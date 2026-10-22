@@ -1,0 +1,19 @@
+// Esquema de la base de datos de GameUP.
+// Documentación: https://pris.ly/d/prisma-schema
+//
+// Los modelos (usuarios, roles, estudiantes, actividades, ...) se agregarán
+// aquí cuando se defina el modelo de datos. Después de cada cambio:
+//   npm run db:migrate -- --name descripcion_del_cambio
+
+generator client {
+  provider = "prisma-client"
+  // Dentro de src/ para que `nest build` lo compile junto con la app.
+  output   = "../src/generated/prisma"
+  // El backend usa módulos ES con imports terminados en .js
+  moduleFormat        = "esm"
+  importFileExtension = "js"
+}
+
+datasource db {
+  provider = "postgresql"
+}

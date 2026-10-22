@@ -1,0 +1,4 @@
+# Código generado por Prisma (npm run db:generate)
+src/generated/
+dist/
+coverage/
