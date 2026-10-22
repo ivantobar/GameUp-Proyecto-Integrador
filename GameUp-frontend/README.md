@@ -2,34 +2,38 @@
 
 App móvil de **GameUP**, el aula virtual inclusiva de la Fundación ASISCO-UP.
 
-- **React Native + Expo** (SDK 57, TypeScript).
+- **React Native + Expo** (SDK 57, TypeScript estricto).
   Se usa el SDK 57 porque el Expo Go de Play Store aún no soporta el 58.
   Antes de subir de SDK, confirma que Expo Go ya lo soporta.
+- Navegación con **Expo Router** (rutas en `src/app/`).
 - Se prueba en el celular con **Expo Go**.
 - Se comunica con el backend **NestJS** (`GameUp-backend`) por su API REST.
 
-> Estado actual: configuración inicial. Hay una sola pantalla con un botón
-> **«Probar conexión»** que llama a `GET /api/v1/health` del backend.
-> Aún no hay navegación, inicio de sesión ni juegos.
+> **Estado actual (Fase 3):** sistema de diseño, componentes base,
+> personaje y bocas en SVG, pantallas del estudiante **Inicio**, **Juegos**,
+> **Mi progreso** y el flujo completo de **Habla conmigo** (selección de
+> vocal, **Mira**, **Dilo** y **Listo**), con datos simulados. Al abrir la
+> app en desarrollo aparece el **Modo desarrollo**: entra como «Estudiante».
+> Aún no hay inicio de sesión.
 
 ---
 
 ## 1. Requisitos
 
-| Herramienta | Versión | Comprobar con |
-|---|---|---|
-| Node.js | **22.18+** o **24.11+** (la misma del backend) | `node -v` |
-| npm | 10 o superior | `npm -v` |
-| Expo Go | La última versión de Play Store / App Store (compatible con SDK 57) | En el celular |
+| Herramienta | Versión                                                             | Comprobar con |
+| ----------- | ------------------------------------------------------------------- | ------------- |
+| Node.js     | **22.18+** o **24.11+** (la misma del backend)                      | `node -v`     |
+| npm         | 10 o superior                                                       | `npm -v`      |
+| Expo Go     | La última versión de Play Store / App Store (compatible con SDK 57) | En el celular |
 
 Todos los comandos se ejecutan en una terminal **bash** (en Windows: Git Bash),
 desde la carpeta `GameUp-frontend`.
 
-## 2. Instalación (primera vez)
+## 2. Instalación
 
 ```bash
-npm install            # instala dependencias
-cp .env.example .env   # crea tu archivo de variables
+npm install            # instala dependencias (también después de cada git pull que cambie package.json)
+cp .env.example .env   # solo la primera vez
 ```
 
 Edita `.env` y pon la IP local de tu PC en `EXPO_PUBLIC_API_URL`:
@@ -48,18 +52,30 @@ EXPO_PUBLIC_API_URL=http://192.168.1.20:3000/api/v1
 
 ## 3. Ejecutar
 
-1. En otra terminal, enciende el backend: `cd ../GameUp-backend && npm run start:dev`.
-2. En esta carpeta:
+```bash
+npx expo start --clear   # la primera vez después de cambiar dependencias
+npm start                # las demás veces
+```
 
-   ```bash
-   npm start
-   ```
+1. Escanea el código QR con **Expo Go** (Android) o con la cámara (iPhone).
+2. Aparece **Modo desarrollo**:
+   - **Catálogo de componentes**: cada componente en todos sus estados.
+     Mantén presionado un botón para ver su estado presionado.
+   - **Prueba de conexión**: con el backend encendido
+     (`cd ../GameUp-backend && npm run start:dev`), toca «Probar conexión».
+     Debe aparecer «Backend conectado».
+   - **Ver la app como → Estudiante**: Inicio, Juegos, Mi progreso y la
+     selección de vocal. Docente y acudiente se habilitan en la Fase 5.
+   - El parlante lee la instrucción con la voz del teléfono. En iPhone no
+     suena si el teléfono está en modo silencio.
+   - **Datos simulados → ¿El acudiente autorizó grabar la voz?**: con «Sí»,
+     «Dilo» graba la voz; con «No», no graba y muestra «Ya lo dije».
+   - En «Dilo», Expo Go pide permiso de **cámara** (solo espejo: no toma
+     fotos ni graba video) y de **micrófono** (solo con autorización).
+     La grabación queda en la caché del teléfono y se reinicia al cerrar la
+     app: todavía no se envía a ningún servidor.
 
-3. Escanea el código QR con **Expo Go** (Android) o con la cámara (iPhone).
-4. Toca **«Probar conexión»**. Debe aparecer «Backend conectado» con el estado
-   de la base de datos y de Supabase.
-
-Si sale «No se pudo conectar»:
+Si la prueba de conexión dice «No se pudo conectar»:
 
 - Revisa que la IP del `.env` sea la actual del PC (puede cambiar).
 - Abre `http://TU_IP:3000/api/v1/health` en el navegador del celular.
@@ -71,14 +87,18 @@ Si sale «No se pudo conectar»:
 
 ## 4. Scripts
 
-| Comando | Para qué |
-|---|---|
-| `npm start` | Inicia Expo (muestra el QR para Expo Go) |
-| `npm run android` | Inicia Expo y abre un emulador Android, si hay uno |
-| `npm run typecheck` | Revisa los tipos de TypeScript |
-| `npm run format` | Da formato al código con Prettier (misma configuración que el backend) |
+| Comando             | Para qué                                                     |
+| ------------------- | ------------------------------------------------------------ |
+| `npm start`         | Inicia Expo (muestra el QR para Expo Go)                     |
+| `npm run android`   | Inicia Expo y abre un emulador Android, si hay uno           |
+| `npm run typecheck` | Revisa los tipos de TypeScript (`tsc --noEmit`)              |
+| `npm run lint`      | Revisa el código con ESLint (`expo lint`)                    |
+| `npm test`          | Ejecuta las pruebas (Jest + Testing Library)                 |
+| `npm run format`    | Da formato con Prettier (misma configuración que el backend) |
 
-Para agregar librerías usa **`npx expo install <paquete>`** (no `npm install`):
+Antes de dar por terminada una tarea: `npm run typecheck`, `npm run lint` y `npm test`.
+
+Para agregar librerías usa **`npx expo install <paquete>`** (no `npm install <paquete>`):
 elige la versión compatible con el SDK de Expo. Expo Go solo trae ciertos
 módulos nativos; antes de agregar uno, comprueba que funcione en Expo Go.
 
@@ -86,23 +106,67 @@ módulos nativos; antes de agregar uno, comprueba que funcione en Expo Go.
 
 ```
 GameUp-frontend/
-├── App.tsx                 # Raíz de la interfaz (aquí irá la navegación)
-├── index.ts                # Registro de la app (no se modifica)
-├── app.json                # Configuración de Expo (nombre, ícono, etc.)
+├── app.json                # Configuración de Expo (scheme, plugins, rutas tipadas)
+├── jest.setup.ts           # Configuración común de las pruebas
 ├── .env.example            # Plantilla de variables (copiar como .env)
 ├── assets/                 # Íconos y splash (provisionales de Expo)
 └── src/
-    ├── components/         # Componentes reutilizables (BigButton)
+    ├── app/                # RUTAS (Expo Router). Cada archivo es una pantalla
+    │   ├── _layout.tsx     #   carga Nunito y define el stack y sus transiciones
+    │   ├── index.tsx       #   ruta inicial (en desarrollo lleva a /dev)
+    │   ├── dev/            #   selector de rol, catálogo y prueba de conexión
+    │   └── student/        #   (tabs)/ Inicio, Juegos, Progreso · speak/ · coming-soon/
+    ├── theme/              # Tokens: colores, tipografía, espacios, movimiento
+    ├── components/ui/      # Componentes base reutilizables
+    ├── components/gameup/  # Personaje, bocas, fichas de sonido, tarjetas de juego
+    ├── features/           # Lógica por funcionalidad (hooks), fuera de las rutas
+    ├── data/               # Tipos, interfaces de repositorio y datos simulados
     ├── config/env.ts       # Lectura de variables de entorno
-    ├── screens/            # Pantallas (HomeScreen, temporal)
-    ├── services/           # Llamadas a la API (api.ts, health.service.ts)
-    └── theme/theme.ts      # Colores, tamaños y espaciados comunes
+    └── services/           # Llamadas a la API (api.ts, health.service.ts)
 ```
 
-Reglas:
+## 6. Reglas de la interfaz
 
-- Toda llamada al backend pasa por `src/services/api.ts`.
-- Colores y tamaños se toman de `src/theme/theme.ts`, no se escriben a mano.
-- Botones grandes (mínimo 72 px de alto), textos cortos y `accessibilityLabel`
-  en todo elemento tocable.
+Vienen de la guía «Estilos para el frontend» de la fundación:
+
+- **Ningún color, tamaño ni duración se escribe a mano.** Todo sale de
+  `src/theme`. Los componentes aceptan `ThemeColor`, así que un color
+  inventado no compila.
+- Botón principal en **verde oscuro**. El naranja es acento y lleva siempre
+  texto oscuro, **nunca blanco**. Única excepción aprobada: sobre una tarjeta
+  verde oscuro, la acción principal es naranja.
+- Botones de **56 px** de alto como mínimo (64 px para la acción principal del
+  niño). Áreas táctiles de **44 px** o más.
+- Texto de **15 px** como mínimo. La «Etiqueta» de la guía (13 px) se usa
+  en 15 px por decisión del equipo.
+- Superficies planas con esquinas redondeadas, sin degradados ni sombras.
+- Las acciones van en la parte inferior; nada flota sobre el contenido.
+- El estado nunca se comunica solo con color: también con texto o forma.
+- Todo elemento tocable lleva `accessibilityRole`, `accessibilityLabel` y
+  `accessibilityState`.
 - Los permisos se verifican en el backend; ocultar un botón en la app no basta.
+
+Las pruebas de `src/theme/__tests__` comprueban automáticamente el contraste
+AA de los colores y los tamaños mínimos.
+
+## 7. Datos simulados y API
+
+Las pantallas no llaman a `fetch` ni conocen los datos simulados: usan
+hooks (`useStudentHome`, `useGameList`…) que dependen de las interfaces de
+`src/data/repositories.ts`. La implementación se elige en un solo lugar,
+`src/app/_layout.tsx`:
+
+```ts
+const repositories = createMockRepositories(); // hoy: datos ficticios
+```
+
+Cuando el backend NestJS tenga los endpoints, se crea una implementación
+que use `src/services/api.ts` y se cambia esa línea. Los datos ficticios
+(`src/data/mock/fixtures.ts`) no corresponden a ningún niño real.
+
+## 8. Agregar un juego
+
+Los juegos se registran en `src/features/games/catalog.ts`. Agregar uno es
+agregar una entrada (título, ícono, sección, tono y ruta); la pantalla
+Juegos no cambia. Mientras `href` sea `null`, el juego lleva a la pantalla
+«Estamos preparando…».
