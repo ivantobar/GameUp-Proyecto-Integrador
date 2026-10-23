@@ -2,7 +2,11 @@ import type {
   Assignment,
   OfficialProgress,
   ResumePoint,
+  ReviewItem,
+  StaffProfile,
   StudentProfile,
+  StudentSummary,
+  TeacherNote,
   VowelPractice,
 } from '../types';
 
@@ -47,4 +51,104 @@ export const mockOfficialProgress: OfficialProgress = {
     { moduleId: 'stories', validated: 0, total: 6 },
   ],
   pendingValidation: 1,
+};
+
+/** Personas adultas ficticias. */
+export const mockTeacher: StaffProfile = {
+  id: 'doc-demo-001',
+  displayName: 'Profe Laura',
+};
+
+export const mockGuardian: StaffProfile = {
+  id: 'acu-demo-001',
+  displayName: 'Acudiente de Martín',
+};
+
+/** Estudiantes asignados a la docente (nombres del mockup, ficticios). */
+export const mockStudentSummaries: Record<string, StudentSummary> = {
+  [mockStudent.id]: {
+    id: mockStudent.id,
+    displayName: 'Martín C.',
+    initials: 'MC',
+  },
+  'est-demo-002': {
+    id: 'est-demo-002',
+    displayName: 'Valentina G.',
+    initials: 'VG',
+  },
+  'est-demo-003': {
+    id: 'est-demo-003',
+    displayName: 'Samuel O.',
+    initials: 'SO',
+  },
+};
+
+/** Docente → estudiantes asignados. */
+export const mockTeacherStudents: Record<string, string[]> = {
+  [mockTeacher.id]: Object.keys(mockStudentSummaries),
+};
+
+/** Acudiente → estudiante asociado (solo Martín). */
+export const mockGuardianStudents: Record<string, string> = {
+  [mockGuardian.id]: mockStudent.id,
+};
+
+function hoursAgo(hours: number): string {
+  return new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
+}
+
+/**
+ * «Por escuchar» del mockup. Son datos de ejemplo SIN audio real: para oír
+ * una grabación, juega «Habla conmigo» como estudiante y aparecerá arriba.
+ */
+export function createSeedReviews(): ReviewItem[] {
+  const [martin, valentina, samuel] = [
+    mockStudentSummaries[mockStudent.id],
+    mockStudentSummaries['est-demo-002'],
+    mockStudentSummaries['est-demo-003'],
+  ] as StudentSummary[];
+  return [
+    {
+      id: 'rev-demo-001',
+      kind: 'speech',
+      student: martin,
+      submittedAt: hoursAgo(2),
+      status: 'pending_validation',
+      speech: {
+        vowel: 'o',
+        audioUri: null,
+        voiceConsent: true,
+        attemptNumber: 2,
+        attemptsTotal: 2,
+      },
+    },
+    {
+      id: 'rev-demo-002',
+      kind: 'speech',
+      student: valentina,
+      submittedAt: hoursAgo(26),
+      status: 'pending_validation',
+      speech: {
+        vowel: 'a',
+        audioUri: null,
+        voiceConsent: true,
+        attemptNumber: 1,
+        attemptsTotal: 1,
+      },
+    },
+    {
+      id: 'rev-demo-003',
+      kind: 'listening',
+      student: samuel,
+      submittedAt: hoursAgo(28),
+      status: 'pending_validation',
+      listening: { firstTryCorrect: 4, total: 5 },
+    },
+  ];
+}
+
+/** Nota de la profe del mockup del acudiente. */
+export const mockTeacherNote: TeacherNote = {
+  text: 'Martín ya redondea los labios. Esta semana jueguen con palabras: oso, ojo, ola.',
+  audioUri: null,
 };

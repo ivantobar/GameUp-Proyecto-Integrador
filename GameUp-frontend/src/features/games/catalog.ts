@@ -27,7 +27,6 @@ export const gameSections: readonly { id: GameSectionId; title: string }[] = [
  * Catálogo de juegos (abierto/cerrado): agregar un juego es agregar una
  * entrada aquí; la pantalla Juegos no cambia.
  *
- * - Busca la boca se habilita en la Fase 4.
  * - Emparejar, Clasificar, Secuenciar y Memoria aún no tienen mockup.
  */
 export const gameCatalog: readonly GameDefinition[] = [
@@ -49,7 +48,7 @@ export const gameCatalog: readonly GameDefinition[] = [
     section: 'sounds',
     tone: 'warm',
     isNewGame: true,
-    href: null,
+    href: '/student/find-mouth',
   },
   {
     id: 'match',

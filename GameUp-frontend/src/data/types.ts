@@ -99,3 +99,85 @@ export interface NewSpeechAttempt {
   vowel: Vowel;
   audioUri: string | null;
 }
+
+/**
+ * Resultado de una partida de «Busca la boca». Cuenta cuántos sonidos
+ * reconoció al primer intento, pero NO es una nota: queda pendiente hasta
+ * que el docente lo revise y lo valide.
+ */
+export interface ListeningResult {
+  id: string;
+  studentId: string;
+  gameId: 'findMouth';
+  firstTryCorrect: number;
+  total: number;
+  status: ActivityStatus;
+  createdAt: string;
+}
+
+export interface NewListeningResult {
+  studentId: string;
+  firstTryCorrect: number;
+  total: number;
+}
+
+/** Persona adulta con sesión (docente o acudiente). */
+export interface StaffProfile {
+  id: string;
+  displayName: string;
+}
+
+/** Estudiante tal como lo ve el docente: nombre corto e iniciales. */
+export interface StudentSummary {
+  id: string;
+  /** Nombre y la inicial del apellido («Martín C.»). */
+  displayName: string;
+  /** Dos letras para el círculo («MC»). */
+  initials: string;
+}
+
+export type ReviewKind = 'speech' | 'listening';
+
+/**
+ * Actividad realizada que espera la revisión del docente («Por escuchar»).
+ * - speech: intento de «Habla conmigo» (con o sin grabación);
+ * - listening: partida de «Busca la boca».
+ */
+export interface ReviewItem {
+  id: string;
+  kind: ReviewKind;
+  student: StudentSummary;
+  submittedAt: string;
+  status: ActivityStatus;
+  /** Solo «Habla conmigo». */
+  speech?: {
+    vowel: Vowel;
+    /** Archivo de voz; `null` si no hay grabación. */
+    audioUri: string | null;
+    /** ¿El acudiente autorizó grabar? Explica por qué no hay audio. */
+    voiceConsent: boolean;
+    attemptNumber: number;
+    attemptsTotal: number;
+  };
+  /** Solo «Busca la boca». */
+  listening?: {
+    firstTryCorrect: number;
+    total: number;
+  };
+  /** Retroalimentación si el docente pidió practicar más. */
+  feedback?: string;
+}
+
+/** Nota de la profe para la familia (texto y, si la grabó, voz). */
+export interface TeacherNote {
+  text: string;
+  audioUri: string | null;
+}
+
+/** Lo que ve el acudiente en «Practicar en casa». */
+export interface WeeklyPractice {
+  student: StudentSummary;
+  vowel: Vowel;
+  teacherNote: TeacherNote | null;
+  practicedToday: boolean;
+}

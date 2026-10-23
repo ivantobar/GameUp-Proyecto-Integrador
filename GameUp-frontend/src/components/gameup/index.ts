@@ -5,6 +5,7 @@ export { GameCard, type GameCardTone } from './GameCard';
 export { MicButton } from './MicButton';
 export { MirrorView } from './MirrorView';
 export { Mouth } from './Mouth';
+export { MouthOption, type MouthOptionState } from './MouthOption';
 export { mouthDescriptions, type MouthShape } from './mouthShapes';
 export { NarrationButton } from './NarrationButton';
 export { SoundTile } from './SoundTile';

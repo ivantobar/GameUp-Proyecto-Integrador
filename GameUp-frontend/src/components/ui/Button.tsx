@@ -167,9 +167,10 @@ export function Button({
             <AppText
               variant="button"
               tone={textTone}
-              style={
-                config.underline && !disabled ? styles.underline : undefined
-              }
+              style={[
+                styles.label,
+                config.underline && !disabled ? styles.underline : undefined,
+              ]}
             >
               {label}
             </AppText>
@@ -190,6 +191,11 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     borderRadius: radii.lg,
     borderWidth: sizes.borderStrong,
+  },
+  /** En botones lado a lado, el texto baja de línea en vez de salirse. */
+  label: {
+    flexShrink: 1,
+    textAlign: 'center',
   },
   underline: {
     textDecorationLine: 'underline',

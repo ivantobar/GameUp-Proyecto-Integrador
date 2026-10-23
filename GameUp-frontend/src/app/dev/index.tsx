@@ -28,8 +28,13 @@ interface RoleEntry {
 /** Roles con mockup. La directora no tiene mockup y no se diseña todavía. */
 const roles: readonly RoleEntry[] = [
   { label: 'Estudiante', icon: 'student', phase: 'Fase 2', href: '/student' },
-  { label: 'Docente', icon: 'teacher', phase: 'Fase 5' },
-  { label: 'Acudiente', icon: 'guardian', phase: 'Fase 5' },
+  { label: 'Docente', icon: 'teacher', phase: 'Fase 5', href: '/teacher' },
+  {
+    label: 'Acudiente',
+    icon: 'guardian',
+    phase: 'Fase 5',
+    href: '/guardian',
+  },
 ];
 
 /**

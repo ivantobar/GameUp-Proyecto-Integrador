@@ -9,12 +9,15 @@ App móvil de **GameUP**, el aula virtual inclusiva de la Fundación ASISCO-UP.
 - Se prueba en el celular con **Expo Go**.
 - Se comunica con el backend **NestJS** (`GameUp-backend`) por su API REST.
 
-> **Estado actual (Fase 3):** sistema de diseño, componentes base,
+> **Estado actual (Fase 5):** sistema de diseño, componentes base,
 > personaje y bocas en SVG, pantallas del estudiante **Inicio**, **Juegos**,
-> **Mi progreso** y el flujo completo de **Habla conmigo** (selección de
-> vocal, **Mira**, **Dilo** y **Listo**), con datos simulados. Al abrir la
-> app en desarrollo aparece el **Modo desarrollo**: entra como «Estudiante».
-> Aún no hay inicio de sesión.
+> **Mi progreso**, el flujo completo de **Habla conmigo** (selección de
+> vocal, **Mira**, **Dilo** y **Listo**) y **Busca la boca**; la pantalla
+> del docente **Por escuchar** y la del acudiente **Practicar en casa**.
+> Todo funciona con datos simulados en memoria. Al abrir la app en
+> desarrollo aparece el **Modo desarrollo**: elige el rol. Aún no hay
+> inicio de sesión ni API: los permisos de cada rol deberá verificarlos el
+> backend.
 
 ---
 
@@ -64,8 +67,16 @@ npm start                # las demás veces
    - **Prueba de conexión**: con el backend encendido
      (`cd ../GameUp-backend && npm run start:dev`), toca «Probar conexión».
      Debe aparecer «Backend conectado».
-   - **Ver la app como → Estudiante**: Inicio, Juegos, Mi progreso y la
-     selección de vocal. Docente y acudiente se habilitan en la Fase 5.
+   - **Ver la app como → Estudiante**: Inicio, Juegos, Mi progreso, Habla
+     conmigo y Busca la boca.
+   - **Ver la app como → Docente**: «Por escuchar». Lo que hizo el
+     estudiante en esta sesión aparece aquí. «Lo logró» lo valida y sube
+     el progreso; «Practicar más» pide una indicación que llega a la
+     familia; también se puede grabar una nota de voz para la familia.
+   - **Ver la app como → Acudiente**: «Practicar en casa», con el sonido de
+     la semana, los pasos, la nota de la profe y «Lo practicamos hoy».
+   - Los datos simulados viven en memoria: al recargar la app (o cerrar
+     Expo Go) vuelven a los iniciales.
    - El parlante lee la instrucción con la voz del teléfono. En iPhone no
      suena si el teléfono está en modo silencio.
    - **Datos simulados → ¿El acudiente autorizó grabar la voz?**: con «Sí»,
@@ -115,7 +126,9 @@ GameUp-frontend/
     │   ├── _layout.tsx     #   carga Nunito y define el stack y sus transiciones
     │   ├── index.tsx       #   ruta inicial (en desarrollo lleva a /dev)
     │   ├── dev/            #   selector de rol, catálogo y prueba de conexión
-    │   └── student/        #   (tabs)/ Inicio, Juegos, Progreso · speak/ · coming-soon/
+    │   ├── student/        #   (tabs)/ Inicio, Juegos, Progreso · speak/ · find-mouth/
+    │   ├── teacher/        #   «Por escuchar» (docente)
+    │   └── guardian/       #   «Practicar en casa» (acudiente)
     ├── theme/              # Tokens: colores, tipografía, espacios, movimiento
     ├── components/ui/      # Componentes base reutilizables
     ├── components/gameup/  # Personaje, bocas, fichas de sonido, tarjetas de juego

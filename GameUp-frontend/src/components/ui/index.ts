@@ -28,5 +28,6 @@ export {
 } from './ScreenHeader';
 export { SegmentedTabs, type SegmentedTabOption } from './SegmentedTabs';
 export { StateView, type StateKind } from './StateView';
+export { TextField } from './TextField';
 export type { PressableBaseProps } from './types';
 export { pressColor, usePressFeedback } from './usePressFeedback';

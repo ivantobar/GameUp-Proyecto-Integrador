@@ -1,13 +1,18 @@
 import type {
   Assignment,
+  ListeningResult,
+  NewListeningResult,
   NewSpeechAttempt,
   OfficialProgress,
   ResumePoint,
+  ReviewItem,
+  StaffProfile,
   SpeechAttempt,
   StarCount,
   StudentProfile,
   Vowel,
   VowelPractice,
+  WeeklyPractice,
 } from './types';
 
 /**
@@ -50,13 +55,52 @@ export interface RecordingRepository {
 }
 
 export interface AssignmentRepository {
-  /** Tareas que el docente asignó al estudiante y aún no están validadas. */
+  /** Tareas que el docente asignó y el estudiante todavía no ha hecho. */
   listPendingForStudent(studentId: string): Promise<Assignment[]>;
+}
+
+export interface ResultRepository {
+  /**
+   * Envía el resultado de «Busca la boca». Queda pendiente de validación y,
+   * si había una tarea de ese juego, la marca como realizada.
+   */
+  submitFindMouthResult(result: NewListeningResult): Promise<ListeningResult>;
 }
 
 export interface ProgressRepository {
   /** Progreso oficial por módulo: solo actividades validadas. */
   getOfficialProgress(studentId: string): Promise<OfficialProgress>;
+}
+
+export interface StaffRepository {
+  /** Docente con sesión. Con la API saldrá del token. */
+  getCurrentTeacher(): Promise<StaffProfile>;
+  /** Acudiente con sesión. */
+  getCurrentGuardian(): Promise<StaffProfile>;
+}
+
+/**
+ * Revisión del docente. Regla 6: el docente solo ve a SUS estudiantes. El
+ * filtro por `teacherId` debe hacerlo el backend; ocultarlo en la app no basta.
+ */
+export interface ReviewRepository {
+  listPendingReviews(teacherId: string): Promise<ReviewItem[]>;
+  /** «Lo logró»: valida la actividad; cuenta para el progreso oficial. */
+  validate(reviewId: string): Promise<void>;
+  /** «Practicar más»: no aprueba y deja retroalimentación (obligatoria). */
+  requestMorePractice(reviewId: string, feedback: string): Promise<void>;
+  /** Nota de voz del docente para la familia de un estudiante. */
+  saveFamilyVoiceNote(studentId: string, audioUri: string): Promise<void>;
+}
+
+/**
+ * Espacio del acudiente. Regla 5: solo ve al estudiante (o estudiantes) que
+ * tiene asociados; el backend debe verificarlo.
+ */
+export interface GuardianRepository {
+  getWeeklyPractice(guardianId: string): Promise<WeeklyPractice>;
+  /** «Lo practicamos hoy»: queda en el seguimiento. */
+  markPracticedToday(guardianId: string, studentId: string): Promise<void>;
 }
 
 /** Conjunto de repositorios que se inyecta en la app. */
@@ -67,4 +111,8 @@ export interface Repositories {
   progress: ProgressRepository;
   consent: ConsentRepository;
   recordings: RecordingRepository;
+  results: ResultRepository;
+  staff: StaffRepository;
+  reviews: ReviewRepository;
+  guardians: GuardianRepository;
 }

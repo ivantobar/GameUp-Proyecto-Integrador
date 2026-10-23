@@ -60,6 +60,8 @@ export const sizes = {
   waveform: 40,
   waveformSmall: 20,
   waveformBar: 4,
+  /** Tarjeta de cada boca en «Busca la boca» (alto mínimo). */
+  mouthOption: 88,
   /** Ficha de sonido (alto mínimo). */
   soundTile: 96,
 } as const;
