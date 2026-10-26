@@ -181,3 +181,22 @@ export interface WeeklyPractice {
   teacherNote: TeacherNote | null;
   practicedToday: boolean;
 }
+
+/** Roles de GameUP. El rol de cada cuenta lo decide el backend, no la app. */
+export type UserRole = 'student' | 'teacher' | 'guardian' | 'director';
+
+/** Lo que escribe la persona en «Iniciar sesión». */
+export interface Credentials {
+  email: string;
+  password: string;
+}
+
+/**
+ * Sesión iniciada. Con la API NestJS también traerá el token que entregue el
+ * backend; la app nunca decide los permisos a partir de estos datos.
+ */
+export interface AuthSession {
+  userId: string;
+  role: UserRole;
+  displayName: string;
+}

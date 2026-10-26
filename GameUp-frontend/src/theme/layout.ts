@@ -64,6 +64,8 @@ export const sizes = {
   mouthOption: 88,
   /** Ficha de sonido (alto mínimo). */
   soundTile: 96,
+  /** Logo completo de la fundación (guía: con lema, desde 200 px de ancho). */
+  logo: 220,
 } as const;
 
 export type CharacterSize = keyof typeof sizes.character;

@@ -1,5 +1,6 @@
 import type {
   Assignment,
+  AuthSession,
   OfficialProgress,
   ResumePoint,
   ReviewItem,
@@ -151,4 +152,33 @@ export function createSeedReviews(): ReviewItem[] {
 export const mockTeacherNote: TeacherNote = {
   text: 'Martín ya redondea los labios. Esta semana jueguen con palabras: oso, ojo, ola.',
   audioUri: null,
+};
+
+/**
+ * Cuentas de prueba del inicio de sesión simulado. Son ficticias y solo
+ * existen en memoria: las cuentas reales las creará y validará el backend.
+ */
+export const MOCK_PASSWORD = 'gameup123';
+
+export const mockAccounts: Record<string, AuthSession> = {
+  'estudiante@gameup.test': {
+    userId: mockStudent.id,
+    role: 'student',
+    displayName: mockStudent.displayName,
+  },
+  'docente@gameup.test': {
+    userId: mockTeacher.id,
+    role: 'teacher',
+    displayName: mockTeacher.displayName,
+  },
+  'acudiente@gameup.test': {
+    userId: mockGuardian.id,
+    role: 'guardian',
+    displayName: mockGuardian.displayName,
+  },
+  'directora@gameup.test': {
+    userId: 'dir-demo-001',
+    role: 'director',
+    displayName: 'Directora',
+  },
 };

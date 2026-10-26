@@ -1,5 +1,7 @@
 import type {
   Assignment,
+  AuthSession,
+  Credentials,
   ListeningResult,
   NewListeningResult,
   NewSpeechAttempt,
@@ -23,6 +25,20 @@ import type {
  * Son interfaces pequeñas y separadas (segregación de interfaces): cada
  * pantalla usa solo las que necesita.
  */
+
+/**
+ * Inicio de sesión. PUNTO DE CONEXIÓN CON LA API: hoy lo resuelve la versión
+ * simulada (`mock/`); con NestJS se implementa llamando al endpoint de
+ * autenticación que defina el backend, sin cambiar la pantalla.
+ */
+export interface AuthRepository {
+  /**
+   * Si el correo o la contraseña no coinciden, rechaza con
+   * `InvalidCredentialsError` (`./authErrors`). Cualquier otro error se trata
+   * como un problema de conexión.
+   */
+  signIn(credentials: Credentials): Promise<AuthSession>;
+}
 
 export interface StudentRepository {
   /** Estudiante con sesión activa. Con la API saldrá del token. */
@@ -105,6 +121,7 @@ export interface GuardianRepository {
 
 /** Conjunto de repositorios que se inyecta en la app. */
 export interface Repositories {
+  auth: AuthRepository;
   students: StudentRepository;
   practice: PracticeRepository;
   assignments: AssignmentRepository;

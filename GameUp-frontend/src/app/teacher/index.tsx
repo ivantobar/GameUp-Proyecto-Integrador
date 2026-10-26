@@ -44,7 +44,12 @@ export default function TeacherReviewScreen() {
     <Screen
       header={
         <ScreenHeader
-          left={<HeaderBackButton onPress={() => router.back()} />}
+          left={
+            // Después de iniciar sesión no hay pantalla anterior.
+            router.canGoBack() ? (
+              <HeaderBackButton onPress={() => router.back()} />
+            ) : undefined
+          }
           title="Por escuchar"
         />
       }

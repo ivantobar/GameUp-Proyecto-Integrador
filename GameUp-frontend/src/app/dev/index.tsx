@@ -50,13 +50,19 @@ export default function DevHome() {
         icon="info"
         tone="warm"
         title="Pantalla temporal"
-        message="Solo existe en desarrollo para revisar los flujos. No es el inicio de sesión."
+        message="Solo existe en desarrollo para revisar los flujos sin iniciar sesión."
       />
 
       <View style={styles.section}>
         <AppText variant="label" tone="secundario" accessibilityRole="header">
           Herramientas
         </AppText>
+        <Button
+          label="Iniciar sesión"
+          icon="login"
+          variant="secondary"
+          onPress={() => router.push('/login')}
+        />
         <Button
           label="Catálogo de componentes"
           icon="palette"

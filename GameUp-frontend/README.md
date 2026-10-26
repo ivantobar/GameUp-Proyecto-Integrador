@@ -14,10 +14,9 @@ App móvil de **GameUP**, el aula virtual inclusiva de la Fundación ASISCO-UP.
 > **Mi progreso**, el flujo completo de **Habla conmigo** (selección de
 > vocal, **Mira**, **Dilo** y **Listo**) y **Busca la boca**; la pantalla
 > del docente **Por escuchar** y la del acudiente **Practicar en casa**.
-> Todo funciona con datos simulados en memoria. Al abrir la app en
-> desarrollo aparece el **Modo desarrollo**: elige el rol. Aún no hay
-> inicio de sesión ni API: los permisos de cada rol deberá verificarlos el
-> backend.
+> Todo funciona con datos simulados en memoria. La app abre en
+> **Iniciar sesión** (simulado: aún no hay API). Los permisos de cada rol
+> deberá verificarlos el backend.
 
 ---
 
@@ -61,7 +60,15 @@ npm start                # las demás veces
 ```
 
 1. Escanea el código QR con **Expo Go** (Android) o con la cámara (iPhone).
-2. Aparece **Modo desarrollo**:
+2. Aparece **Iniciar sesión**. El inicio de sesión es simulado: en
+   desarrollo, la tarjeta **Cuentas de prueba** llena el formulario
+   (contraseña `gameup123`, solo datos ficticios):
+   - `estudiante@gameup.test` → Inicio del estudiante.
+   - `docente@gameup.test` → «Por escuchar».
+   - `acudiente@gameup.test` → «Practicar en casa».
+   - `directora@gameup.test` → aviso «llega en una próxima versión».
+   El enlace **Ir al modo desarrollo** abre el selector de abajo.
+3. **Modo desarrollo**:
    - **Catálogo de componentes**: cada componente en todos sus estados.
      Mantén presionado un botón para ver su estado presionado.
    - **Prueba de conexión**: con el backend encendido
@@ -124,7 +131,8 @@ GameUp-frontend/
 └── src/
     ├── app/                # RUTAS (Expo Router). Cada archivo es una pantalla
     │   ├── _layout.tsx     #   carga Nunito y define el stack y sus transiciones
-    │   ├── index.tsx       #   ruta inicial (en desarrollo lleva a /dev)
+    │   ├── index.tsx       #   ruta inicial (lleva a /login)
+    │   ├── login.tsx       #   Iniciar sesión (simulado)
     │   ├── dev/            #   selector de rol, catálogo y prueba de conexión
     │   ├── student/        #   (tabs)/ Inicio, Juegos, Progreso · speak/ · find-mouth/
     │   ├── teacher/        #   «Por escuchar» (docente)
@@ -174,7 +182,14 @@ const repositories = createMockRepositories(); // hoy: datos ficticios
 ```
 
 Cuando el backend NestJS tenga los endpoints, se crea una implementación
-que use `src/services/api.ts` y se cambia esa línea. Los datos ficticios
+que use `src/services/api.ts` y se cambia esa línea.
+
+El inicio de sesión sigue el mismo camino: la pantalla `src/app/login.tsx`
+llama a `repositories.auth.signIn` (contrato `AuthRepository`). Para
+conectarlo, la implementación real envía el correo y la contraseña al
+endpoint de autenticación que defina el backend, rechaza con
+`InvalidCredentialsError` cuando no coinciden y guarda el token de forma
+segura. La pantalla no cambia. Los datos ficticios
 (`src/data/mock/fixtures.ts`) no corresponden a ningún niño real.
 
 ## 8. Agregar un juego

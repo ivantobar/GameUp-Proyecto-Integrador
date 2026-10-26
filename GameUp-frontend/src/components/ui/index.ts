@@ -11,6 +11,7 @@ export {
   type IconButtonSize,
 } from './IconButton';
 export { InitialsAvatar } from './InitialsAvatar';
+export { Logo } from './Logo';
 export { Notice, type NoticeTone } from './Notice';
 export { NumberedSteps } from './NumberedSteps';
 export {

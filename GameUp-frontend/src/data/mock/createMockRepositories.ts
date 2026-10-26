@@ -1,3 +1,4 @@
+import { InvalidCredentialsError } from '../authErrors';
 import type { Repositories } from '../repositories';
 import {
   MAX_STARS,
@@ -14,6 +15,8 @@ import {
 import { devSettings } from './devSettings';
 import {
   createSeedReviews,
+  MOCK_PASSWORD,
+  mockAccounts,
   mockAssignments,
   mockGuardian,
   mockGuardianStudents,
@@ -86,10 +89,13 @@ export function createMockRepositories({
       setTimeout(() => resolve(clone(value)), delayMs);
     });
 
-  const fail = (message: string): Promise<never> =>
+  const rejectWith = (error: Error): Promise<never> =>
     new Promise((_resolve, reject) => {
-      setTimeout(() => reject(new Error(message)), delayMs);
+      setTimeout(() => reject(error), delayMs);
     });
+
+  const fail = (message: string): Promise<never> =>
+    rejectWith(new Error(message));
 
   const summaryOf = (studentId: string): StudentSummary =>
     mockStudentSummaries[studentId] ?? {
@@ -119,6 +125,15 @@ export function createMockRepositories({
   };
 
   return {
+    auth: {
+      signIn: ({ email, password }) => {
+        const session = mockAccounts[email.trim().toLowerCase()];
+        if (!session || password !== MOCK_PASSWORD) {
+          return rejectWith(new InvalidCredentialsError());
+        }
+        return respond(session);
+      },
+    },
     students: {
       getCurrentStudent: () => respond(mockStudent),
     },

@@ -1,21 +1,9 @@
 import { Redirect } from 'expo-router';
-import { Screen, StateView } from '@/components/ui';
 
 /**
- * Ruta inicial. Mientras no exista el inicio de sesión, en desarrollo lleva
- * al selector de rol. En una versión publicada no muestra ese selector.
+ * Ruta inicial: la app empieza en «Iniciar sesión». En desarrollo, desde
+ * ahí se puede ir al «Modo desarrollo» para revisar cada rol.
  */
 export default function Index() {
-  if (__DEV__) {
-    return <Redirect href="/dev" />;
-  }
-  return (
-    <Screen>
-      <StateView
-        kind="empty"
-        title="Muy pronto podrás entrar aquí"
-        message="Estamos preparando el inicio de sesión."
-      />
-    </Screen>
-  );
+  return <Redirect href="/login" />;
 }

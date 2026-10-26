@@ -43,6 +43,9 @@ export const iconGlyphs = {
   book: 'book-outline',
   stop: 'stop',
   pause: 'pause',
+  login: 'log-in-outline',
+  eye: 'eye-outline',
+  eyeOff: 'eye-off-outline',
 } as const satisfies Record<string, IoniconName>;
 
 export type IconName = keyof typeof iconGlyphs;

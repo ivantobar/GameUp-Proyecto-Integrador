@@ -54,7 +54,12 @@ export default function GuardianPracticeScreen() {
     <Screen
       header={
         <ScreenHeader
-          left={<HeaderBackButton onPress={() => router.back()} />}
+          left={
+            // Después de iniciar sesión no hay pantalla anterior.
+            router.canGoBack() ? (
+              <HeaderBackButton onPress={() => router.back()} />
+            ) : undefined
+          }
           title="Practicar en casa"
         />
       }
