@@ -1,0 +1,37 @@
+{
+  "compilerOptions": {
+    // --- Módulos ES (igual que en clase) ---
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "resolvePackageJsonExports": true,
+    "moduleDetection": "force",
+    "isolatedModules": true,
+    "verbatimModuleSyntax": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+
+    // --- Salida ---
+    // ES2023 en lugar de "esnext": garantiza que todo lo emitido lo entienda Node 22.
+    "target": "ES2023",
+    "outDir": "./dist",
+    "sourceMap": true,
+    "declaration": true,
+    "removeComments": true,
+    "incremental": true,
+
+    // --- Revisión de tipos estricta (igual que en clase) ---
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
+    "noUncheckedSideEffectImports": true,
+    "skipLibCheck": true,
+
+    // --- Requeridos por NestJS (decoradores e inyección de dependencias) ---
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    // Los DTO y entidades de Nest declaran propiedades sin inicializarlas.
+    "strictPropertyInitialization": false,
+
+    "types": ["vitest/globals", "node"]
+  }
+}
