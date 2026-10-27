@@ -12,7 +12,9 @@ App móvil de **GameUP**, el aula virtual inclusiva de la Fundación ASISCO-UP.
 > **Estado actual (Fase 5):** sistema de diseño, componentes base,
 > personaje y bocas en SVG, pantallas del estudiante **Inicio**, **Juegos**,
 > **Mi progreso**, el flujo completo de **Habla conmigo** (selección de
-> vocal, **Mira**, **Dilo** y **Listo**) y **Busca la boca**; la pantalla
+> vocal, **Mira**, **Dilo** y **Listo**), **Busca la boca** y los juegos
+> de «Pensar y recordar» (**Emparejar**, **Clasificar**, **Secuenciar** y
+> **Memoria**, con contenido de ejemplo); la pantalla
 > del docente **Por escuchar** y la del acudiente **Practicar en casa**.
 > Todo funciona con datos simulados en memoria. La app abre en
 > **Iniciar sesión** (simulado: aún no hay API). Los permisos de cada rol
@@ -75,7 +77,9 @@ npm start                # las demás veces
      (`cd ../GameUp-backend && npm run start:dev`), toca «Probar conexión».
      Debe aparecer «Backend conectado».
    - **Ver la app como → Estudiante**: Inicio, Juegos, Mi progreso, Habla
-     conmigo y Busca la boca.
+     conmigo, Busca la boca, Emparejar, Clasificar, Secuenciar y Memoria.
+     El contenido de estos cuatro está en `src/data/mock/gameContent.ts`
+     (dibujos provisionales con emojis) y todavía no se envía al docente.
    - **Ver la app como → Docente**: «Por escuchar». Lo que hizo el
      estudiante en esta sesión aparece aquí. «Lo logró» lo valida y sube
      el progreso; «Practicar más» pide una indicación que llega a la

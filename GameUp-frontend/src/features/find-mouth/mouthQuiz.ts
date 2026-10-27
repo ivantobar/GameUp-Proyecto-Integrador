@@ -1,4 +1,8 @@
 import { VOWELS, type Vowel } from '@/data/types';
+import { shuffle, type Random } from '@/features/games/shuffle';
+
+// Se movió a `features/games` porque la usan varios juegos.
+export { shuffle };
 
 /**
  * Lógica pura de «Busca la boca» (sin React), para poder probarla sola.
@@ -30,23 +34,6 @@ export interface QuizState {
 }
 
 export type QuizAction = { type: 'choose'; vowel: Vowel } | { type: 'next' };
-
-type Random = () => number;
-
-/** Mezcla una copia de la lista (Fisher–Yates). */
-export function shuffle<T>(items: readonly T[], random: Random): T[] {
-  const copy = [...items];
-  for (let i = copy.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(random() * (i + 1));
-    const a = copy[i];
-    const b = copy[j];
-    if (a !== undefined && b !== undefined) {
-      copy[i] = b;
-      copy[j] = a;
-    }
-  }
-  return copy;
-}
 
 /** Crea las rondas: cada vocal una vez, con 2 bocas distractoras. */
 export function buildRounds(
