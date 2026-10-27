@@ -27,12 +27,7 @@ export const gameSections: readonly { id: GameSectionId; title: string }[] = [
  * Catálogo de juegos (abierto/cerrado): agregar un juego es agregar una
  * entrada aquí; la pantalla Juegos no cambia.
  *
-<<<<<<< HEAD
  * - Emparejar, Clasificar, Secuenciar y Memoria aún no tienen mockup.
-=======
- * - Emparejar, Clasificar, Secuenciar y Memoria no tienen mockup: su
- *   interfaz es una propuesta que sigue el estilo de «Busca la boca».
->>>>>>> d35da8ccfdd8dc6504d71a290c9fdc1a1ad75028
  */
 export const gameCatalog: readonly GameDefinition[] = [
   {
@@ -63,11 +58,7 @@ export const gameCatalog: readonly GameDefinition[] = [
     section: 'thinking',
     tone: 'surface',
     isNewGame: false,
-<<<<<<< HEAD
     href: null,
-=======
-    href: '/student/match',
->>>>>>> d35da8ccfdd8dc6504d71a290c9fdc1a1ad75028
   },
   {
     id: 'classify',
@@ -77,11 +68,7 @@ export const gameCatalog: readonly GameDefinition[] = [
     section: 'thinking',
     tone: 'surface',
     isNewGame: false,
-<<<<<<< HEAD
     href: null,
-=======
-    href: '/student/classify',
->>>>>>> d35da8ccfdd8dc6504d71a290c9fdc1a1ad75028
   },
   {
     id: 'sequence',
@@ -91,11 +78,7 @@ export const gameCatalog: readonly GameDefinition[] = [
     section: 'thinking',
     tone: 'surface',
     isNewGame: false,
-<<<<<<< HEAD
     href: null,
-=======
-    href: '/student/sequence',
->>>>>>> d35da8ccfdd8dc6504d71a290c9fdc1a1ad75028
   },
   {
     id: 'memory',
@@ -105,11 +88,7 @@ export const gameCatalog: readonly GameDefinition[] = [
     section: 'thinking',
     tone: 'surface',
     isNewGame: false,
-<<<<<<< HEAD
     href: null,
-=======
-    href: '/student/memory',
->>>>>>> d35da8ccfdd8dc6504d71a290c9fdc1a1ad75028
   },
 ];
 
