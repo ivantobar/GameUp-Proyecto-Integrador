@@ -55,7 +55,12 @@ export function setupSwagger(app: INestApplication, publicUrl?: string): void {
     .addTag(
       'estudiantes',
       'Estudiantes, sus vínculos, nivel y consentimiento de voz',
-    );
+    )
+    .addTag(
+      'catalogo',
+      'Niveles, categorías, tipos de juego y música (lectura)',
+    )
+    .addTag('modulos', 'Módulos, contenidos (archivos) y actividades');
 
   const document = SwaggerModule.createDocument(app, builder.build());
 

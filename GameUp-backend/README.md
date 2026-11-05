@@ -12,9 +12,10 @@ Fundación ASISCO-UP.
 - Pensada para una **app móvil** (React Native + Expo Go): sin CORS por
   defecto y escuchando en la red local para que el celular pueda llegar.
 
-> Estado actual: fase 3. Base común (autenticación global con la API de
+> Estado actual: fase 4. Base común (autenticación global con la API de
 > seguridad, roles, errores uniformes), login/sesión, cuentas de GameUP,
-> estudiantes con sus vínculos, nivel y consentimiento de voz. Los demás
+> estudiantes con sus vínculos, nivel y consentimiento de voz, y el catálogo
+> de contenido (módulos, archivos en Storage y actividades). Los demás
 > módulos de negocio se agregan por fases. El
 > esquema de la base (20 tablas) está en `prisma/schema.prisma` y sus reglas
 > (triggers, CHECK, RLS) en `prisma/migrations/`.
@@ -220,6 +221,33 @@ La regla de relación vive en un solo lugar
 Los mensajes de validación (400) salen en español
 (`src/common/validacion/mensajes-validacion.ts`).
 
+### Catálogo, módulos, contenidos y actividades (fase 4)
+
+| Método y ruta | Quién | Notas |
+|---|---|---|
+| `GET /niveles`, `/categorias`, `/tipos-juego`, `/musica` | todos | Solo lectura |
+| `GET /modulos?categoriaId&nivelId&publicado` | D, T | T ve los publicados y los suyos |
+| `GET /modulos/:id` | todos | E y A: solo si el módulo está asignado (a él o a su estudiante); si no, 404 |
+| `POST /modulos`, `PATCH/DELETE /modulos/:id` | D, T (autora) | DELETE solo sin asignaciones (409) |
+| `POST/DELETE /modulos/:id/publicacion` | D | Publicar exige al menos una actividad activa |
+| `GET/POST /modulos/:id/contenidos` | ver / D, T (autora) | POST multipart: `archivo`, `tipo`, `titulo`, `orden`. Máx. 50 MB |
+| `GET /modulos/:id/contenidos/urls`, `GET /contenidos/:id/url` | quien ve el módulo | URLs firmadas de 60 min |
+| `PATCH/DELETE /contenidos/:id` | D, T (autora) | DELETE: 409 si una actividad lo usa o es la portada |
+| `GET/POST /modulos/:id/actividades`, `GET/PATCH/DELETE /actividades/:id` | ver / D, T (autora) | E y A ven solo las activas |
+| `PUT /actividades/:id/contenidos` | D, T (autora) | Reemplaza los contenidos; todos del mismo módulo |
+
+- **Archivos:** bucket privado `contenidos`, ruta
+  `modulo/<id>/contenido/<uuid>.<ext>`. El formato se comprueba por los
+  bytes del archivo, no por el Content-Type. La API nunca devuelve rutas:
+  solo URLs firmadas. Puerto `AlmacenArchivos` (`src/common/almacenamiento/`).
+- **Subidas a disco, no a memoria:** `@SubidaDeArchivo(campo, máximo)` escribe
+  el archivo en una carpeta temporal del servidor (`<tmp>/gameup-subidas`),
+  lo envía a Storage como stream y lo **borra siempre** al terminar, también
+  si la petición falla (413, 422, 403, 503...).
+- **Configuración por juego:** una estrategia por tipo de juego
+  (`src/modules/catalogo/domain/juegos/`). HABLA_CONMIGO: `{ "vocal": "a" }`.
+  Los demás juegos aceptan `{}` hasta que se defina su configuración.
+
 ### Primera directora
 
 `POST /usuarios` solo lo puede usar una directora, así que la primera se crea
@@ -280,6 +308,7 @@ src/
 │   ├── auth/                # AuthGuard, RolesGuard, @Public, @Roles, @UsuarioActual,
 │   │   │                    # puertos VerificadorToken y ResolutorUsuario
 │   │   └── seguridad-api/   # Adaptador: GET /api/auth/perfil con caché
+│   ├── almacenamiento/      # Puerto AlmacenArchivos (Supabase Storage) y tipos de archivo
 │   ├── errors/              # Errores de dominio y filtro global
 │   ├── ids/                 # bigint ⇄ string, @IsIdNumerico()
 │   ├── paginacion/          # ?page&limit (máx. 50)
@@ -289,7 +318,9 @@ src/
 │   ├── auth/                # Login, /auth/me, logout; MapeadorRoles; guards globales
 │   ├── usuarios/            # Cuentas de GameUP (directora)
 │   ├── estudiantes/         # Estudiantes, vínculos, nivel; regla de relación
-│   └── consentimiento/      # Consentimiento de voz (API del núcleo familiar)
+│   ├── consentimiento/      # Consentimiento de voz (API del núcleo familiar)
+│   ├── catalogo/            # Niveles, categorías, tipos de juego, música; estrategias por juego
+│   └── modulos/             # Módulos, contenidos (Storage) y actividades
 ├── docs/
 │   └── swagger.ts           # /api-docs
 ├── prisma/

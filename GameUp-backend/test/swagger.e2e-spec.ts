@@ -63,6 +63,15 @@ describe('Swagger (e2e)', () => {
     expect(
       paths['/api/v1/estudiantes/{id}/consentimiento-voz'].get,
     ).toBeDefined();
+    // Fase 4.
+    expect(paths['/api/v1/tipos-juego'].get).toBeDefined();
+    expect(
+      paths['/api/v1/modulos/{id}/contenidos'].post.requestBody.content[
+        'multipart/form-data'
+      ],
+    ).toBeDefined();
+    expect(paths['/api/v1/modulos/{id}/publicacion'].post).toBeDefined();
+    expect(paths['/api/v1/actividades/{id}/contenidos'].put).toBeDefined();
     expect(res.body.components.securitySchemes.bearerAuth).toMatchObject({
       type: 'http',
       scheme: 'bearer',
