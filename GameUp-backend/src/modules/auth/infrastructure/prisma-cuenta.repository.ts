@@ -16,6 +16,7 @@ export class PrismaCuentaRepository implements CuentaRepository {
         id_usuario_auth: true,
         activo: true,
         rol: { select: { nombre: true } },
+        estudiante: { select: { estado: true } },
       },
     });
     return fila ? CuentaMapper.aEntidad(fila) : null;

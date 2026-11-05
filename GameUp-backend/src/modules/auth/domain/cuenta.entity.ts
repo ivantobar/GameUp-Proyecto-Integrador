@@ -10,7 +10,18 @@ export class Cuenta {
     readonly idUsuarioAuth: bigint,
     readonly rol: RolGameUp,
     readonly activo: boolean,
+    /** estudiante.estado (ACTIVO, EGRESADO, RETIRADO) si el rol es ESTUDIANTE. */
+    readonly estadoEstudiante: string | null = null,
   ) {}
+
+  /**
+   * Un estudiante egresado o retirado ya no inicia sesión (403). Su
+   * historial sigue visible para la directora y su acudiente. Si por un
+   * error de datos no tiene fila en `estudiante`, tampoco entra.
+   */
+  esEstudianteSinAcceso(): boolean {
+    return this.rol === 'ESTUDIANTE' && this.estadoEstudiante !== 'ACTIVO';
+  }
 
   /** ¿Alguno de los roles externos coincide con el rol de esta cuenta? */
   coincideCon(rolesExternos: readonly RolGameUp[]): boolean {

@@ -9,6 +9,9 @@ describe('ResolutorUsuarioService', () => {
     new Cuenta(1n, 100n, 'DIRECTORA', true),
     new Cuenta(2n, 200n, 'TALLERISTA', true),
     new Cuenta(3n, 300n, 'ACUDIENTE', false),
+    new Cuenta(4n, 400n, 'ESTUDIANTE', true, 'ACTIVO'),
+    new Cuenta(5n, 500n, 'ESTUDIANTE', true, 'EGRESADO'),
+    new Cuenta(6n, 600n, 'ESTUDIANTE', true, 'RETIRADO'),
   ]);
   const servicio = new ResolutorUsuarioService(cuentas);
   beforeAll(() => {
@@ -45,6 +48,21 @@ describe('ResolutorUsuarioService', () => {
       servicio.resolver(identidad(999, ['TALLERISTA'])),
     ).rejects.toThrow(/aún no está registrada en GameUP/);
   });
+
+  it('estudiante ACTIVO entra', async () => {
+    await expect(
+      servicio.resolver(identidad(400, ['ESTUDIANTE'])),
+    ).resolves.toMatchObject({ id: 4n, rol: 'ESTUDIANTE' });
+  });
+
+  it.each([500, 600])(
+    'estudiante egresado o retirado → 403 (auth %d)',
+    async (idAuth) => {
+      await expect(
+        servicio.resolver(identidad(idAuth, ['ESTUDIANTE'])),
+      ).rejects.toThrow(/ya no está activa/);
+    },
+  );
 
   it('cuenta inactiva → 403', async () => {
     await expect(

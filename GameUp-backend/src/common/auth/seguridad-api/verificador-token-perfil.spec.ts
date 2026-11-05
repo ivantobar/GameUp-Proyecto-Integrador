@@ -119,6 +119,26 @@ describe('VerificadorTokenPerfil', () => {
     expect(fetchFalso).toHaveBeenCalledTimes(1);
   });
 
+  it('olvidar (logout) obliga a volver a preguntar a /perfil', async () => {
+    const verificador = crear();
+    await verificador.verificar('token-1');
+    await verificador.verificar('token-2');
+    verificador.olvidar('token-1');
+
+    // Si la API de seguridad ya lo revocó, se nota de inmediato.
+    fetchFalso.mockResolvedValueOnce(respuestaJson({}, 401));
+    await expect(verificador.verificar('token-1')).rejects.toThrow(
+      NoAutenticadoError,
+    );
+    // Los demás tokens siguen en caché.
+    await verificador.verificar('token-2');
+    expect(fetchFalso).toHaveBeenCalledTimes(3);
+  });
+
+  it('olvidar un token que no está en caché no falla', () => {
+    expect(() => crear().olvidar('desconocido')).not.toThrow();
+  });
+
   it('no guarda el token en claro en la caché', async () => {
     const verificador = crear();
     await verificador.verificar('token-secreto');

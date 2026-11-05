@@ -6,6 +6,7 @@ import { RelojModule } from './common/reloj/reloj.module.js';
 import { validateEnv } from './config/env.validation.js';
 import { HealthModule } from './health/health.module.js';
 import { AuthModule } from './modules/auth/auth.module.js';
+import { UsuariosModule } from './modules/usuarios/usuarios.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { SupabaseModule } from './supabase/supabase.module.js';
 
@@ -22,6 +23,8 @@ import { SupabaseModule } from './supabase/supabase.module.js';
     // Autenticación global: toda ruta exige token salvo las @Public().
     AuthModule,
     HealthModule,
+    // Fase 2: cuentas de GameUP (directora).
+    UsuariosModule,
   ],
   providers: [
     // Traduce errores de dominio y de la base a { statusCode, error, message }.

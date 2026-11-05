@@ -27,3 +27,14 @@ export interface VerificadorToken {
 }
 
 export const VERIFICADOR_TOKEN = Symbol('VERIFICADOR_TOKEN');
+
+/**
+ * Puerto InvalidadorToken: olvida un token ya verificado (logout), para que
+ * la siguiente petición con él vuelva a preguntar a la API de seguridad en
+ * lugar de esperar a que venza la caché.
+ */
+export interface InvalidadorToken {
+  olvidar(token: string): void;
+}
+
+export const INVALIDADOR_TOKEN = Symbol('INVALIDADOR_TOKEN');

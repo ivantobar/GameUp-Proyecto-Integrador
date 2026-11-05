@@ -20,6 +20,9 @@ necesita el esquema `storage` con la tabla `buckets`, que Supabase trae por defe
   los buckets solo existen en las migraciones: Prisma no los modela.
 - No cambies tablas desde el SQL Editor de Supabase: crea una migración. Si no,
   el historial deja de coincidir con la base.
+- `prisma/scripts/` tiene scripts que se ejecutan a mano y **no** son
+  migraciones (no cambian el esquema): `alta_primera_directora.sql` crea la
+  primera cuenta de directora.
 - `prisma/pruebas/ajustes_revision.sql` prueba las reglas de la base
   (vínculos, progreso, grabaciones). Se ejecuta dentro de una transacción y
   deshace todo al final.

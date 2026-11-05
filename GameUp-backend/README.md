@@ -12,9 +12,9 @@ Fundación ASISCO-UP.
 - Pensada para una **app móvil** (React Native + Expo Go): sin CORS por
   defecto y escuchando en la red local para que el celular pueda llegar.
 
-> Estado actual: base común lista (fase 1): autenticación global con la API
-> de seguridad, roles, errores uniformes y utilidades. Solo existe
-> `GET /api/v1/health`; los módulos de negocio se agregan por fases. El
+> Estado actual: fase 2. Base común (autenticación global con la API de
+> seguridad, roles, errores uniformes), login/sesión y cuentas de GameUP.
+> Los demás módulos de negocio se agregan por fases. El
 > esquema de la base (20 tablas) está en `prisma/schema.prisma` y sus reglas
 > (triggers, CHECK, RLS) en `prisma/migrations/`.
 
@@ -183,6 +183,35 @@ y en los DTO, `@ApiProperty({ example: ... })` en cada campo.
 | Base: único (23505) / FK (23503) / CHECK o trigger (23514) / vínculo (42501) | 409 / 422 / 422 / 403 |
 | Cualquier otro | 500 genérico (sin traza ni SQL) |
 
+### Endpoints de sesión y cuentas (fase 2)
+
+| Método y ruta | Quién | Qué hace |
+|---|---|---|
+| `POST /auth/login` | público | `{ correo, contrasena }` → reenvía a la API de seguridad y devuelve `{ token, expiraEn, usuario: { userId, role, displayName } }`. Sincroniza nombres, apellidos y correo en `usuario` |
+| `GET /auth/me` | cualquier sesión | `{ userId, role, displayName }` |
+| `POST /auth/logout` | cualquier sesión | 204. GameUP olvida el token de su caché; la app debe descartarlo |
+| `POST /usuarios` | directora | Alta de la copia mínima (para ESTUDIANTE crea también `estudiante`) |
+| `GET /usuarios?rol&activo&page&limit` | directora | Listado paginado |
+| `GET /usuarios/:id` | directora | Una cuenta |
+| `PATCH /usuarios/:id/estado` | directora | `{ activo }`. Una cuenta inactiva recibe 403 |
+
+`role` usa los nombres de la app: `director`, `teacher`, `guardian`, `student`.
+
+### Primera directora
+
+`POST /usuarios` solo lo puede usar una directora, así que la primera se crea
+una sola vez con `prisma/scripts/alta_primera_directora.sql` (instrucciones
+dentro del archivo). La persona debe existir antes en la API de seguridad con
+rol ADMIN. El script se niega a correr si ya hay una directora o si falta
+reemplazar algún valor.
+
+```bash
+# Probar (con el backend encendido y SEGURIDAD_API_URL configurada):
+curl -s -X POST localhost:3000/api/v1/auth/login   -H 'Content-Type: application/json'   -d '{"correo":"directora@ejemplo.com","contrasena":"..."}'
+curl -s localhost:3000/api/v1/auth/me -H "Authorization: Bearer $TOKEN"
+curl -s localhost:3000/api/v1/usuarios -H "Authorization: Bearer $TOKEN"
+```
+
 ## 9. Despliegue en Render
 
 El archivo `render.yaml` (en la raíz del repositorio) define el servicio.
@@ -215,6 +244,8 @@ Igual que en clase: módulos ES, `strict`, `noUncheckedIndexedAccess`,
 ```
 prisma/
 └── schema.prisma            # Modelos de la base de datos
+prisma/scripts/
+└── alta_primera_directora.sql  # Se ejecuta una sola vez, a mano
 prisma.config.ts             # Configuración de la CLI de Prisma
 src/
 ├── main.ts                  # Punto de entrada: escucha en 0.0.0.0:PORT
@@ -232,7 +263,8 @@ src/
 │   ├── pipes/               # ParseBigIntPipe
 │   └── reloj/               # Puerto Reloj (hora inyectable)
 ├── modules/                 # Un módulo por agregado del dominio
-│   └── auth/                # domain/ application/ infrastructure/ (+ presentation/)
+│   ├── auth/                # Login, /auth/me, logout; MapeadorRoles; guards globales
+│   └── usuarios/            # Cuentas de GameUP (directora)
 ├── docs/
 │   └── swagger.ts           # /api-docs
 ├── prisma/

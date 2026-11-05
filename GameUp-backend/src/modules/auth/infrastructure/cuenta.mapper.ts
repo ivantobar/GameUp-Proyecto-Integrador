@@ -7,6 +7,7 @@ export interface FilaCuenta {
   id_usuario_auth: bigint;
   activo: boolean;
   rol: { nombre: string };
+  estudiante: { estado: string } | null;
 }
 
 export const CuentaMapper = {
@@ -20,6 +21,7 @@ export const CuentaMapper = {
       fila.id_usuario_auth,
       fila.rol.nombre,
       fila.activo,
+      fila.estudiante?.estado ?? null,
     );
   },
 } as const;

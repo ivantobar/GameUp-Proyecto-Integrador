@@ -16,6 +16,7 @@ import { MapeadorRoles } from '../domain/mapeador-roles.js';
  *  - Si ningún rol externo tiene acceso (DONANTE, desconocido) → 403.
  *  - Si no hay fila en `usuario` con ese id_usuario_auth → 403 (la directora la da de alta).
  *  - Si la cuenta está inactiva → 403.
+ *  - Si es un estudiante EGRESADO o RETIRADO → 403 (su historial se conserva).
  *  - Se queda con el rol externo que coincide con el rol local. Si ninguno
  *    coincide → 403, y el rol local NO se cambia (lo revisa la directora).
  */
@@ -44,6 +45,11 @@ export class ResolutorUsuarioService implements ResolutorUsuario {
     if (!cuenta.activo) {
       throw new AccesoDenegadoError(
         'Tu cuenta de GameUP está desactivada. Habla con la directora de la fundación.',
+      );
+    }
+    if (cuenta.esEstudianteSinAcceso()) {
+      throw new AccesoDenegadoError(
+        'Tu cuenta de estudiante ya no está activa en GameUP. Habla con la fundación.',
       );
     }
     if (!cuenta.coincideCon(rolesExternos)) {

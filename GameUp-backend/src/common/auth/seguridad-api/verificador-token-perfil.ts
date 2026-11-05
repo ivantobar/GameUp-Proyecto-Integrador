@@ -9,6 +9,7 @@ import {
 import { RELOJ, type Reloj } from '../../reloj/reloj.js';
 import type {
   IdentidadExterna,
+  InvalidadorToken,
   VerificadorToken,
 } from '../verificador-token.js';
 import { leerExpiracionJwt } from './jwt.js';
@@ -31,10 +32,13 @@ export const RUTA_PERFIL = '/api/auth/perfil';
  *
  * Caché: la clave es el SHA-256 del token (nunca el token). Dura lo menor
  * entre AUTH_CACHE_TTL_SEG (máx. 5 min) y el `exp` del JWT. Un token
- * revocado en la API de seguridad puede seguir sirviendo hasta ese plazo.
+ * revocado en la API de seguridad puede seguir sirviendo hasta ese plazo,
+ * salvo que se cierre la sesión en GameUP (`olvidar`, POST /auth/logout).
  */
 @Injectable()
-export class VerificadorTokenPerfil implements VerificadorToken {
+export class VerificadorTokenPerfil
+  implements VerificadorToken, InvalidadorToken
+{
   private readonly logger = new Logger(VerificadorTokenPerfil.name);
   private readonly cache = new Map<string, EntradaCache>();
   private readonly baseUrl: string | undefined;
@@ -59,7 +63,7 @@ export class VerificadorTokenPerfil implements VerificadorToken {
       throw new NoAutenticadoError('Tu sesión venció. Inicia sesión de nuevo.');
     }
 
-    const clave = createHash('sha256').update(token).digest('hex');
+    const clave = claveDe(token);
     const enCache = this.cache.get(clave);
     if (enCache && enCache.venceEn > ahora) return enCache.identidad;
     this.cache.delete(clave);
@@ -72,6 +76,10 @@ export class VerificadorTokenPerfil implements VerificadorToken {
     );
     if (venceEn > ahora) this.guardar(clave, { identidad, venceEn }, ahora);
     return identidad;
+  }
+
+  olvidar(token: string): void {
+    this.cache.delete(claveDe(token));
   }
 
   private async consultarPerfil(token: string): Promise<IdentidadExterna> {
@@ -141,4 +149,9 @@ export class VerificadorTokenPerfil implements VerificadorToken {
     }
     this.cache.set(clave, entrada);
   }
+}
+
+/** La caché nunca guarda el token: solo su SHA-256. */
+function claveDe(token: string): string {
+  return createHash('sha256').update(token).digest('hex');
 }

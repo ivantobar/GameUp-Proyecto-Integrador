@@ -44,6 +44,16 @@ describe('Swagger (e2e)', () => {
     expect(res.body.info.title).toBe('GameUP API');
     // Las rutas documentadas incluyen el prefijo global.
     expect(res.body.paths['/api/v1/health']).toBeDefined();
+    // Fase 2: login es público; me y usuarios piden token.
+    const paths = res.body.paths;
+    expect(paths['/api/v1/auth/login'].post.security).toBeUndefined();
+    expect(paths['/api/v1/auth/me'].get.security).toEqual([{ bearerAuth: [] }]);
+    expect(paths['/api/v1/auth/logout'].post).toBeDefined();
+    expect(paths['/api/v1/usuarios'].post.security).toEqual([
+      { bearerAuth: [] },
+    ]);
+    expect(paths['/api/v1/usuarios/{id}/estado'].patch).toBeDefined();
+    expect(res.body.components.schemas.ErrorRespuestaDto).toBeDefined();
     expect(res.body.components.securitySchemes.bearerAuth).toMatchObject({
       type: 'http',
       scheme: 'bearer',
