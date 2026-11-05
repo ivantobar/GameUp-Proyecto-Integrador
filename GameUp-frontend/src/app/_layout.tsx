@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
-import { SplashScreen, Stack } from 'expo-router';
+import { router, SplashScreen, Stack } from 'expo-router';
 import { useFonts } from 'expo-font';
-import { createMockRepositories } from '@/data/mock/createMockRepositories';
+import { createRepositories } from '@/data/createRepositories';
 import { RepositoryProvider } from '@/data/RepositoryProvider';
 import { useStackScreenOptions } from '@/features/motion/useStackScreenOptions';
 import { fontAssets } from '@/theme/fonts';
@@ -12,11 +12,13 @@ SplashScreen.preventAutoHideAsync().catch(() => {
 });
 
 /**
- * Repositorios de datos. Hoy, simulados en memoria. Cuando exista la API
- * NestJS, aquí se cambia por la implementación real y ninguna pantalla
- * tiene que modificarse.
+ * Repositorios de datos: simulados o de la API NestJS, según
+ * `EXPO_PUBLIC_DATA_SOURCE` (ver `src/data/createRepositories.ts`). Si la
+ * sesión termina (401), se vuelve a «Iniciar sesión».
  */
-const repositories = createMockRepositories();
+const repositories = createRepositories({
+  onSessionExpired: () => router.replace('/login'),
+});
 
 /**
  * Raíz de la app: carga las fuentes, inyecta los datos y define el stack.

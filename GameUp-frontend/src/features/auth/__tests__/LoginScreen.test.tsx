@@ -1,6 +1,7 @@
 import { act, render, screen, userEvent } from '@testing-library/react-native';
 import { router } from 'expo-router';
 import LoginScreen from '@/app/login';
+import { AccountNotAllowedError } from '@/data/authErrors';
 import { createMockRepositories } from '@/data/mock/createMockRepositories';
 import { MOCK_PASSWORD } from '@/data/mock/fixtures';
 import { RepositoryProvider } from '@/data/RepositoryProvider';
@@ -73,6 +74,23 @@ describe('Iniciar sesión (simulado)', () => {
     await signIn('docente@gameup.test', MOCK_PASSWORD);
 
     expect(screen.getByText('Sin conexión')).toBeOnTheScreen();
+    expect(router.replace).not.toHaveBeenCalled();
+  });
+
+  it('si la cuenta no tiene acceso a GameUP lo dice y no navega', async () => {
+    const repositories = createMockRepositories({ delayMs: 0 });
+    jest
+      .spyOn(repositories.auth, 'signIn')
+      .mockRejectedValue(new AccountNotAllowedError());
+    await renderLogin(repositories);
+
+    await signIn('docente@gameup.test', MOCK_PASSWORD);
+
+    expect(
+      screen.getByText(
+        'Tu cuenta no tiene acceso a GameUP. Habla con la fundación.',
+      ),
+    ).toBeOnTheScreen();
     expect(router.replace).not.toHaveBeenCalled();
   });
 

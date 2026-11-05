@@ -279,7 +279,7 @@ Las corre otra persona sobre las ramas subidas. Con la base en memoria no se pue
 - **Mapper del perfil:** sigue provisional. Falta un ejemplo, con datos ficticios, de la respuesta de `POST /api/auth/login` y `GET /api/auth/perfil`. Ajustarlo solo toca `src/common/auth/seguridad-api/perfil.mapper.ts` y su prueba.
 - **Consentimiento vigente:** falta el endpoint del núcleo familiar. Mientras no exista, nunca se guarda audio; `CONSENTIMIENTO_SIMULADO` solo se permite fuera de producción.
 - **Revocación de tokens:** un token revocado en la API de seguridad puede seguir sirviendo hasta 5 minutos, por la caché.
-- **Frontend:** tiene conflictos de merge sin resolver, que no se tocaron. Además debe hacer estos cambios de contrato:
+- **Frontend:** los conflictos de merge ya se resolvieron (commit `bab0cb3`, Expo SDK 58). La conexión con la API avanza en la rama `frontend/conexion-api`. Debe hacer estos cambios de contrato:
   - enviar `actividadId` en los intentos;
   - mostrar los módulos de forma dinámica;
   - traducir los códigos de juego y de estado;

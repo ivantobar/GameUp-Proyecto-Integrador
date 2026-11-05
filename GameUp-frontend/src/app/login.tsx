@@ -18,6 +18,7 @@ import {
   Screen,
   TextField,
 } from '@/components/ui';
+import { env } from '@/config/env';
 import { MOCK_PASSWORD, mockAccounts } from '@/data/mock/fixtures';
 import type { UserRole } from '@/data/types';
 import { roleHomes } from '@/features/auth/roleHome';
@@ -32,6 +33,10 @@ const problemNotices: Record<
     title: 'No pudimos entrar',
     message:
       'El correo o la contraseña no coinciden. Revísalos e inténtalo otra vez.',
+  },
+  notAllowed: {
+    title: 'No pudimos entrar',
+    message: 'Tu cuenta no tiene acceso a GameUP. Habla con la fundación.',
   },
   connection: {
     title: 'Sin conexión',
@@ -48,10 +53,10 @@ const roleLabels: Record<UserRole, string> = {
 };
 
 /**
- * Iniciar sesión. Por ahora, simulado: la sesión la resuelve
- * `repositories.auth` (ver `src/data/repositories.ts`), que hoy son datos
- * en memoria y mañana la API NestJS. Después de entrar, cada rol va a su
- * pantalla de inicio.
+ * Iniciar sesión. La sesión la resuelve `repositories.auth` (ver
+ * `src/data/repositories.ts`): datos simulados o la API NestJS, según
+ * `EXPO_PUBLIC_DATA_SOURCE`. Después de entrar, cada rol va a su pantalla
+ * de inicio.
  */
 export default function LoginScreen() {
   const form = useSignIn();
@@ -191,25 +196,35 @@ interface DevAccountsProps {
 
 /**
  * Solo en desarrollo: llena el formulario con una cuenta de prueba y lleva
- * al «Modo desarrollo». No aparece en una versión publicada.
+ * al «Modo desarrollo». No aparece en una versión publicada. Con la API,
+ * las cuentas ficticias no existen: no se ofrecen.
  */
 function DevAccounts({ onPick }: DevAccountsProps) {
+  const usesMockData = env.dataSource === 'mock';
   return (
     <Card tone="warm">
       <AppText variant="bodyStrong">Cuentas de prueba</AppText>
-      <AppText variant="support" tone="cafe">
-        Solo en desarrollo. Contraseña: {MOCK_PASSWORD}
-      </AppText>
-      <View style={styles.chips}>
-        {Object.entries(mockAccounts).map(([email, session]) => (
-          <FilterChip
-            key={email}
-            label={roleLabels[session.role]}
-            selected={false}
-            onPress={() => onPick({ email, password: MOCK_PASSWORD })}
-          />
-        ))}
-      </View>
+      {usesMockData ? (
+        <>
+          <AppText variant="support" tone="cafe">
+            Solo en desarrollo. Contraseña: {MOCK_PASSWORD}
+          </AppText>
+          <View style={styles.chips}>
+            {Object.entries(mockAccounts).map(([email, session]) => (
+              <FilterChip
+                key={email}
+                label={roleLabels[session.role]}
+                selected={false}
+                onPress={() => onPick({ email, password: MOCK_PASSWORD })}
+              />
+            ))}
+          </View>
+        </>
+      ) : (
+        <AppText variant="support" tone="cafe">
+          La app usa la API. Entra con una cuenta de prueba del backend.
+        </AppText>
+      )}
       <Button
         label="Ir al modo desarrollo"
         variant="link"
