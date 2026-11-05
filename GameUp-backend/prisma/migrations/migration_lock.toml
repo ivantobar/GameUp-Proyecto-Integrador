@@ -1,0 +1,2 @@
+# Migration lock file. Do not edit manually.
+provider = "postgresql"
