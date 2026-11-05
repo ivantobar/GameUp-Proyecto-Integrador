@@ -22,6 +22,9 @@ Fundación ASISCO-UP.
 > módulos de negocio se agregan por fases. El
 > esquema de la base (20 tablas) está en `prisma/schema.prisma` y sus reglas
 > (triggers, CHECK, RLS) en `prisma/migrations/`.
+>
+> El avance por fase (rama y commit), las decisiones aprobadas y lo pendiente
+> están en [docs/AVANCE.md](docs/AVANCE.md).
 
 ---
 
@@ -231,7 +234,7 @@ Los mensajes de validación (400) salen en español
 |---|---|---|
 | `GET /revisiones/pendientes?estudianteId&page&limit` | T (sus estudiantes), D | Bandeja «Por escuchar», del más antiguo al más reciente |
 | `GET /intentos/:id/grabacion` | T a cargo, D | URL firmada del audio, **10 minutos**. 404 si no hay audio, venció o ya se validó |
-| `POST /intentos/:id/validacion` | T a cargo, D | `{ resultado: APROBADO \| RECHAZADO, retroalimentacion? }`. RECHAZADO exige retroalimentación. 409 si ya está validado |
+| `POST /intentos/:id/validacion` | T a cargo, D | `{ resultado: APROBADO \| RECHAZADO, retroalimentacion? }`. RECHAZADO exige retroalimentación. 409 si ya está validado. Si el intento de voz tiene audio, antes hay que pedir su URL firmada (si no, 422) |
 | `POST /validaciones/lote` | T a cargo, D | `{ intentoIds: [...] }` (1-50): aprueba juegos **sin voz**, todos o ninguno |
 | `GET /estudiantes/:id/progreso`, `GET /estudiantes/me/progreso` | D, T, A / E | Por módulo: `validadas` de `total` y `progreso` (de la base); las pendientes, aparte |
 
