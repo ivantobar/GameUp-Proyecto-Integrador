@@ -10,7 +10,7 @@ import {
   SELECCION_PERSONA,
 } from '../../estudiantes/infrastructure/estudiante.mapper.js';
 import type {
-  ActividadPendiente,
+  ActividadDeAsignacion,
   DetalleAsignacion,
   ProgresoOficial,
 } from '../application/avance-asignacion.service.js';
@@ -23,7 +23,7 @@ import {
 } from '../domain/asignacion.entity.js';
 import type {
   ProgresoOficialDto,
-  ActividadPendienteDto,
+  ActividadEstudianteDto,
   AsignacionDetalleDto,
   AsignacionDto,
   AvanceActividadDto,
@@ -159,7 +159,8 @@ export const AsignacionMapper = {
     };
   },
 
-  aPendienteDto(p: ActividadPendiente): ActividadPendienteDto {
+  /** También sirve para las pendientes del estudiante (misma forma). */
+  aActividadDto(p: ActividadDeAsignacion): ActividadEstudianteDto {
     return {
       asignacionId: idATexto(p.asignacion.id),
       modulo: {

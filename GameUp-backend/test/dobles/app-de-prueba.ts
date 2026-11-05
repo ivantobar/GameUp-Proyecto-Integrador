@@ -46,8 +46,19 @@ import {
   REVISION_LECTURA_REPOSITORY,
   VALIDACION_ESCRITURA_REPOSITORY,
 } from '../../src/modules/validaciones/domain/validacion.repository.js';
+import { NOTIFICACION_REPOSITORY } from '../../src/modules/notificaciones/domain/notificacion.repository.js';
+import {
+  OBSERVACION_ESCRITURA_REPOSITORY,
+  OBSERVACION_LECTURA_REPOSITORY,
+} from '../../src/modules/observaciones/domain/observacion.repository.js';
+import { PRACTICA_CASA_REPOSITORY } from '../../src/modules/practica-casa/domain/practica-casa.repository.js';
 import { PrismaService } from '../../src/prisma/prisma.service.js';
 import { SupabaseService } from '../../src/supabase/supabase.service.js';
+import {
+  NotificacionesEnMemoria,
+  ObservacionesEnMemoria,
+  PracticasEnMemoria,
+} from './acudiente-en-memoria.js';
 import { AsignacionesEnMemoria } from './asignaciones-en-memoria.js';
 import { AutenticadorFalso } from './autenticador-falso.js';
 import { EstudiantesEnMemoria } from './estudiantes-en-memoria.js';
@@ -78,6 +89,10 @@ export interface OpcionesAppDePrueba {
   intentos?: IntentosEnMemoria;
   /** Validaciones y grabaciones en memoria (fase 7). */
   validaciones?: ValidacionesEnMemoria;
+  /** Observaciones, notificaciones y práctica en casa en memoria (fase 8). */
+  notificaciones?: NotificacionesEnMemoria;
+  observaciones?: ObservacionesEnMemoria;
+  practicas?: PracticasEnMemoria;
   /** Si se da, reemplaza solo el CuentaRepository que usa el guard. */
   cuentas?: CuentaRepository;
   /** Controladores extra solo para la prueba. */
@@ -108,6 +123,12 @@ export async function crearAppDePrueba(
   const validaciones =
     opciones.validaciones ??
     new ValidacionesEnMemoria(usuarios, estudiantes, modulos, asignaciones);
+  const notificaciones =
+    opciones.notificaciones ?? new NotificacionesEnMemoria();
+  const observaciones =
+    opciones.observaciones ??
+    new ObservacionesEnMemoria(usuarios, estudiantes, notificaciones);
+  const practicas = opciones.practicas ?? new PracticasEnMemoria();
   let builder = Test.createTestingModule({
     imports: [AppModule],
     controllers: opciones.controllers ?? [],
@@ -159,7 +180,15 @@ export async function crearAppDePrueba(
     .overrideProvider(VALIDACION_ESCRITURA_REPOSITORY)
     .useValue(validaciones)
     .overrideProvider(GRABACION_REPOSITORY)
-    .useValue(validaciones);
+    .useValue(validaciones)
+    .overrideProvider(NOTIFICACION_REPOSITORY)
+    .useValue(notificaciones)
+    .overrideProvider(OBSERVACION_LECTURA_REPOSITORY)
+    .useValue(observaciones)
+    .overrideProvider(OBSERVACION_ESCRITURA_REPOSITORY)
+    .useValue(observaciones)
+    .overrideProvider(PRACTICA_CASA_REPOSITORY)
+    .useValue(practicas);
 
   for (const { provide, useValue } of opciones.reemplazos ?? []) {
     builder = builder.overrideProvider(provide).useValue(useValue);

@@ -39,10 +39,23 @@ export interface ProgresoOficial {
   pendientesValidacion: number;
 }
 
-export interface ActividadPendiente {
+/** Una actividad activa dentro de una asignación, con su estado. */
+export interface ActividadDeAsignacion {
   asignacion: Asignacion;
   avance: AvanceActividad;
 }
+
+/** Lo que el estudiante tiene por hacer (sin intentos o rechazada). */
+export type ActividadPendiente = ActividadDeAsignacion;
+
+/** Avance de cada actividad activa de una asignación. */
+interface AvanceDeAsignacion {
+  asignacion: Asignacion;
+  avances: AvanceActividad[];
+}
+
+/** Máximo de asignaciones que se leen de un estudiante (como el progreso). */
+const MAXIMO_ASIGNACIONES = 50;
 
 function aActividadAsignada(a: Actividad): ActividadAsignada {
   return {
@@ -79,23 +92,9 @@ export class AvanceAsignacionService {
     estudianteId: bigint,
   ): Promise<ProgresoOficial> {
     await this.acceso.verificar(actual, estudianteId);
-    const pagina = await this.lectura.listar(
-      { tipo: 'todos' },
-      { estudianteId, moduloId: null, estado: null },
-      { page: 1, limit: 50 },
+    const modulos = (await this.avancesDelEstudiante(estudianteId)).map(
+      ({ asignacion, avances }) => ({ asignacion, resumen: resumir(avances) }),
     );
-    const intentos = await this.lectura.intentos(pagina.items.map((a) => a.id));
-    const modulos: ProgresoOficial['modulos'] = [];
-    for (const asignacion of pagina.items) {
-      const actividades = await this.actividades.listar(
-        asignacion.modulo.id,
-        true,
-      );
-      const avances = actividades.map((a) =>
-        avanceDe(aActividadAsignada(a), intentos.get(asignacion.id) ?? []),
-      );
-      modulos.push({ asignacion, resumen: resumir(avances) });
-    }
     return {
       modulos,
       pendientesValidacion: modulos.reduce(
@@ -103,6 +102,48 @@ export class AvanceAsignacionService {
         0,
       ),
     };
+  }
+
+  /**
+   * Estado de cada actividad activa de todas las asignaciones del estudiante
+   * (también las completadas), con la retroalimentación si le pidieron
+   * practicar más. Directora, tallerista a cargo o acudiente (si no, 404).
+   */
+  async actividadesDelEstudiante(
+    actual: UsuarioAutenticado,
+    estudianteId: bigint,
+  ): Promise<ActividadDeAsignacion[]> {
+    await this.acceso.verificar(actual, estudianteId);
+    return (await this.avancesDelEstudiante(estudianteId)).flatMap(
+      ({ asignacion, avances }) =>
+        avances.map((avance) => ({ asignacion, avance })),
+    );
+  }
+
+  /** Sin verificar acceso: quien llama ya lo hizo. */
+  private async avancesDelEstudiante(
+    estudianteId: bigint,
+  ): Promise<AvanceDeAsignacion[]> {
+    const pagina = await this.lectura.listar(
+      { tipo: 'todos' },
+      { estudianteId, moduloId: null, estado: null },
+      { page: 1, limit: MAXIMO_ASIGNACIONES },
+    );
+    const intentos = await this.lectura.intentos(pagina.items.map((a) => a.id));
+    const resultado: AvanceDeAsignacion[] = [];
+    for (const asignacion of pagina.items) {
+      const actividades = await this.actividades.listar(
+        asignacion.modulo.id,
+        true,
+      );
+      resultado.push({
+        asignacion,
+        avances: actividades.map((a) =>
+          avanceDe(aActividadAsignada(a), intentos.get(asignacion.id) ?? []),
+        ),
+      });
+    }
+    return resultado;
   }
 
   async detalle(

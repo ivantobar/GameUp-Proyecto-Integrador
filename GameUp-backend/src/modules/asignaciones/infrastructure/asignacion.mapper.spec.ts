@@ -54,10 +54,10 @@ describe('AsignacionMapper', () => {
     ).toEqual({ resultado: 'RECHAZADO', retroalimentacion: 'Otra vez' });
   });
 
-  it('pendiente → DTO para la app', () => {
+  it('actividad de una asignación (o pendiente) → DTO para la app', () => {
     const asignacion = AsignacionMapper.aEntidad(fila());
     expect(
-      AsignacionMapper.aPendienteDto({
+      AsignacionMapper.aActividadDto({
         asignacion,
         avance: {
           actividad: {

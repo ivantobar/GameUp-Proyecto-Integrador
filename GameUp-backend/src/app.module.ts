@@ -13,6 +13,9 @@ import { ConsentimientoModule } from './modules/consentimiento/consentimiento.mo
 import { EstudiantesModule } from './modules/estudiantes/estudiantes.module.js';
 import { IntentosModule } from './modules/intentos/intentos.module.js';
 import { ModulosModule } from './modules/modulos/modulos.module.js';
+import { NotificacionesModule } from './modules/notificaciones/notificaciones.module.js';
+import { ObservacionesModule } from './modules/observaciones/observaciones.module.js';
+import { PracticaCasaModule } from './modules/practica-casa/practica-casa.module.js';
 import { UsuariosModule } from './modules/usuarios/usuarios.module.js';
 import { ValidacionesModule } from './modules/validaciones/validaciones.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
@@ -47,6 +50,10 @@ import { SupabaseModule } from './supabase/supabase.module.js';
     IntentosModule,
     // Fase 7: validación, borrado del audio y progreso oficial.
     ValidacionesModule,
+    // Fase 8: acudiente, observaciones, notificaciones y práctica en casa.
+    ObservacionesModule,
+    NotificacionesModule,
+    PracticaCasaModule,
   ],
   providers: [
     // Traduce errores de dominio y de la base a { statusCode, error, message }.

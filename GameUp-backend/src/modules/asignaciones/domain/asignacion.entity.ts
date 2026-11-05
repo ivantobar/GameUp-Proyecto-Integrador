@@ -90,7 +90,11 @@ export interface AvanceActividad {
   intentos: number;
   /** Sin intentos todavía: la app la marca como nueva. */
   esNueva: boolean;
-  /** Retroalimentación del último intento rechazado (si el último fue rechazado). */
+  /**
+   * RECHAZADA: la del último intento (obligatoria al rechazar).
+   * APROBADA: la del último intento aprobado, si la tallerista dejó una
+   * (es opcional). En los demás estados, null.
+   */
   retroalimentacion: string | null;
   /** Vocal de Habla conmigo (configuracion.vocal), o null. */
   vocal: string | null;
@@ -105,13 +109,21 @@ export function avanceDe(
     .filter((i) => i.actividadId === actividad.id)
     .sort((a, b) => a.numeroIntento - b.numeroIntento);
   const ultimo = propios.at(-1);
+  const ultimoAprobado = propios.findLast(
+    (i) => i.validacion?.resultado === 'APROBADO',
+  );
   let estado: EstadoActividad;
-  if (propios.some((i) => i.validacion?.resultado === 'APROBADO'))
-    estado = 'APROBADA';
+  if (ultimoAprobado) estado = 'APROBADA';
   else if (!ultimo) estado = 'SIN_INTENTOS';
   else if (!ultimo.validacion) estado = 'PENDIENTE_VALIDACION';
   else estado = 'RECHAZADA';
 
+  const conRetroalimentacion =
+    estado === 'APROBADA'
+      ? ultimoAprobado
+      : estado === 'RECHAZADA'
+        ? ultimo
+        : undefined;
   const vocal = actividad.configuracion['vocal'];
   return {
     actividad,
@@ -119,9 +131,7 @@ export function avanceDe(
     intentos: propios.length,
     esNueva: propios.length === 0,
     retroalimentacion:
-      estado === 'RECHAZADA'
-        ? (ultimo?.validacion?.retroalimentacion ?? null)
-        : null,
+      conRetroalimentacion?.validacion?.retroalimentacion ?? null,
     vocal:
       actividad.tipoJuego === 'HABLA_CONMIGO' && typeof vocal === 'string'
         ? vocal

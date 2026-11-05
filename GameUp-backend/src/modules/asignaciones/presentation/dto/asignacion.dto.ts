@@ -125,7 +125,8 @@ export class AvanceActividadDto {
     example: 'Abre más la boca en la a',
     nullable: true,
     type: String,
-    description: 'Solo si el último intento fue rechazado',
+    description:
+      'RECHAZADA: la del último intento. APROBADA: la del intento aprobado, si la tallerista dejó una. Si no, null.',
   })
   retroalimentacion: string | null;
 }
@@ -147,8 +148,8 @@ export class AsignacionDetalleDto extends AsignacionDto {
   @ApiProperty({ type: ResumenAvanceDto }) resumen: ResumenAvanceDto;
 }
 
-/** Lo que el estudiante tiene por hacer (Assignment en la app). */
-export class ActividadPendienteDto extends AvanceActividadDto {
+/** Una actividad de un módulo asignado, con su estado y retroalimentación. */
+export class ActividadEstudianteDto extends AvanceActividadDto {
   @ApiProperty({ example: '12' }) asignacionId: string;
   @ApiProperty({ type: NivelDto, description: 'Módulo { id, nombre }' })
   modulo: NivelDto;
@@ -160,6 +161,9 @@ export class ActividadPendienteDto extends AvanceActividadDto {
   })
   fechaSugerida: string | null;
 }
+
+/** Lo que el estudiante tiene por hacer (Assignment en la app). */
+export class ActividadPendienteDto extends ActividadEstudianteDto {}
 
 /** Avance de un módulo asignado (ModuleProgress en la app). */
 export class ProgresoModuloDto {

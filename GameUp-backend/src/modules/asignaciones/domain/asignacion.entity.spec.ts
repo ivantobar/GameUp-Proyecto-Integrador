@@ -69,6 +69,19 @@ describe('avanceDe', () => {
       intento(3),
     ]);
     expect(v.estado).toBe('APROBADA');
+    expect(v.retroalimentacion).toBeNull();
+  });
+
+  it('APROBADA muestra la retroalimentación del intento aprobado, no la de un rechazo', () => {
+    const v = avanceDe(habla, [
+      intento(1, rechazado('Abre más la boca')),
+      intento(2, { resultado: 'APROBADO', retroalimentacion: '¡Muy bien!' }),
+      intento(3, rechazado('Más fuerte')),
+    ]);
+    expect(v).toMatchObject({
+      estado: 'APROBADA',
+      retroalimentacion: '¡Muy bien!',
+    });
   });
 
   it('la vocal solo aplica a HABLA_CONMIGO', () => {

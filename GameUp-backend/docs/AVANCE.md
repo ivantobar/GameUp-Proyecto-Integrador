@@ -16,13 +16,19 @@ Cada fase vive en su rama, creada desde la rama de la fase anterior. Todas está
 | 5 | Asignaciones y su avance | `backend/fase-5-asignaciones` | `de234e6` | `e6357d3` |
 | 6 | Configuración de los juegos, intentos y grabaciones de voz | `backend/fase-6-intentos` | `f29ed42` | `de234e6` |
 | 7 | Validación, audio y progreso oficial | `backend/fase-7-validacion` | `2372684` | `f29ed42` |
-| 8 | Acudiente, observaciones y notificaciones | sin empezar | — | — |
+| 8 | Acudiente, observaciones, notificaciones y práctica en casa | `backend/fase-8-acudiente` | sin commit (en revisión) | `3cff8c9` |
 
-**Estado al cerrar la fase 7:**
+**Estado al cerrar la fase 8:**
 - `build`, `lint` (0 advertencias) y Prettier pasan.
-- Pasan las 437 pruebas unitarias (37 archivos) y las 138 e2e (10 archivos).
-- Swagger documenta 46 rutas.
+- Pasan las 475 pruebas unitarias (41 archivos) y las 152 e2e (11 archivos).
+- Swagger documenta 54 rutas (70 operaciones).
 - No se agregaron dependencias en ninguna fase.
+- La migración `20261105120000_practica_casa` está escrita, **sin aplicar** en Supabase: primero se prueba contra PostgreSQL real.
+- En una máquina cargada, la e2e «no se elimina un contenido en uso (409)» de `modulos.e2e-spec.ts` puede fallar por tiempo (tardó 38 s una vez). Pasa al repetirla: no es un fallo de lógica.
+
+Nota para Windows: Git convierte los archivos a CRLF al descargarlos, y
+`prettier --check` los marca a todos. Para revisar el formato real:
+`npx prettier --check --end-of-line auto "src/**/*.ts" "test/**/*.ts"`.
 
 Para verificar una rama:
 
@@ -165,27 +171,59 @@ Valen en todas las fases.
    - La marca vale 12 horas y se olvida al validar.
    - Se guarda en memoria del proceso, detrás del puerto `RegistroEscucha` (`RegistroEscuchaEnMemoria`). Si el servidor se reinicia, basta con volver a pedir el audio. Si Render pasa a varias instancias, hay que cambiarlo por un adaptador en la base, lo que requiere una migración.
 
-## 4. Pendiente para la fase 8
+### Fase 8: acudiente
 
-Endpoints propuestos en la fase 0. Todos van bajo `/api/v1`.
+1. **Actividades del estudiante:** todas las asignaciones (también las completadas, hasta 50), la más reciente primero.
+   - Retroalimentación de una actividad RECHAZADA: la del último intento.
+   - Retroalimentación de una actividad APROBADA: la del último intento aprobado, si la tallerista dejó una (es opcional). La familia la ve.
+   - En los demás estados no hay retroalimentación.
+   - La regla vive en `avanceDe`, así que vale igual en `GET /asignaciones/:id`.
+2. **Observaciones:**
+   - texto de hasta 1000 caracteres; se recortan los extremos y se conservan los saltos de línea; vacío → 422;
+   - `visibleAcudiente` es `false` por defecto;
+   - editar: la autora (mientras tenga al estudiante a cargo) o la directora; otra tallerista a cargo → 403; sin el estudiante a cargo → 404;
+   - ocultar una observación ya visible está permitido; el aviso solo sale la primera vez que se hace visible (lo decide el trigger de la base);
+   - no hay borrado.
+3. **Notificaciones:** cualquier rol consulta las suyas (hoy solo los acudientes reciben avisos). La respuesta trae `noLeidas` para el globo del ícono. Marcar una ajena → 404.
+4. **Práctica en casa:**
+   - solo el acudiente la marca, con sus propios estudiantes;
+   - la leen el acudiente, la tallerista a cargo y la directora (queda en el seguimiento); el estudiante no (403);
+   - la semana va de lunes a domingo, en hora de Bogotá;
+   - cuenta la práctica de cualquier acudiente del estudiante;
+   - solo se marca con estudiantes ACTIVO (si no, 422);
+   - `PUT …/hoy` es idempotente y devuelve la semana;
+   - no se puede desmarcar.
+5. **`WeeklyPractice` de la app** sale de tres rutas existentes, sin campos nuevos:
+   - `practicedToday` y los días: `GET /estudiantes/:id/practica-semanal`;
+   - `teacherNote` (texto): la observación visible más reciente, `GET /estudiantes/:id/observaciones?limit=1` (decisión 8 de la fase 0);
+   - `vowel`: la vocal de la actividad de Habla conmigo pendiente, `GET /estudiantes/:id/actividades`.
+
+## 4. Fase 8: lo implementado
+
+Todas las rutas van bajo `/api/v1`.
 
 | Ruta | Roles | Regla |
 |---|---|---|
-| `GET /estudiantes/:id/actividades` | directora, tallerista, acudiente | Estado de cada actividad y su retroalimentación. |
+| `GET /estudiantes/:id/actividades` | directora, tallerista a cargo, acudiente | Estado de cada actividad y su retroalimentación. |
 | `GET /estudiantes/:id/observaciones` | directora, tallerista a cargo, acudiente | El acudiente solo ve las de `visible_acudiente = true`. |
-| `POST /estudiantes/:id/observaciones` | directora, tallerista a cargo | Crear una observación. |
-| `PATCH /observaciones/:id` | autor o directora | Editar una observación. |
-| `GET /notificaciones?leida&page` | todos | Solo las propias. |
-| `PATCH /notificaciones/:id/lectura` | todos | Marcar una como leída. |
+| `POST /estudiantes/:id/observaciones` | directora, tallerista a cargo | Si es visible, la base avisa a los acudientes. |
+| `PATCH /observaciones/:id` | autora o directora | Editar el texto o la visibilidad. |
+| `GET /notificaciones?leida&page&limit` | todos | Solo las propias, con `noLeidas`. |
+| `PATCH /notificaciones/:id/lectura` | todos | Marcar una como leída (idempotente). |
 | `POST /notificaciones/lectura` | todos | Marcar todas como leídas. |
-| `GET /estudiantes/:id/practica-semanal` | acudiente (propio) | Días practicados de la semana, en hora de Bogotá. |
+| `GET /estudiantes/:id/practica-semanal` | acudiente (propio), tallerista a cargo, directora | Días practicados de la semana, en hora de Bogotá. |
 | `PUT /estudiantes/:id/practica-casa/hoy` | acudiente (propio) | «Lo practicamos hoy». |
 
-**Migración `practica_casa`**
+Módulos nuevos: `observaciones`, `notificaciones` y `practica-casa`. Las
+actividades del estudiante viven en `asignaciones` (reutilizan el cálculo del progreso).
+
+**Migración `20261105120000_practica_casa`**
 - Columnas: `estudiante_id`, `acudiente_id`, `fecha` y `registrada_en`, con la PK sobre las tres primeras.
-- Lleva un trigger que exige el rol ACUDIENTE y el vínculo, RLS y `revoke execute` en las funciones nuevas.
-- Va en una migración nueva; las ya aplicadas no se editan.
-- No hay PostgreSQL local, así que la debe probar quien corre las pruebas contra PostgreSQL real. **Requiere confirmación antes de aplicarse en Supabase.**
+- Triggers de rol ACUDIENTE (`fn_exigir_rol`) y de vínculo (`fn_practica_casa_vinculo`, código `42501` → 403).
+- RLS sin políticas, `revoke all` para `anon`/`authenticated` y `revoke execute` en la función nueva.
+- El modelo de `schema.prisma` se escribió a mano: hay que compararlo con `prisma db pull` al aplicarla en local.
+- Prueba SQL: `prisma/pruebas/practica_casa.sql`.
+- **Requiere confirmación antes de aplicarse en Supabase.** Mientras no esté aplicada, las dos rutas de práctica en casa fallan; el resto de la API no se ve afectado.
 
 **Fuera de la fase 8:** la nota de voz para la familia (`nota-voz`), que quedó pospuesta.
 
@@ -225,6 +263,12 @@ Las corre otra persona sobre las ramas subidas. Con la base en memoria no se pue
 - El lote como una sola transacción.
 - El `groupBy` de pendientes por actividad.
 
+**Fase 8**
+- La migración `practica_casa` completa (`prisma/pruebas/practica_casa.sql`).
+- El `upsert` de `practica_casa` y el `distinct` por fecha.
+- `trg_observacion_notificar` al crear y al editar una observación.
+- Los triggers de rol y vínculo de `observacion`.
+
 **Supabase Storage real**
 - La subida por *stream*.
 - Las URLs firmadas y el borrado en los buckets `contenidos` y `grabaciones`.
@@ -239,4 +283,6 @@ Las corre otra persona sobre las ramas subidas. Con la base en memoria no se pue
   - mostrar los módulos de forma dinámica;
   - traducir los códigos de juego y de estado;
   - agregar la revisión de los juegos sin voz;
-  - pedir el audio antes de validar un intento de voz.
+  - pedir el audio antes de validar un intento de voz;
+  - armar `WeeklyPractice` con las tres rutas de la fase 8 (ver la decisión 5 de la fase 8);
+  - mostrar la retroalimentación de las actividades aprobadas.

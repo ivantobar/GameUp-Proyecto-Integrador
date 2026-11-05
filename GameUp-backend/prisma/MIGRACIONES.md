@@ -12,7 +12,21 @@ npx prisma migrate resolve --applied 0_esquema_inicial   # ya existe: no se ejec
 npm run db:deploy                                        # aplica los ajustes
 ```
 
-**En una base local nueva**: `npm run db:deploy` aplica las dos. La base local
+**`20261105120000_practica_casa` (fase 8): PENDIENTE de aplicar en Supabase.**
+Crea la tabla `practica_casa` («Lo practicamos hoy» del acudiente), con un trigger
+de rol (ACUDIENTE), otro de vínculo con el estudiante, RLS sin políticas y sin
+permisos para `anon`/`authenticated`. Antes de aplicarla en Supabase:
+
+1. Aplicarla en una base local y correr `prisma/pruebas/practica_casa.sql`.
+2. Comparar el modelo `practica_casa` de `schema.prisma` (escrito a mano) con
+   el que genere `npx prisma db pull` contra esa base local.
+3. **Pedir confirmación** y solo entonces ejecutar `npm run db:deploy` contra Supabase.
+
+Mientras no esté aplicada, las rutas de práctica en casa
+(`/estudiantes/:id/practica-semanal` y `/estudiantes/:id/practica-casa/hoy`)
+fallan porque la tabla no existe; el resto de la API no se ve afectado.
+
+**En una base local nueva**: `npm run db:deploy` aplica todas. La base local
 necesita el esquema `storage` con la tabla `buckets`, que Supabase trae por defecto
 (ver `prisma/pruebas/README.md`).
 

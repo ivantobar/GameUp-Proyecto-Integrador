@@ -196,6 +196,35 @@ describe('AsignacionService y AvanceAsignacionService', () => {
       ]);
     });
 
+    it('actividades del estudiante: todas sus asignaciones, con estado y retroalimentación', async () => {
+      e.asignaciones.cambiarEstado(e.ids.a4, 'COMPLETADO', 100);
+      const a = await avance.actividadesDelEstudiante(ACUDIENTE_4, 10n);
+      expect(
+        a.map((x) => [x.asignacion.id, x.avance.actividad.id, x.avance.estado]),
+      ).toEqual([
+        // Como el listado de asignaciones: la más reciente primero.
+        [e.ids.a4, e.ids.hablaE, 'SIN_INTENTOS'],
+        [e.ids.a4, e.ids.emparejar, 'RECHAZADA'],
+        [e.ids.a4, e.ids.memoria, 'APROBADA'],
+        [e.ids.a1, e.ids.habla, 'PENDIENTE_VALIDACION'],
+      ]);
+      expect(a[1]?.avance.retroalimentacion).toBe('Mira bien las parejas');
+      await expect(
+        avance.actividadesDelEstudiante(TALLERISTA_2, 10n),
+      ).resolves.toHaveLength(4);
+      await expect(
+        avance.actividadesDelEstudiante(DIRECTORA, 12n),
+      ).resolves.toEqual([]);
+    });
+
+    it('actividades de un estudiante ajeno → 404', async () => {
+      for (const actor of [ACUDIENTE_5, TALLERISTA_3]) {
+        await expect(
+          avance.actividadesDelEstudiante(actor, 10n),
+        ).rejects.toBeInstanceOf(RecursoNoEncontradoError);
+      }
+    });
+
     it('una asignación completada ya no aporta pendientes', async () => {
       e.asignaciones.cambiarEstado(e.ids.a4, 'COMPLETADO', 100);
       await expect(

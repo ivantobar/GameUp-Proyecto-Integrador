@@ -28,6 +28,7 @@ import { AsignacionService } from '../application/asignacion.service.js';
 import { AvanceAsignacionService } from '../application/avance-asignacion.service.js';
 import { AsignacionMapper } from '../infrastructure/asignacion.mapper.js';
 import {
+  ActividadEstudianteDto,
   ActividadPendienteDto,
   AsignacionDetalleDto,
   AsignacionDto,
@@ -145,7 +146,26 @@ export class PendientesController {
     @UsuarioActual() actual: UsuarioAutenticado,
   ): Promise<ActividadPendienteDto[]> {
     return (await this.avance.pendientesDelEstudiante(actual)).map(
-      AsignacionMapper.aPendienteDto,
+      AsignacionMapper.aActividadDto,
+    );
+  }
+
+  @Get(':id/actividades')
+  @Roles('DIRECTORA', 'TALLERISTA', 'ACUDIENTE')
+  @ApiOperation({
+    summary: 'Actividades de un estudiante, con su estado y retroalimentación',
+    description:
+      'Cada actividad activa de sus módulos asignados (también los completados, hasta 50 asignaciones). ' +
+      'La retroalimentación aparece si le pidieron practicar más. Estudiante ajeno → 404.',
+  })
+  @ApiOkResponse({ type: [ActividadEstudianteDto] })
+  @ApiErrores(400, 401, 403, 404)
+  async actividades(
+    @UsuarioActual() actual: UsuarioAutenticado,
+    @Param('id', ParseBigIntPipe) id: bigint,
+  ): Promise<ActividadEstudianteDto[]> {
+    return (await this.avance.actividadesDelEstudiante(actual, id)).map(
+      AsignacionMapper.aActividadDto,
     );
   }
 
