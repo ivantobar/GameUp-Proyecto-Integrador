@@ -6,7 +6,7 @@
 // buckets de Storage viven solo en esas migraciones (Prisma no los modela).
 // Después de cada cambio:
 //   npm run db:migrate -- --name descripcion_del_cambio
-
+ 
 generator client {
   provider            = "prisma-client"
   // Dentro de src/ para que `nest build` lo compile junto con la app.
@@ -17,11 +17,11 @@ generator client {
   moduleFormat        = "esm"
   importFileExtension = "js"
 }
-
+ 
 datasource db {
   provider = "postgresql"
 }
-
+ 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model actividad {
@@ -37,12 +37,12 @@ model actividad {
   tipo_juego          tipo_juego            @relation(fields: [tipo_juego_id], references: [id], onUpdate: NoAction)
   actividad_contenido actividad_contenido[]
   intento             intento[]
-
+ 
   @@unique([id, modulo_id], map: "uq_actividad_id_modulo")
   @@index([modulo_id, orden], map: "ix_actividad_modulo")
   @@index([tipo_juego_id], map: "ix_actividad_tipo_juego")
 }
-
+ 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model actividad_contenido {
   actividad_id BigInt
@@ -55,11 +55,11 @@ model actividad_contenido {
   url_audio    String?
   actividad    actividad @relation(fields: [actividad_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   contenido    contenido @relation(fields: [contenido_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-
+ 
   @@id([actividad_id, contenido_id])
   @@index([contenido_id], map: "ix_act_cont_contenido")
 }
-
+ 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
@@ -70,11 +70,11 @@ model acudiente_estudiante {
   es_principal  Boolean    @default(false)
   usuario       usuario    @relation(fields: [acudiente_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   estudiante    estudiante @relation(fields: [estudiante_id], references: [usuario_id], onDelete: Cascade, onUpdate: NoAction)
-
+ 
   @@id([acudiente_id, estudiante_id])
   @@index([estudiante_id], map: "ix_acud_est_estudiante")
 }
-
+ 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model asignacion {
@@ -90,13 +90,13 @@ model asignacion {
   estudiante       estudiante @relation(fields: [estudiante_id], references: [usuario_id], onDelete: Cascade, onUpdate: NoAction)
   modulo           modulo     @relation(fields: [modulo_id], references: [id], onUpdate: NoAction)
   intento          intento[]
-
+ 
   @@unique([modulo_id, estudiante_id], map: "uq_asignacion_activa", where: raw("(estado <> 'COMPLETADO'::text)"))
   @@index([asignado_por], map: "ix_asignacion_asignado")
   @@index([estudiante_id, estado], map: "ix_asignacion_estudiante")
   @@index([modulo_id], map: "ix_asignacion_modulo")
 }
-
+ 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model categoria {
   id          BigInt   @id @default(autoincrement())
@@ -105,7 +105,7 @@ model categoria {
   icono_url   String?
   modulo      modulo[]
 }
-
+ 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model contenido {
@@ -117,11 +117,11 @@ model contenido {
   orden               Int                   @default(0)
   actividad_contenido actividad_contenido[]
   modulo              modulo                @relation(fields: [modulo_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-
+ 
   @@unique([id, modulo_id], map: "uq_contenido_id_modulo")
   @@index([modulo_id, orden], map: "ix_contenido_modulo")
 }
-
+ 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
@@ -138,12 +138,11 @@ model estudiante {
   usuario               usuario                 @relation(fields: [usuario_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   historial_nivel       historial_nivel[]
   observacion           observacion[]
-  psicologo_estudiante  psicologo_estudiante[]
   tallerista_estudiante tallerista_estudiante[]
-
+ 
   @@index([nivel_id], map: "ix_estudiante_nivel")
 }
-
+ 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
@@ -158,7 +157,7 @@ model grabacion_estudiante {
   eliminada_en                 DateTime? @db.Timestamptz(6)
   intento                      intento   @relation(fields: [intento_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 }
-
+ 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model historial_nivel {
   id            BigInt     @id @default(autoincrement())
@@ -170,12 +169,12 @@ model historial_nivel {
   usuario       usuario    @relation(fields: [asignado_por], references: [id], onUpdate: NoAction)
   estudiante    estudiante @relation(fields: [estudiante_id], references: [usuario_id], onDelete: Cascade, onUpdate: NoAction)
   nivel         nivel      @relation(fields: [nivel_id], references: [id], onUpdate: NoAction)
-
+ 
   @@index([asignado_por], map: "ix_histnivel_asignado")
   @@index([estudiante_id, fecha(sort: Desc)], map: "ix_histnivel_estudiante")
   @@index([nivel_id], map: "ix_histnivel_nivel")
 }
-
+ 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model intento {
@@ -190,12 +189,12 @@ model intento {
   actividad            actividad             @relation(fields: [actividad_id], references: [id], onUpdate: NoAction)
   asignacion           asignacion            @relation(fields: [asignacion_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   validacion           validacion?
-
+ 
   @@unique([asignacion_id, actividad_id, numero_intento], map: "uq_intento")
   @@index([actividad_id], map: "ix_intento_actividad")
   @@index([asignacion_id], map: "ix_intento_asignacion")
 }
-
+ 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model modulo {
@@ -217,14 +216,14 @@ model modulo {
   usuario      usuario      @relation(fields: [creado_por], references: [id], onUpdate: NoAction)
   musica       musica?      @relation(fields: [musica_id], references: [id], onUpdate: NoAction)
   nivel        nivel        @relation(fields: [nivel_id], references: [id], onUpdate: NoAction)
-
+ 
   @@index([categoria_id], map: "ix_modulo_categoria")
   @@index([creado_por], map: "ix_modulo_creado_por")
   @@index([musica_id], map: "ix_modulo_musica")
   @@index([nivel_id], map: "ix_modulo_nivel")
   @@index([publicado, orden], map: "ix_modulo_publicado")
 }
-
+ 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model musica {
@@ -236,7 +235,7 @@ model musica {
   activa    Boolean  @default(true)
   modulo    modulo[]
 }
-
+ 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model nivel {
   id              BigInt            @id @default(autoincrement())
@@ -247,7 +246,7 @@ model nivel {
   historial_nivel historial_nivel[]
   modulo          modulo[]
 }
-
+ 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model notificacion {
@@ -258,10 +257,10 @@ model notificacion {
   leida      Boolean  @default(false)
   fecha      DateTime @default(now()) @db.Timestamptz(6)
   usuario    usuario  @relation(fields: [usuario_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-
+ 
   @@index([usuario_id, leida, fecha(sort: Desc)], map: "ix_notificacion_usuario")
 }
-
+ 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model observacion {
@@ -273,24 +272,11 @@ model observacion {
   fecha             DateTime   @default(now()) @db.Timestamptz(6)
   usuario           usuario    @relation(fields: [autor_id], references: [id], onUpdate: NoAction)
   estudiante        estudiante @relation(fields: [estudiante_id], references: [usuario_id], onDelete: Cascade, onUpdate: NoAction)
-
+ 
   @@index([autor_id], map: "ix_observacion_autor")
   @@index([estudiante_id, fecha(sort: Desc)], map: "ix_observacion_estudiante")
 }
-
-/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
-model psicologo_estudiante {
-  psicologo_id  BigInt
-  estudiante_id BigInt
-  fecha_inicio  DateTime   @default(dbgenerated("CURRENT_DATE")) @db.Date
-  activo        Boolean    @default(true)
-  estudiante    estudiante @relation(fields: [estudiante_id], references: [usuario_id], onDelete: Cascade, onUpdate: NoAction)
-  usuario       usuario    @relation(fields: [psicologo_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-
-  @@id([psicologo_id, estudiante_id])
-  @@index([estudiante_id], map: "ix_psi_est_estudiante")
-}
-
+ 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model rol {
@@ -299,7 +285,7 @@ model rol {
   descripcion String?
   usuario     usuario[]
 }
-
+ 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model tallerista_estudiante {
   tallerista_id BigInt
@@ -308,11 +294,11 @@ model tallerista_estudiante {
   activo        Boolean    @default(true)
   estudiante    estudiante @relation(fields: [estudiante_id], references: [usuario_id], onDelete: Cascade, onUpdate: NoAction)
   usuario       usuario    @relation(fields: [tallerista_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-
+ 
   @@id([tallerista_id, estudiante_id])
   @@index([estudiante_id], map: "ix_tall_est_estudiante")
 }
-
+ 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model tipo_juego {
   id          BigInt      @id @default(autoincrement())
@@ -321,7 +307,7 @@ model tipo_juego {
   descripcion String?
   actividad   actividad[]
 }
-
+ 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
@@ -345,14 +331,13 @@ model usuario {
   modulo                modulo[]
   notificacion          notificacion[]
   observacion           observacion[]
-  psicologo_estudiante  psicologo_estudiante[]
   tallerista_estudiante tallerista_estudiante[]
   rol                   rol                     @relation(fields: [rol_id], references: [id])
   validacion            validacion[]
-
+ 
   @@index([rol_id], map: "ix_usuario_rol")
 }
-
+ 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model validacion {
@@ -364,6 +349,7 @@ model validacion {
   fecha             DateTime @default(now()) @db.Timestamptz(6)
   intento           intento  @relation(fields: [intento_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   usuario           usuario  @relation(fields: [validador_id], references: [id], onUpdate: NoAction)
-
+ 
   @@index([validador_id], map: "ix_validacion_validador")
 }
+ 
