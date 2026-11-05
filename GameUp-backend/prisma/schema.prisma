@@ -4,8 +4,11 @@
 // Los modelos se generaron con `npx prisma db pull` a partir de las migraciones
 // de prisma/migrations. Los triggers, las restricciones CHECK, RLS y los
 // buckets de Storage viven solo en esas migraciones (Prisma no los modela).
-// Después de cada cambio:
-//   npm run db:migrate -- --name descripcion_del_cambio
+// NO uses `prisma migrate dev`, `migrate reset` ni `db push` contra Supabase.
+// Para cambiar el esquema: escribe una migración nueva en
+// prisma/migrations/<timestamp>_<nombre>/migration.sql, pruébala en una base
+// PostgreSQL local (prisma/pruebas/README.md), actualiza este archivo con
+// `npx prisma db pull` contra esa base local y ejecuta `npm run db:generate`.
  
 generator client {
   provider            = "prisma-client"

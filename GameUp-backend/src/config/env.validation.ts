@@ -78,6 +78,30 @@ export class EnvironmentVariables {
   @IsOptional()
   @IsString()
   SUPABASE_SECRET_KEY?: string;
+
+  /**
+   * URL base de la API de seguridad (login y perfil), sin /api al final.
+   * Ej.: https://seguridad.ejemplo.com  →  se llama a /api/auth/perfil.
+   * Si falta, el login y las rutas protegidas responden 503.
+   */
+  @IsOptional()
+  @IsUrl({ require_tld: false, protocols: ['http', 'https'] })
+  SEGURIDAD_API_URL?: string;
+
+  /** Tiempo máximo de espera de cada llamada a la API de seguridad. */
+  @IsInt()
+  @Min(500)
+  @Max(30000)
+  SEGURIDAD_API_TIMEOUT_MS: number = 5000;
+
+  /**
+   * Segundos que se recuerda un token ya verificado (máximo 5 minutos).
+   * Nunca supera la expiración (exp) del propio token.
+   */
+  @IsInt()
+  @Min(0)
+  @Max(300)
+  AUTH_CACHE_TTL_SEG: number = 300;
 }
 
 export function validateEnv(config: Record<string, unknown>) {

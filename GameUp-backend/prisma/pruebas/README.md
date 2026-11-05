@@ -1,8 +1,7 @@
 # Pruebas SQL de la base de datos
 
 `ajustes_revision.sql` comprueba las reglas que viven en la base: que solo el
-tallerista o psicólogo a cargo (o la directora) asigne, valide u observe a un
-estudiante; que el progreso cuente solo actividades aprobadas y se recalcule al
+tallerista a cargo (o la directora) asigne, valide u observe a un estudiante; que el progreso cuente solo actividades aprobadas y se recalcule al
 cambiar las actividades; que solo Habla conmigo tenga grabaciones; y que las
 grabaciones validadas queden listas para borrarse.
 

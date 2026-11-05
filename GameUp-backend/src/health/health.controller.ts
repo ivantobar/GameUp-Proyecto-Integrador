@@ -1,5 +1,6 @@
 import { Controller, Get } from '@nestjs/common';
 import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Public } from '../common/auth/decoradores.js';
 import {
   PrismaService,
   type DatabaseStatus,
@@ -22,6 +23,8 @@ export interface HealthResponse {
  * Útil también para verificar desde el celular que la app llega al backend.
  */
 @ApiTags('health')
+// Sin token: Render y el celular lo usan para saber si la API está viva.
+@Public()
 @Controller('health')
 export class HealthController {
   constructor(
