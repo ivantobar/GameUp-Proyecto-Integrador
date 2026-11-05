@@ -6,6 +6,7 @@ import { FiltroErroresGlobal } from './common/errors/filtro-errores.filter.js';
 import { RelojModule } from './common/reloj/reloj.module.js';
 import { validateEnv } from './config/env.validation.js';
 import { HealthModule } from './health/health.module.js';
+import { AsignacionesModule } from './modules/asignaciones/asignaciones.module.js';
 import { AuthModule } from './modules/auth/auth.module.js';
 import { CatalogoModule } from './modules/catalogo/catalogo.module.js';
 import { ConsentimientoModule } from './modules/consentimiento/consentimiento.module.js';
@@ -38,6 +39,8 @@ import { SupabaseModule } from './supabase/supabase.module.js';
     // Fase 4: catálogo, módulos, contenidos y actividades.
     CatalogoModule,
     ModulosModule,
+    // Fase 5: asignaciones y su avance.
+    AsignacionesModule,
   ],
   providers: [
     // Traduce errores de dominio y de la base a { statusCode, error, message }.

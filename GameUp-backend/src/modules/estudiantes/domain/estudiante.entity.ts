@@ -31,6 +31,28 @@ function palabras(texto: string): string[] {
   return texto.trim().split(/\s+/).filter(Boolean);
 }
 
+type Nombre = { nombres: string; apellidos: string };
+
+/** «Martín» (como saluda la app al niño). */
+export function primerNombreDe(p: Nombre): string {
+  return palabras(p.nombres)[0] ?? '';
+}
+
+/** «Martín C.» (como lo ve el tallerista). */
+export function nombreCortoDe(p: Nombre): string {
+  const inicial = palabras(p.apellidos)[0]?.charAt(0);
+  return inicial
+    ? `${primerNombreDe(p)} ${inicial.toUpperCase()}.`
+    : primerNombreDe(p);
+}
+
+/** «MC» (el círculo con iniciales). */
+export function inicialesDe(p: Nombre): string {
+  const n = primerNombreDe(p).charAt(0);
+  const a = palabras(p.apellidos)[0]?.charAt(0) ?? '';
+  return `${n}${a}`.toUpperCase();
+}
+
 /** Estudiante de la fundación tal como lo maneja GameUP. */
 export class Estudiante {
   readonly id: bigint;
@@ -57,22 +79,17 @@ export class Estudiante {
 
   /** «Martín» (como saluda la app al niño). */
   primerNombre(): string {
-    return palabras(this.nombres)[0] ?? '';
+    return primerNombreDe(this);
   }
 
   /** «Martín C.» (como lo ve el tallerista). */
   nombreCorto(): string {
-    const inicial = palabras(this.apellidos)[0]?.charAt(0);
-    return inicial
-      ? `${this.primerNombre()} ${inicial.toUpperCase()}.`
-      : this.primerNombre();
+    return nombreCortoDe(this);
   }
 
   /** «MC» (el círculo con iniciales). */
   iniciales(): string {
-    const n = this.primerNombre().charAt(0);
-    const a = palabras(this.apellidos)[0]?.charAt(0) ?? '';
-    return `${n}${a}`.toUpperCase();
+    return inicialesDe(this);
   }
 
   estaActivo(): boolean {

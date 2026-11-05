@@ -12,10 +12,11 @@ Fundación ASISCO-UP.
 - Pensada para una **app móvil** (React Native + Expo Go): sin CORS por
   defecto y escuchando en la red local para que el celular pueda llegar.
 
-> Estado actual: fase 4. Base común (autenticación global con la API de
+> Estado actual: fase 5. Base común (autenticación global con la API de
 > seguridad, roles, errores uniformes), login/sesión, cuentas de GameUP,
 > estudiantes con sus vínculos, nivel y consentimiento de voz, y el catálogo
-> de contenido (módulos, archivos en Storage y actividades). Los demás
+> de contenido (módulos, archivos en Storage y actividades) y las
+> asignaciones con su avance. Los demás
 > módulos de negocio se agregan por fases. El
 > esquema de la base (20 tablas) está en `prisma/schema.prisma` y sus reglas
 > (triggers, CHECK, RLS) en `prisma/migrations/`.
@@ -221,6 +222,20 @@ La regla de relación vive en un solo lugar
 Los mensajes de validación (400) salen en español
 (`src/common/validacion/mensajes-validacion.ts`).
 
+### Asignaciones (fase 5)
+
+| Método y ruta | Quién | Notas |
+|---|---|---|
+| `POST /asignaciones` | D, T a cargo | `{ moduloId, estudianteId, fechaSugerida? }`. Solo módulos publicados y estudiantes ACTIVO; 409 si ya lo tiene sin completar; estudiante ajeno → 404. La base avisa a los acudientes |
+| `GET /asignaciones?estudianteId&moduloId&estado` | todos | Las de los estudiantes que puede ver |
+| `GET /asignaciones/:id` | todos (con relación) | Avance: estado de cada actividad activa (`SIN_INTENTOS`, `PENDIENTE_VALIDACION`, `RECHAZADA`, `APROBADA`) y resumen |
+| `DELETE /asignaciones/:id` | D, T a cargo | Solo sin intentos (409) |
+| `GET /estudiantes/me/actividades-pendientes` | E | Lo que tiene por hacer: sin intentos o rechazadas |
+
+El progreso oficial (`progreso`, 0-100) lo calcula la base: solo actividades
+activas con un intento APROBADO. Las pendientes de validación se informan
+aparte (`resumen.pendientesValidacion`) y no suman.
+
 ### Catálogo, módulos, contenidos y actividades (fase 4)
 
 | Método y ruta | Quién | Notas |
@@ -320,7 +335,8 @@ src/
 │   ├── estudiantes/         # Estudiantes, vínculos, nivel; regla de relación
 │   ├── consentimiento/      # Consentimiento de voz (API del núcleo familiar)
 │   ├── catalogo/            # Niveles, categorías, tipos de juego, música; estrategias por juego
-│   └── modulos/             # Módulos, contenidos (Storage) y actividades
+│   ├── modulos/             # Módulos, contenidos (Storage) y actividades
+│   └── asignaciones/        # Módulos asignados a estudiantes y su avance
 ├── docs/
 │   └── swagger.ts           # /api-docs
 ├── prisma/
