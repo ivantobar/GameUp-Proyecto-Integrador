@@ -15,3 +15,4 @@ export { VideoPlaceholder } from './VideoPlaceholder';
 export { Waveform, type WaveformTone } from './Waveform';
 export { HintPill, hintPillStyles, type HintPillKind } from './HintPill';
 export { Pictogram, type PictogramSize } from './Pictogram';
+export { PictureCard, type PictureCardState } from './PictureCard';

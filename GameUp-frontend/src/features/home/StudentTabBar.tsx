@@ -21,7 +21,7 @@ function isStudentTab(name: string): name is StudentTabRoute {
  */
 export function StudentTabBar({
   state,
-  navigation,
+  navigateToTab,
   insets,
 }: BottomTabBarProps) {
   const current = state.routes[state.index]?.name ?? 'index';
@@ -37,7 +37,11 @@ export function StudentTabBar({
       <BottomTabBar
         items={studentTabs}
         activeKey={activeKey}
-        onSelect={(key) => navigation.navigate(key)}
+        onSelect={(name) => {
+          // SDK 58: navigateToTab recibe la key de la ruta, no su nombre.
+          const route = state.routes.find((r) => r.name === name);
+          if (route) navigateToTab(route.key);
+        }}
       />
     </View>
   );

@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, type ComponentRef } from 'react';
 import { router } from 'expo-router';
 import {
   KeyboardAvoidingView,
@@ -24,18 +24,20 @@ import { roleHomes } from '@/features/auth/roleHome';
 import { useSignIn, type SignInProblem } from '@/features/auth/useSignIn';
 import { spacing } from '@/theme';
 
-const problemNotices: Record<SignInProblem, { title: string; message: string }> =
-  {
-    invalid: {
-      title: 'No pudimos entrar',
-      message:
-        'El correo o la contraseña no coinciden. Revísalos e inténtalo otra vez.',
-    },
-    connection: {
-      title: 'Sin conexión',
-      message: 'Revisa la conexión a internet e inténtalo otra vez.',
-    },
-  };
+const problemNotices: Record<
+  SignInProblem,
+  { title: string; message: string }
+> = {
+  invalid: {
+    title: 'No pudimos entrar',
+    message:
+      'El correo o la contraseña no coinciden. Revísalos e inténtalo otra vez.',
+  },
+  connection: {
+    title: 'Sin conexión',
+    message: 'Revisa la conexión a internet e inténtalo otra vez.',
+  },
+};
 
 /** Nombres de los roles en las cuentas de prueba. */
 const roleLabels: Record<UserRole, string> = {
@@ -55,7 +57,7 @@ export default function LoginScreen() {
   const form = useSignIn();
   const [showPassword, setShowPassword] = useState(false);
   const [roleNotReady, setRoleNotReady] = useState<string | null>(null);
-  const passwordRef = useRef<TextInput>(null);
+  const passwordRef = useRef<ComponentRef<typeof TextInput>>(null);
 
   const onSubmit = async () => {
     setRoleNotReady(null);
@@ -95,83 +97,85 @@ export default function LoginScreen() {
 
         <Card>
           <View style={styles.form}>
-          <TextField
-            label="Correo"
-            value={form.email}
-            onChangeText={form.setEmail}
-            placeholder="nombre@correo.com"
-            error={form.errors.email}
-            keyboardType="email-address"
-            autoComplete="email"
-            textContentType="emailAddress"
-            autoCapitalize="none"
-            autoCorrect={false}
-            returnKeyType="next"
-            submitBehavior="submit"
-            onSubmitEditing={() => passwordRef.current?.focus()}
-            editable={!form.submitting}
-            testID="login-email"
-          />
-          <TextField
-            inputRef={passwordRef}
-            label="Contraseña"
-            value={form.password}
-            onChangeText={form.setPassword}
-            error={form.errors.password}
-            secureTextEntry={!showPassword}
-            autoComplete="current-password"
-            textContentType="password"
-            autoCapitalize="none"
-            autoCorrect={false}
-            returnKeyType="go"
-            onSubmitEditing={() => {
-              onSubmit().catch(() => {});
-            }}
-            editable={!form.submitting}
-            testID="login-password"
-            trailing={
-              <IconButton
-                icon={showPassword ? 'eyeOff' : 'eye'}
-                variant="soft"
-                size="sm"
-                accessibilityLabel={
-                  showPassword ? 'Ocultar la contraseña' : 'Mostrar la contraseña'
-                }
-                onPress={() => setShowPassword((value) => !value)}
-              />
-            }
-          />
+            <TextField
+              label="Correo"
+              value={form.email}
+              onChangeText={form.setEmail}
+              placeholder="nombre@correo.com"
+              error={form.errors.email}
+              keyboardType="email-address"
+              autoComplete="email"
+              textContentType="emailAddress"
+              autoCapitalize="none"
+              autoCorrect={false}
+              returnKeyType="next"
+              submitBehavior="submit"
+              onSubmitEditing={() => passwordRef.current?.focus()}
+              editable={!form.submitting}
+              testID="login-email"
+            />
+            <TextField
+              inputRef={passwordRef}
+              label="Contraseña"
+              value={form.password}
+              onChangeText={form.setPassword}
+              error={form.errors.password}
+              secureTextEntry={!showPassword}
+              autoComplete="current-password"
+              textContentType="password"
+              autoCapitalize="none"
+              autoCorrect={false}
+              returnKeyType="go"
+              onSubmitEditing={() => {
+                onSubmit().catch(() => {});
+              }}
+              editable={!form.submitting}
+              testID="login-password"
+              trailing={
+                <IconButton
+                  icon={showPassword ? 'eyeOff' : 'eye'}
+                  variant="soft"
+                  size="sm"
+                  accessibilityLabel={
+                    showPassword
+                      ? 'Ocultar la contraseña'
+                      : 'Mostrar la contraseña'
+                  }
+                  onPress={() => setShowPassword((value) => !value)}
+                />
+              }
+            />
 
-          {notice ? (
-            <View accessibilityLiveRegion="polite">
-              <Notice
-                icon={form.problem === 'connection' ? 'offline' : 'info'}
-                tone="warm"
-                title={notice.title}
-                message={notice.message}
-              />
-            </View>
-          ) : null}
+            {notice ? (
+              <View accessibilityLiveRegion="polite">
+                <Notice
+                  icon={form.problem === 'connection' ? 'offline' : 'info'}
+                  tone="warm"
+                  title={notice.title}
+                  message={notice.message}
+                />
+              </View>
+            ) : null}
 
-          {roleNotReady ? (
-            <View accessibilityLiveRegion="polite">
-              <Notice
-                icon="construction"
-                tone="soft"
-                title={`Hola, ${roleNotReady}`}
-                message="Tu espacio en GameUP llega en una próxima versión."
-              />
-            </View>
-          ) : null}
+            {roleNotReady ? (
+              <View accessibilityLiveRegion="polite">
+                <Notice
+                  icon="construction"
+                  tone="soft"
+                  title={`Hola, ${roleNotReady}`}
+                  message="Tu espacio en GameUP llega en una próxima versión."
+                />
+              </View>
+            ) : null}
 
-          <Button
-            label="Entrar"
-            icon="login"
-            loading={form.submitting}
-            onPress={() => {
-              onSubmit().catch(() => {});
-            }}
-          />
+            <Button
+              label="Entrar"
+              icon="login"
+              loading={form.submitting}
+              onPress={() => {
+                onSubmit().catch(() => {});
+              }}
+            />
           </View>
         </Card>
 

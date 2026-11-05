@@ -23,12 +23,20 @@ describe('catálogo de juegos', () => {
     });
   });
 
+  it('los 6 juegos del MVP ya tienen su pantalla', () => {
+    gameCatalog.forEach((game) => {
+      expect(game.href).not.toBeNull();
+    });
+    expect(gameHref(findGame('speak'))).toBe('/student/speak');
+    expect(gameHref(findGame('memory'))).toBe('/student/memory');
+  });
+
   it('un juego sin pantalla lleva a «en construcción»', () => {
-    expect(gameHref(findGame('memory'))).toEqual({
+    const draft = { ...findGame('memory'), href: null };
+    expect(gameHref(draft)).toEqual({
       pathname: '/student/coming-soon/[game]',
       params: { game: 'memory' },
     });
-    expect(gameHref(findGame('speak'))).toBe('/student/speak');
   });
 
   it('«Tarea» tiene prioridad sobre «Nuevo»', () => {

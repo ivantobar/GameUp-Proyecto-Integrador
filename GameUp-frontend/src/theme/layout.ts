@@ -64,6 +64,17 @@ export const sizes = {
   mouthOption: 88,
   /** Ficha de sonido (alto mínimo). */
   soundTile: 96,
+  /**
+   * Juegos de «Pensar y recordar» (sin mockup: propuesta del equipo).
+   * Tarjeta con dibujo en fila (Emparejar) y en cuadrícula (Secuenciar,
+   * Memoria), grupo de Clasificar y casilla de cada paso en Secuenciar.
+   */
+  pictureRow: 96,
+  /** Tarjeta grande de arriba: lo que se empareja o se clasifica. */
+  pictureStage: 160,
+  pictureTile: 140,
+  categoryBin: 180,
+  sequenceSlot: 72,
   /** Logo completo de la fundación (guía: con lema, desde 200 px de ancho). */
   logo: 220,
 } as const;
