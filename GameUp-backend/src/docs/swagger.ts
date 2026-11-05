@@ -51,7 +51,11 @@ export function setupSwagger(app: INestApplication, publicUrl?: string): void {
     )
     .addTag('health', 'Estado del backend y de sus conexiones')
     .addTag('auth', 'Inicio y cierre de sesión con la API de seguridad')
-    .addTag('usuarios', 'Cuentas de GameUP (solo la directora)');
+    .addTag('usuarios', 'Cuentas de GameUP (solo la directora)')
+    .addTag(
+      'estudiantes',
+      'Estudiantes, sus vínculos, nivel y consentimiento de voz',
+    );
 
   const document = SwaggerModule.createDocument(app, builder.build());
 

@@ -12,9 +12,10 @@ Fundación ASISCO-UP.
 - Pensada para una **app móvil** (React Native + Expo Go): sin CORS por
   defecto y escuchando en la red local para que el celular pueda llegar.
 
-> Estado actual: fase 2. Base común (autenticación global con la API de
-> seguridad, roles, errores uniformes), login/sesión y cuentas de GameUP.
-> Los demás módulos de negocio se agregan por fases. El
+> Estado actual: fase 3. Base común (autenticación global con la API de
+> seguridad, roles, errores uniformes), login/sesión, cuentas de GameUP,
+> estudiantes con sus vínculos, nivel y consentimiento de voz. Los demás
+> módulos de negocio se agregan por fases. El
 > esquema de la base (20 tablas) está en `prisma/schema.prisma` y sus reglas
 > (triggers, CHECK, RLS) en `prisma/migrations/`.
 
@@ -127,6 +128,7 @@ Si al actualizar Prisma npm avisa de scripts bloqueados:
 | `SEGURIDAD_API_URL` | No* | — | URL base de la API de seguridad (login y perfil). *Sin ella, el login y las rutas protegidas responden 503 |
 | `SEGURIDAD_API_TIMEOUT_MS` | No | `5000` | Espera máxima por llamada a la API de seguridad |
 | `AUTH_CACHE_TTL_SEG` | No | `300` | Segundos que se recuerda un token verificado (máx. 300 y nunca más que su `exp`) |
+| `CONSENTIMIENTO_SIMULADO` | No | `false` | **Solo desarrollo**: todos los estudiantes figuran con consentimiento de voz. Prohibido en producción |
 
 Se validan al arrancar (`src/config/env.validation.ts`). Si falta
 `DATABASE_URL` o algo es inválido, la app no inicia y muestra el error.
@@ -197,6 +199,27 @@ y en los DTO, `@ApiProperty({ example: ... })` en cada campo.
 
 `role` usa los nombres de la app: `director`, `teacher`, `guardian`, `student`.
 
+### Estudiantes y vínculos (fase 3)
+
+| Método y ruta | Quién | Regla de relación |
+|---|---|---|
+| `GET /estudiantes?estado&nivelId&page&limit` | D, T, A | D: todos · T: a cargo (activo) · A: los suyos |
+| `GET /estudiantes/me` | E | El propio |
+| `GET /estudiantes/:id` | D, T, A | Si no le corresponde → **404** |
+| `GET /estudiantes/:id/historial-nivel` | D, T, A | Igual que arriba |
+| `PUT /estudiantes/:id/nivel` | D | `{ nivelId, motivo? }` → función `cambiar_nivel` (historial + aviso a acudientes) |
+| `GET/POST /estudiantes/:id/talleristas`, `DELETE …/:talleristaId` | D | El DELETE desactiva el vínculo (se conserva el historial) |
+| `GET/POST /estudiantes/:id/acudientes`, `PATCH/DELETE …/:acudienteId` | D | Un solo principal; `PATCH { esPrincipal: true }` lo cambia |
+| `GET /estudiantes/me/consentimiento-voz` | E | El propio |
+| `GET /estudiantes/:id/consentimiento-voz` | D, T, A | `{ concedido, motivo }`; sin la API del núcleo familiar → `concedido: false` |
+
+La regla de relación vive en un solo lugar
+(`src/modules/estudiantes/domain/alcance.ts`) y la aplica
+`AccesoEstudianteService`, que también usan los módulos siguientes.
+
+Los mensajes de validación (400) salen en español
+(`src/common/validacion/mensajes-validacion.ts`).
+
 ### Primera directora
 
 `POST /usuarios` solo lo puede usar una directora, así que la primera se crea
@@ -264,7 +287,9 @@ src/
 │   └── reloj/               # Puerto Reloj (hora inyectable)
 ├── modules/                 # Un módulo por agregado del dominio
 │   ├── auth/                # Login, /auth/me, logout; MapeadorRoles; guards globales
-│   └── usuarios/            # Cuentas de GameUP (directora)
+│   ├── usuarios/            # Cuentas de GameUP (directora)
+│   ├── estudiantes/         # Estudiantes, vínculos, nivel; regla de relación
+│   └── consentimiento/      # Consentimiento de voz (API del núcleo familiar)
 ├── docs/
 │   └── swagger.ts           # /api-docs
 ├── prisma/

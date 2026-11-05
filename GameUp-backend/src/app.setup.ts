@@ -1,6 +1,7 @@
 import { ValidationPipe, type INestApplication } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import helmet from 'helmet';
+import { errorDeValidacion } from './common/validacion/mensajes-validacion.js';
 import type { EnvironmentVariables } from './config/env.validation.js';
 import { setupSwagger } from './docs/swagger.js';
 
@@ -38,11 +39,13 @@ export function configureApp(app: INestApplication): void {
   }
 
   // Valida los DTO: elimina campos no declarados y rechaza los desconocidos.
+  // Los mensajes de error (400) salen en español.
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
       forbidNonWhitelisted: true,
       transform: true,
+      exceptionFactory: errorDeValidacion,
     }),
   );
 

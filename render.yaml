@@ -39,6 +39,9 @@ services:
         value: "5000"
       - key: AUTH_CACHE_TTL_SEG
         value: "300"
+      # Nunca true en producción (la app no arrancaría).
+      - key: CONSENTIMIENTO_SIMULADO
+        value: "false"
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_SECRET_KEY

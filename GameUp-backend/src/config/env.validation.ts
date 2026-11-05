@@ -1,6 +1,7 @@
 import 'reflect-metadata';
-import { plainToInstance } from 'class-transformer';
+import { plainToInstance, Transform } from 'class-transformer';
 import {
+  IsBoolean,
   IsEnum,
   IsInt,
   IsOptional,
@@ -102,6 +103,28 @@ export class EnvironmentVariables {
   @Min(0)
   @Max(300)
   AUTH_CACHE_TTL_SEG: number = 300;
+
+  /**
+   * SOLO DESARROLLO: si es "true", todos los estudiantes figuran con
+   * consentimiento de voz aceptado (para probar Habla conmigo mientras no
+   * exista la consulta en la API del núcleo familiar). Prohibido en producción.
+   */
+  @Transform(({ obj }: { obj: Record<string, unknown> }) =>
+    booleanoEstricto(obj['CONSENTIMIENTO_SIMULADO']),
+  )
+  @IsBoolean({ message: 'CONSENTIMIENTO_SIMULADO debe ser true o false' })
+  CONSENTIMIENTO_SIMULADO: boolean = false;
+}
+
+/**
+ * "true"/"false" → boolean. Con la conversión implícita de class-transformer,
+ * el texto "false" se volvería true (Boolean("false")), así que se lee el
+ * valor original. Cualquier otro valor lo rechaza @IsBoolean.
+ */
+function booleanoEstricto(valor: unknown): unknown {
+  if (valor === undefined || valor === false || valor === 'false') return false;
+  if (valor === true || valor === 'true') return true;
+  return valor;
 }
 
 export function validateEnv(config: Record<string, unknown>) {
@@ -116,6 +139,13 @@ export function validateEnv(config: Record<string, unknown>) {
       ? ['DATABASE_URL es obligatoria (revisa el archivo .env)']
       : Object.values(e.constraints ?? {}),
   );
+
+  if (
+    env.NODE_ENV === Environment.Production &&
+    env.CONSENTIMIENTO_SIMULADO === true
+  ) {
+    messages.push('CONSENTIMIENTO_SIMULADO no se puede activar en producción');
+  }
 
   if (messages.length > 0) {
     throw new Error(

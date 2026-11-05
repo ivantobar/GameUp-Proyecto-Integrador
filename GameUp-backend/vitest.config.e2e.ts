@@ -9,6 +9,11 @@ export default defineConfig({
     include: ['**/*.e2e-spec.ts'],
     // La validación de entorno exige DATABASE_URL. En las pruebas e2e no se
     // usa de verdad: PrismaService se reemplaza por un doble.
-    env: { DATABASE_URL: 'postgresql://test:test@localhost:5432/test' },
+    // CONSENTIMIENTO_SIMULADO se fija en false para que el .env de quien
+    // corre las pruebas no cambie el resultado (las pruebas lo activan a mano).
+    env: {
+      DATABASE_URL: 'postgresql://test:test@localhost:5432/test',
+      CONSENTIMIENTO_SIMULADO: 'false',
+    },
   },
 });

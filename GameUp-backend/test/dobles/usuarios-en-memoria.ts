@@ -74,6 +74,11 @@ export class UsuariosEnMemoria
     return [...this.usuarios.values()];
   }
 
+  /** Reemplaza un usuario (lo usan otros dobles, ej.: cambio de nivel). */
+  reemplazar(usuario: Usuario): void {
+    this.usuarios.set(usuario.id, usuario);
+  }
+
   async buscarPorId(id: bigint): Promise<Usuario | null> {
     return this.usuarios.get(id) ?? null;
   }

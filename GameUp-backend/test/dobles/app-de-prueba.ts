@@ -16,6 +16,12 @@ import {
   type CuentaRepository,
 } from '../../src/modules/auth/domain/cuenta.repository.js';
 import {
+  ACUDIENTE_ESTUDIANTE_REPOSITORY,
+  ESTUDIANTE_LECTURA_REPOSITORY,
+  NIVEL_ESTUDIANTE_REPOSITORY,
+  TALLERISTA_ESTUDIANTE_REPOSITORY,
+} from '../../src/modules/estudiantes/domain/estudiante.repository.js';
+import {
   NIVEL_CONSULTA,
   USUARIO_ESCRITURA_REPOSITORY,
   USUARIO_LECTURA_REPOSITORY,
@@ -23,6 +29,7 @@ import {
 import { PrismaService } from '../../src/prisma/prisma.service.js';
 import { SupabaseService } from '../../src/supabase/supabase.service.js';
 import { AutenticadorFalso } from './autenticador-falso.js';
+import { EstudiantesEnMemoria } from './estudiantes-en-memoria.js';
 import { NivelesEnMemoria, UsuariosEnMemoria } from './usuarios-en-memoria.js';
 import { VerificadorTokenFalso } from './verificador-token-falso.js';
 
@@ -31,6 +38,8 @@ export interface OpcionesAppDePrueba {
   autenticador?: AutenticadorExterno;
   /** Usuarios en memoria: también responden como CuentaRepository. */
   usuarios?: UsuariosEnMemoria;
+  /** Estudiantes y vínculos en memoria (por defecto, sobre `usuarios`). */
+  estudiantes?: EstudiantesEnMemoria;
   /** Si se da, reemplaza solo el CuentaRepository que usa el guard. */
   cuentas?: CuentaRepository;
   /** Controladores extra solo para la prueba. */
@@ -47,6 +56,8 @@ export async function crearAppDePrueba(
   opciones: OpcionesAppDePrueba = {},
 ): Promise<INestApplication<App>> {
   const usuarios = opciones.usuarios ?? new UsuariosEnMemoria();
+  const estudiantes =
+    opciones.estudiantes ?? new EstudiantesEnMemoria(usuarios);
   let builder = Test.createTestingModule({
     imports: [AppModule],
     controllers: opciones.controllers ?? [],
@@ -66,7 +77,15 @@ export async function crearAppDePrueba(
     .overrideProvider(USUARIO_ESCRITURA_REPOSITORY)
     .useValue(usuarios)
     .overrideProvider(NIVEL_CONSULTA)
-    .useValue(new NivelesEnMemoria());
+    .useValue(new NivelesEnMemoria())
+    .overrideProvider(ESTUDIANTE_LECTURA_REPOSITORY)
+    .useValue(estudiantes)
+    .overrideProvider(NIVEL_ESTUDIANTE_REPOSITORY)
+    .useValue(estudiantes)
+    .overrideProvider(TALLERISTA_ESTUDIANTE_REPOSITORY)
+    .useValue(estudiantes.talleristasRepo)
+    .overrideProvider(ACUDIENTE_ESTUDIANTE_REPOSITORY)
+    .useValue(estudiantes.acudientesRepo);
 
   for (const { provide, useValue } of opciones.reemplazos ?? []) {
     builder = builder.overrideProvider(provide).useValue(useValue);

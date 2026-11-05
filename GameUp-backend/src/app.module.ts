@@ -6,6 +6,8 @@ import { RelojModule } from './common/reloj/reloj.module.js';
 import { validateEnv } from './config/env.validation.js';
 import { HealthModule } from './health/health.module.js';
 import { AuthModule } from './modules/auth/auth.module.js';
+import { ConsentimientoModule } from './modules/consentimiento/consentimiento.module.js';
+import { EstudiantesModule } from './modules/estudiantes/estudiantes.module.js';
 import { UsuariosModule } from './modules/usuarios/usuarios.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { SupabaseModule } from './supabase/supabase.module.js';
@@ -25,6 +27,9 @@ import { SupabaseModule } from './supabase/supabase.module.js';
     HealthModule,
     // Fase 2: cuentas de GameUP (directora).
     UsuariosModule,
+    // Fase 3: estudiantes, vínculos, nivel y consentimiento de voz.
+    EstudiantesModule,
+    ConsentimientoModule,
   ],
   providers: [
     // Traduce errores de dominio y de la base a { statusCode, error, message }.

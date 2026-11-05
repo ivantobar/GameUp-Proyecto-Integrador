@@ -48,6 +48,33 @@ describe('validateEnv', () => {
     ).toThrow(/inválidas/);
   });
 
+  it('CONSENTIMIENTO_SIMULADO: false por defecto y lectura estricta', () => {
+    expect(validateEnv({ DATABASE_URL: DB }).CONSENTIMIENTO_SIMULADO).toBe(
+      false,
+    );
+    expect(
+      validateEnv({ DATABASE_URL: DB, CONSENTIMIENTO_SIMULADO: 'false' })
+        .CONSENTIMIENTO_SIMULADO,
+    ).toBe(false);
+    expect(
+      validateEnv({ DATABASE_URL: DB, CONSENTIMIENTO_SIMULADO: 'true' })
+        .CONSENTIMIENTO_SIMULADO,
+    ).toBe(true);
+    expect(() =>
+      validateEnv({ DATABASE_URL: DB, CONSENTIMIENTO_SIMULADO: 'si' }),
+    ).toThrow(/true o false/);
+  });
+
+  it('CONSENTIMIENTO_SIMULADO está prohibido en producción', () => {
+    expect(() =>
+      validateEnv({
+        DATABASE_URL: DB,
+        NODE_ENV: 'production',
+        CONSENTIMIENTO_SIMULADO: 'true',
+      }),
+    ).toThrow(/no se puede activar en producción/);
+  });
+
   it('Supabase es opcional', () => {
     const env = validateEnv({ DATABASE_URL: DB, NODE_ENV: 'production' });
     expect(env.SUPABASE_URL).toBeUndefined();
