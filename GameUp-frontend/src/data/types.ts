@@ -208,7 +208,23 @@ export interface StudentSummary {
   initials: string;
 }
 
-export type ReviewKind = 'speech' | 'listening';
+/**
+ * - speech: «Habla conmigo»;
+ * - listening: «Busca la boca»;
+ * - game: Emparejar, Clasificar, Secuenciar o Memoria.
+ */
+export type ReviewKind = 'speech' | 'listening' | 'game';
+
+/**
+ * Por qué un intento de voz no tiene audio (sale de `estadoGrabacion` del
+ * backend). En todos estos casos el docente valida sin escuchar.
+ * - noConsent: el acudiente no autorizó grabar;
+ * - notVerified: no se pudo verificar la autorización (la app no grabó);
+ * - notSent: había autorización, pero el niño no envió grabación;
+ * - notSaved: no se pudo guardar el audio en el servidor.
+ */
+export type NoAudioReason =
+  'noConsent' | 'notVerified' | 'notSent' | 'notSaved';
 
 /**
  * Actividad realizada que espera la revisión del docente («Por escuchar»).
@@ -224,8 +240,17 @@ export interface ReviewItem {
   /** Solo «Habla conmigo». */
   speech?: {
     vowel: Vowel;
-    /** Archivo de voz; `null` si no hay grabación. */
+    /** Archivo de voz que ya se puede oír; `null` si no hay (o hay que pedirlo). */
     audioUri: string | null;
+    /**
+     * El audio está en el servidor: se pide con `getRecordingUrl` y hay que
+     * oírlo antes de decidir (lo exige el backend).
+     */
+    remoteAudio?: boolean;
+    /** Había audio, pero se borró a los 30 días sin revisar. */
+    audioExpired?: boolean;
+    /** Por qué no hay audio, si se sabe. */
+    noAudioReason?: NoAudioReason;
     /** ¿El acudiente autorizó grabar? Explica por qué no hay audio. */
     voiceConsent: boolean;
     attemptNumber: number;
@@ -235,6 +260,13 @@ export interface ReviewItem {
   listening?: {
     firstTryCorrect: number;
     total: number;
+  };
+  /** Solo Emparejar, Clasificar, Secuenciar y Memoria. */
+  game?: {
+    gameId: ThinkingGameId;
+    /** Título de la actividad («Las vocales en orden»). */
+    title: string;
+    score: GameScore;
   };
   /** Retroalimentación si el docente pidió practicar más. */
   feedback?: string;

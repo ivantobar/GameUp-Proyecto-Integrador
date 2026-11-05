@@ -134,6 +134,58 @@ export function createFakeBackend() {
         nivel: { id: '1', nombre: 'BAJO' },
       });
     }
+    // ─── Tallerista ───
+    if (method === 'GET' && path.startsWith('/revisiones/pendientes')) {
+      if (session.role !== 'teacher' && session.role !== 'director') {
+        return errorResponse(403, 'Sin permiso');
+      }
+      const item = (intentoId: string, extra: Record<string, unknown>) => ({
+        intentoId,
+        estudiante: {
+          id: mockStudent.id,
+          displayName: 'Martín C.',
+          initials: 'MC',
+        },
+        modulo: { id: '1', nombre: 'Vocales' },
+        fecha: '2026-11-05T15:00:00.000Z',
+        numeroIntento: 1,
+        pendientesMismaActividad: 1,
+        ...extra,
+      });
+      return jsonResponse(200, {
+        items: [
+          item('41', {
+            tipo: 'VOZ',
+            tipoJuego: 'HABLA_CONMIGO',
+            actividad: { id: '1', titulo: 'Di la a', vocal: 'a' },
+            resultado: { estadoGrabacion: 'NO_VERIFICABLE' },
+            consentimientoVoz: false,
+            grabacion: null,
+          }),
+          item('42', {
+            tipo: 'JUEGO',
+            tipoJuego: 'BUSCA_LA_BOCA',
+            actividad: { id: '3', titulo: 'Busca la boca', vocal: null },
+            resultado: { firstTryCorrect: 4, total: 5 },
+            consentimientoVoz: null,
+            grabacion: null,
+          }),
+        ],
+        total: 2,
+        page: 1,
+        limit: 50,
+      });
+    }
+    if (method === 'POST' && /^\/intentos\/[\w-]+\/validacion$/.test(path)) {
+      return jsonResponse(201, intentoGuardado('validado', 'HABLA_CONMIGO'));
+    }
+    if (
+      method === 'POST' &&
+      /^\/estudiantes\/[\w-]+\/observaciones$/.test(path)
+    ) {
+      return jsonResponse(201, { id: '7' });
+    }
+
     if (path.startsWith('/estudiantes/me/') && session.role !== 'student') {
       return errorResponse(403, 'Sin permiso');
     }

@@ -8,7 +8,7 @@ App móvil de **GameUP**, el aula virtual inclusiva de la Fundación ASISCO-UP.
 - Se prueba en el celular con **Expo Go**.
 - Se comunica con el backend **NestJS** (`GameUp-backend`) por su API REST.
 
-> **Estado actual (conexión con la API, fase 2b):** sistema de diseño,
+> **Estado actual (conexión con la API, fase 3):** sistema de diseño,
 > componentes base, personaje y bocas en SVG, pantallas del estudiante
 > **Inicio**, **Juegos**, **Mi progreso**, el flujo completo de **Habla
 > conmigo** (selección de vocal, **Mira**, **Dilo** y **Listo**), **Busca la
@@ -23,8 +23,13 @@ App móvil de **GameUP**, el aula virtual inclusiva de la Fundación ASISCO-UP.
 > boca**, **Habla conmigo**, **Emparejar**, **Clasificar**, **Secuenciar** y
 > **Memoria** (estos cuatro juegan el contenido de su actividad; las
 > tarjetas muestran la imagen de la fundación y, si no hay, el dibujo
-> provisional o la palabra). La revisión del docente y el espacio del acudiente se conectan
-> en las fases 3 y 4 (mientras tanto muestran su aviso con «Reintentar»).
+> provisional o la palabra). También la revisión de la tallerista («Por
+> escuchar»): sus pendientes de los seis juegos, «Lo logró» y «Practicar
+> más» (con la opción de enviar la indicación como nota a la familia). Un
+> intento de voz con audio se escucha antes de decidir (lo exige el
+> backend); sin audio, se explica por qué y se decide de inmediato. El
+> espacio del acudiente se conecta en la fase 4 (mientras tanto muestra su
+> aviso con «Reintentar»).
 > Los permisos de cada rol los verifica el backend.
 >
 > **Tareas y juego libre:** el aviso «Tu profe te dejó…» de Inicio y las

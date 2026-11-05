@@ -263,4 +263,47 @@ describe.each(implementations)('contrato de la versión %s', (_name, create) => 
       expect(result.sentForReview).toBe(false);
     });
   });
+
+  describe('revisión de la tallerista', () => {
+    let teacherId: string;
+    beforeEach(async () => {
+      teacherId = (await signInAs('docente@gameup.test')).userId;
+    });
+
+    it('la bandeja trae intentos pendientes de sus estudiantes', async () => {
+      const items = await settle(repos.reviews.listPendingReviews(teacherId));
+
+      expect(items.length).toBeGreaterThan(0);
+      items.forEach((item) => {
+        expect(['speech', 'listening', 'game']).toContain(item.kind);
+        expect(item.status).toBe('pending_validation');
+        expect(typeof item.student.displayName).toBe('string');
+      });
+    });
+
+    it('validar y pedir más práctica; sin indicación, rechaza', async () => {
+      const [first, second] = await settle(
+        repos.reviews.listPendingReviews(teacherId),
+      );
+      if (!first || !second) throw new Error('faltan pendientes');
+
+      await expect(settle(repos.reviews.validate(first.id))).resolves.toBe(
+        undefined,
+      );
+      await expect(
+        settle(repos.reviews.requestMorePractice(second.id, '   ')),
+      ).rejects.toThrow('obligatoria');
+      await expect(
+        settle(repos.reviews.requestMorePractice(second.id, 'Otra vez.')),
+      ).resolves.toBe(undefined);
+    });
+
+    it('la nota para la familia se guarda', async () => {
+      await expect(
+        settle(
+          repos.reviews.shareNoteWithFamily('est-demo-001', 'Practiquen la a.'),
+        ),
+      ).resolves.toBe(undefined);
+    });
+  });
 });

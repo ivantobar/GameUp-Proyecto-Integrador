@@ -15,20 +15,8 @@ export class NotConnectedYetError extends Error {
 const notYet = (what: string) => () =>
   Promise.reject(new NotConnectedYetError(what));
 
-/**
- * PROVISIONAL: cada fase reemplaza un grupo por su repositorio HTTP
- * (fase 3: tallerista; fase 4: acudiente).
- */
-export const notConnectedRepositories: Pick<
-  Repositories,
-  'reviews' | 'guardians'
-> = {
-  reviews: {
-    listPendingReviews: notYet('revisiones pendientes'),
-    validate: notYet('validar'),
-    requestMorePractice: notYet('pedir más práctica'),
-    saveFamilyVoiceNote: notYet('nota de voz'),
-  },
+/** PROVISIONAL: la fase 4 reemplaza el espacio del acudiente. */
+export const notConnectedRepositories: Pick<Repositories, 'guardians'> = {
   guardians: {
     getWeeklyPractice: notYet('práctica de la semana'),
     markPracticedToday: notYet('práctica en casa'),

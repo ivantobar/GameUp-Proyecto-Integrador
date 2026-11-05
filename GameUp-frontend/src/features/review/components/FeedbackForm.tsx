@@ -4,11 +4,22 @@ import { AppText, Button, FilterChip, TextField } from '@/components/ui';
 import { spacing } from '@/theme';
 import { feedbackSuggestions } from '../reviewText';
 
+/** Opciones al enviar «Practicar más». */
+export interface FeedbackOptions {
+  /** Enviar también la indicación como nota para la familia (con aviso). */
+  shareWithFamily: boolean;
+}
+
 interface FeedbackFormProps {
   studentName: string;
   busy: boolean;
+  /**
+   * Ofrecer «Enviar también a la familia» (cuando la indicación no llega
+   * sola a la familia como nota).
+   */
+  shareOption?: boolean;
   /** Devuelve `true` si se guardó (entonces el formulario se cierra). */
-  onSubmit: (feedback: string) => Promise<boolean>;
+  onSubmit: (feedback: string, options?: FeedbackOptions) => Promise<boolean>;
   onCancel: () => void;
 }
 
@@ -19,10 +30,12 @@ interface FeedbackFormProps {
 export function FeedbackForm({
   studentName,
   busy,
+  shareOption = false,
   onSubmit,
   onCancel,
 }: FeedbackFormProps) {
   const [text, setText] = useState('');
+  const [share, setShare] = useState(false);
   const empty = text.trim().length === 0;
 
   return (
@@ -49,6 +62,13 @@ export function FeedbackForm({
           />
         ))}
       </View>
+      {shareOption ? (
+        <FilterChip
+          label="Enviar también como nota a la familia"
+          selected={share}
+          onPress={() => setShare((value) => !value)}
+        />
+      ) : null}
       <Button
         label="Enviar indicación"
         icon="check"
@@ -58,7 +78,10 @@ export function FeedbackForm({
           empty ? 'Escribe primero qué debe practicar' : undefined
         }
         onPress={() => {
-          onSubmit(text.trim()).catch(() => {});
+          const sent = share
+            ? onSubmit(text.trim(), { shareWithFamily: true })
+            : onSubmit(text.trim());
+          sent.catch(() => {});
         }}
       />
       <Button label="Cancelar" variant="link" onPress={onCancel} />

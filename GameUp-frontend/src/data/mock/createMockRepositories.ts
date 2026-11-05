@@ -3,6 +3,7 @@ import type { Repositories } from '../repositories';
 import {
   MAX_STARS,
   type Assignment,
+  type GameId,
   type GameResult,
   type ListeningResult,
   type OfficialProgress,
@@ -40,6 +41,19 @@ interface MockOptions {
   delayMs?: number;
   /** Consentimiento de voz. Por defecto, el ajuste de «Modo desarrollo». */
   voiceConsent?: () => boolean;
+}
+
+/** Nombre de un juego sin actividad conocida (solo para la demo). */
+function findGameTitle(gameId: GameId): string {
+  const titles: Record<GameId, string> = {
+    speak: 'Habla conmigo',
+    findMouth: 'Busca la boca',
+    match: 'Emparejar',
+    classify: 'Clasificar',
+    sequence: 'Secuenciar',
+    memory: 'Memoria',
+  };
+  return titles[gameId];
 }
 
 /** Copia profunda simple: los datos simulados son JSON plano. */
@@ -262,7 +276,7 @@ export function createMockRepositories({
         markSubmitted('findMouth', activityId);
         return respond(result);
       },
-      submitGameResult: ({ activityId, studentId, gameId }) => {
+      submitGameResult: ({ activityId, studentId, gameId, score }) => {
         // Como antes de conectar estos juegos: el juego libre no se envía.
         // Desde una tarea, queda guardado y la tarea pasa a «realizada».
         const result: GameResult = {
@@ -276,6 +290,19 @@ export function createMockRepositories({
         if (activityId) {
           state.gameResults.push(result);
           markSubmitted(gameId, activityId);
+          // Llega a «Por escuchar» del docente.
+          state.reviews.unshift({
+            id: result.id,
+            kind: 'game',
+            student: summaryOf(studentId),
+            submittedAt: result.createdAt,
+            status: 'pending_validation',
+            game: {
+              gameId,
+              title: mockActivities[activityId]?.title ?? findGameTitle(gameId),
+              score,
+            },
+          });
         }
         return respond(result);
       },
@@ -285,6 +312,22 @@ export function createMockRepositories({
       getCurrentGuardian: () => respond(mockGuardian),
     },
     reviews: {
+      // En la demo la indicación siempre llega a la familia, y se puede
+      // grabar una nota de voz.
+      features: { familyVoiceNote: true, feedbackAlwaysReachesFamily: true },
+      getRecordingUrl: (reviewId) => {
+        const audio = state.reviews.find((r) => r.id === reviewId)?.speech
+          ?.audioUri;
+        return audio ? respond(audio) : fail('Este intento no tiene audio');
+      },
+      shareNoteWithFamily: (studentId, text) => {
+        const note = state.teacherNotes[studentId];
+        state.teacherNotes[studentId] = {
+          text: text.trim(),
+          audioUri: note?.audioUri ?? null,
+        };
+        return respond(undefined);
+      },
       listPendingReviews: (teacherId) => {
         const mine = mockTeacherStudents[teacherId] ?? [];
         return respond(

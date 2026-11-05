@@ -124,13 +124,39 @@ export interface StaffRepository {
  * filtro por `teacherId` debe hacerlo el backend; ocultarlo en la app no basta.
  */
 export interface ReviewRepository {
+  /** Qué ofrece esta versión (cambia entre los datos simulados y la API). */
+  readonly features: ReviewFeatures;
   listPendingReviews(teacherId: string): Promise<ReviewItem[]>;
-  /** «Lo logró»: valida la actividad; cuenta para el progreso oficial. */
+  /**
+   * Audio de un intento de voz para escucharlo (`speech.remoteAudio`). Con
+   * la API es una URL firmada de pocos minutos; pedirlo es requisito para
+   * validar ese intento.
+   */
+  getRecordingUrl(reviewId: string): Promise<string>;
+  /**
+   * «Lo logró»: valida la actividad; cuenta para el progreso oficial. Si el
+   * intento tiene audio y no se escuchó, rechaza con `ListenFirstError`.
+   */
   validate(reviewId: string): Promise<void>;
   /** «Practicar más»: no aprueba y deja retroalimentación (obligatoria). */
   requestMorePractice(reviewId: string, feedback: string): Promise<void>;
-  /** Nota de voz del docente para la familia de un estudiante. */
+  /**
+   * Nota de texto para la familia: la ve el acudiente en «Practicar en
+   * casa» y le llega un aviso.
+   */
+  shareNoteWithFamily(studentId: string, text: string): Promise<void>;
+  /** Nota de voz del docente para la familia (si `features.familyVoiceNote`). */
   saveFamilyVoiceNote(studentId: string, audioUri: string): Promise<void>;
+}
+
+export interface ReviewFeatures {
+  /** Se puede grabar una nota de voz para la familia. */
+  familyVoiceNote: boolean;
+  /**
+   * La indicación de «Practicar más» llega sola a la familia como nota. Si
+   * no, el docente puede elegir enviarla también (`shareNoteWithFamily`).
+   */
+  feedbackAlwaysReachesFamily: boolean;
 }
 
 /**

@@ -1,6 +1,7 @@
 import type { ApiClient } from '@/services/api';
 import type { Repositories } from '../repositories';
 import { createHttpAuthRepository } from './httpAuthRepository';
+import { createHttpReviewRepository } from './httpReviewRepository';
 import { createHttpStaffRepository } from './httpStaffRepository';
 import {
   createHttpActivityRepository,
@@ -34,5 +35,6 @@ export function createHttpRepositories(
     consent: createHttpConsentRepository(api),
     recordings: createHttpRecordingRepository(api),
     results: createHttpResultRepository(api),
+    reviews: createHttpReviewRepository(api),
   };
 }

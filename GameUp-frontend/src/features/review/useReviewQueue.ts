@@ -1,7 +1,9 @@
 import { useCallback, useState } from 'react';
 import { useRepositories } from '@/data/RepositoryProvider';
+import { ListenFirstError } from '@/data/reviewErrors';
 import { useResource } from '@/data/useResource';
 import type { ReviewItem, StaffProfile } from '@/data/types';
+import type { FeedbackOptions } from './components/FeedbackForm';
 
 interface ReviewQueue {
   teacher: StaffProfile;
@@ -12,6 +14,13 @@ interface ReviewQueue {
 export interface ReviewMessage {
   tone: 'done' | 'error';
   text: string;
+}
+
+/** Mensaje para el docente cuando algo no se pudo guardar. */
+function errorText(error: unknown): string {
+  return error instanceof ListenFirstError
+    ? 'Primero escucha la grabación del intento: toca «Escuchar».'
+    : 'No se pudo guardar. Revisa la conexión e inténtalo otra vez.';
 }
 
 /**
@@ -41,11 +50,11 @@ export function useReviewQueue() {
         refresh();
         return true;
       } catch (error) {
-        console.warn('[GameUP] No se pudo guardar la revisión', error);
-        setMessage({
-          tone: 'error',
-          text: 'No se pudo guardar. Revisa la conexión e inténtalo otra vez.',
-        });
+        console.warn(
+          '[GameUP] No se pudo guardar la revisión',
+          error instanceof Error ? error.name : 'Error',
+        );
+        setMessage({ tone: 'error', text: errorText(error) });
         return false;
       } finally {
         setBusyId(null);
@@ -64,14 +73,48 @@ export function useReviewQueue() {
     [run, reviews],
   );
 
+  /**
+   * «Practicar más». Si el docente lo pide, la indicación también llega a la
+   * familia como nota (si se guardó la decisión pero no la nota, se avisa).
+   */
   const requestMorePractice = useCallback(
-    (item: ReviewItem, feedback: string) =>
-      run(
+    (item: ReviewItem, feedback: string, options?: FeedbackOptions) => {
+      const name = item.student.displayName;
+      const share = options?.shareWithFamily === true;
+      const reachesFamily =
+        reviews.features.feedbackAlwaysReachesFamily || share;
+      let noteFailed = false;
+      return run(
         item.id,
-        () => reviews.requestMorePractice(item.id, feedback),
-        `${item.student.displayName} practicará más. Tu nota llegó a la familia.`,
-      ),
+        async () => {
+          await reviews.requestMorePractice(item.id, feedback);
+          if (!share) return;
+          try {
+            await reviews.shareNoteWithFamily(item.student.id, feedback);
+          } catch {
+            noteFailed = true;
+          }
+        },
+        reachesFamily
+          ? `${name} practicará más. Tu nota llegó a la familia.`
+          : `${name} practicará más.`,
+      ).then((saved) => {
+        if (saved && noteFailed) {
+          setMessage({
+            tone: 'error',
+            text: `${name} practicará más, pero la nota no llegó a la familia. Revisa la conexión.`,
+          });
+        }
+        return saved;
+      });
+    },
     [run, reviews],
+  );
+
+  /** Audio de un intento de voz (lo pide al tocar «Escuchar»). */
+  const loadRecording = useCallback(
+    (item: ReviewItem) => reviews.getRecordingUrl(item.id),
+    [reviews],
   );
 
   const saveFamilyVoiceNote = useCallback(
@@ -93,5 +136,7 @@ export function useReviewQueue() {
     validate,
     requestMorePractice,
     saveFamilyVoiceNote,
+    loadRecording,
+    features: reviews.features,
   };
 }

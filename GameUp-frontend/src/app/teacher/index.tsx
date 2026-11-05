@@ -111,12 +111,15 @@ export default function TeacherReviewScreen() {
                   onValidate={() => {
                     queue.validate(item).catch(() => {});
                   }}
-                  onRequestMore={(feedback) =>
-                    queue.requestMorePractice(item, feedback)
+                  onRequestMore={(feedback, options) =>
+                    queue.requestMorePractice(item, feedback, options)
                   }
                   onSaveVoiceNote={(audioUri) =>
                     queue.saveFamilyVoiceNote(item, audioUri)
                   }
+                  loadRecording={() => queue.loadRecording(item)}
+                  voiceNoteEnabled={queue.features.familyVoiceNote}
+                  shareOption={!queue.features.feedbackAlwaysReachesFamily}
                 />
               ))}
             </View>

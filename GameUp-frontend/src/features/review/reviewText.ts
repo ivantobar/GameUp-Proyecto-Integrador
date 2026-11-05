@@ -9,6 +9,7 @@ export const reviewFilters: readonly { value: ReviewFilter; label: string }[] =
     { value: 'all', label: 'Todas' },
     { value: 'speech', label: findGame('speak').title },
     { value: 'listening', label: findGame('findMouth').title },
+    { value: 'game', label: 'Pensar y recordar' },
   ];
 
 export function matchesFilter(item: ReviewItem, filter: ReviewFilter): boolean {
@@ -23,6 +24,9 @@ export function reviewSummary(item: ReviewItem, now?: Date): string {
   }
   if (item.kind === 'listening' && item.listening) {
     return `${findGame('findMouth').title} · ${item.listening.firstTryCorrect} de ${item.listening.total} · ${when}`;
+  }
+  if (item.kind === 'game' && item.game) {
+    return `${findGame(item.game.gameId).title} · ${when}`;
   }
   return when;
 }
