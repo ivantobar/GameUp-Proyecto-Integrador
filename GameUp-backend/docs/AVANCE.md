@@ -276,7 +276,7 @@ Las corre otra persona sobre las ramas subidas. Con la base en memoria no se pue
 
 ## 6. Otros pendientes abiertos
 
-- **Mapper del perfil:** sigue provisional. Falta un ejemplo, con datos ficticios, de la respuesta de `POST /api/auth/login` y `GET /api/auth/perfil`. Ajustarlo solo toca `src/common/auth/seguridad-api/perfil.mapper.ts` y su prueba.
+- **Mapper del perfil:** confirmado el 2026-11-05 con una cuenta de prueba: `GET /api/auth/perfil` devuelve un objeto plano con `id_usuario` (número), `nombres`, `apellidos`, `correo_usuario` y `roles: [{ id_rol, nombre_rol }]`. El mapper ya lo leía bien y no cambió; se agregó una prueba con esa forma (valores ficticios) que comprueba que documento, teléfono, dirección y fecha de nacimiento no pasan a GameUP.
 - **Consentimiento vigente:** falta el endpoint del núcleo familiar. Mientras no exista, nunca se guarda audio; `CONSENTIMIENTO_SIMULADO` solo se permite fuera de producción.
 - **Revocación de tokens:** un token revocado en la API de seguridad puede seguir sirviendo hasta 5 minutos, por la caché.
 - **Frontend:** los conflictos de merge ya se resolvieron (commit `bab0cb3`, Expo SDK 58). La conexión con la API avanza en la rama `frontend/conexion-api`. Debe hacer estos cambios de contrato:

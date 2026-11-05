@@ -4,9 +4,12 @@ import type { IdentidadExterna } from '../verificador-token.js';
  * Convierte la respuesta de GET /api/auth/perfil (API de seguridad) en una
  * IdentidadExterna.
  *
- * PROVISIONAL: la colección del otro grupo aún no trae un ejemplo de
- * respuesta, así que se aceptan los nombres de campo más probables. Cuando
- * llegue el ejemplo real, se ajustan SOLO las listas de abajo (y su prueba).
+ * Forma real, confirmada el 2026-11-05 con una cuenta de prueba (y en
+ * /api-docs.json de esa API): objeto plano con id_usuario (número), nombres,
+ * apellidos, correo_usuario y roles: [{ id_rol, nombre_rol }]; además trae
+ * documento, teléfono, dirección y fecha de nacimiento, que aquí se ignoran.
+ * Se siguen aceptando otros nombres de campo por si esa API cambia; si lo
+ * hace, se ajustan SOLO las listas de abajo (y su prueba).
  *
  * Roles: un usuario puede tener varios (tabla rol_usuario). Se recogen todos
  * los `nombre_rol`; el módulo de auth elige el que coincide con GameUP.
