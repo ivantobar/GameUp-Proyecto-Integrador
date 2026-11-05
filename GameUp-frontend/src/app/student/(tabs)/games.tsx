@@ -10,6 +10,7 @@ import {
 import { GameCard, NarrationButton } from '@/components/gameup';
 import { assignmentHref, gameHref } from '@/features/games/catalog';
 import { useGameList, type GameListItem } from '@/features/games/useGameList';
+import { useRefreshOnFocus } from '@/data/useRefreshOnFocus';
 import { spacing } from '@/theme';
 
 const QUESTION = '¿A qué quieres jugar?';
@@ -23,7 +24,9 @@ function pairs(items: GameListItem[]): GameListItem[][] {
 
 /** Pantalla 2 · Juegos. Las secciones y tarjetas salen del catálogo. */
 export default function GamesScreen() {
-  const { resource, reload } = useGameList();
+  const { resource, reload, refresh } = useGameList();
+  // Al volver de un juego, la insignia «Tarea» se actualiza.
+  useRefreshOnFocus(refresh);
 
   return (
     <Screen
