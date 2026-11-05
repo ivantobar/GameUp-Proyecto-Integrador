@@ -16,7 +16,7 @@ Cada fase vive en su rama, creada desde la rama de la fase anterior. Todas está
 | 5 | Asignaciones y su avance | `backend/fase-5-asignaciones` | `de234e6` | `e6357d3` |
 | 6 | Configuración de los juegos, intentos y grabaciones de voz | `backend/fase-6-intentos` | `f29ed42` | `de234e6` |
 | 7 | Validación, audio y progreso oficial | `backend/fase-7-validacion` | `2372684` | `f29ed42` |
-| 8 | Acudiente, observaciones, notificaciones y práctica en casa | `backend/fase-8-acudiente` | sin commit (en revisión) | `3cff8c9` |
+| 8 | Acudiente, observaciones, notificaciones y práctica en casa | `backend/fase-8-acudiente` | `1aa768c` | `3cff8c9` |
 
 **Estado al cerrar la fase 8:**
 - `build`, `lint` (0 advertencias) y Prettier pasan.
