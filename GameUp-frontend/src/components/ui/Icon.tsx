@@ -44,6 +44,7 @@ export const iconGlyphs = {
   stop: 'stop',
   pause: 'pause',
   login: 'log-in-outline',
+  logout: 'log-out-outline',
   eye: 'eye-outline',
   eyeOff: 'eye-off-outline',
 } as const satisfies Record<string, IoniconName>;

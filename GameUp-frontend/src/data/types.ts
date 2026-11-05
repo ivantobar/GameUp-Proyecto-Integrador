@@ -278,12 +278,38 @@ export interface TeacherNote {
   audioUri: string | null;
 }
 
+/** Un día de la semana en el seguimiento de la práctica en casa. */
+export interface PracticeDay {
+  /** AAAA-MM-DD (hora de Bogotá). */
+  date: string;
+  practiced: boolean;
+}
+
+/**
+ * Lo que dijo la profe al revisar una actividad: la familia lo ve en
+ * «Practicar en casa» (decisión D5).
+ */
+export interface ActivityFeedback {
+  activityId: string;
+  /** Título de la actividad («Di la a»). */
+  title: string;
+  gameId: GameId;
+  /** `validated`: «Lo logró»; `rejected`: «Practicar más». */
+  status: 'validated' | 'rejected';
+  text: string;
+}
+
 /** Lo que ve el acudiente en «Practicar en casa». */
 export interface WeeklyPractice {
   student: StudentSummary;
-  vowel: Vowel;
+  /** Sonido de la semana; `null` si no hay una tarea de habla pendiente. */
+  vowel: Vowel | null;
   teacherNote: TeacherNote | null;
   practicedToday: boolean;
+  /** Lunes a domingo de esta semana, si se conocen. */
+  days?: PracticeDay[];
+  /** Retroalimentación de las actividades revisadas, si hay. */
+  feedback?: ActivityFeedback[];
 }
 
 /** Roles de GameUP. El rol de cada cuenta lo decide el backend, no la app. */

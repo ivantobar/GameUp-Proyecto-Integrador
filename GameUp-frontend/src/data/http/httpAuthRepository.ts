@@ -16,6 +16,16 @@ export function createHttpAuthRepository(
   tokens: TokenStore,
 ): AuthRepository {
   return {
+    async signOut() {
+      // El token lo emite la API de seguridad: GameUP no puede revocarlo,
+      // solo olvidarlo. Se avisa al backend si hay sesión, sin esperar a que
+      // responda bien: en el teléfono la sesión se cierra igual.
+      if (await tokens.get()) {
+        await api.post('/auth/logout').catch(() => {});
+      }
+      await tokens.clear();
+    },
+
     async signIn({ email, password }) {
       // Al entrar con otra cuenta, la sesión anterior se olvida primero.
       await tokens.clear();

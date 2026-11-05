@@ -95,6 +95,8 @@ function intentoGuardado(actividadId: string, tipoJuego: string) {
  */
 export function createFakeBackend() {
   const tokenOf = (email: string) => `token-de-prueba:${email}`;
+  // «Lo practicamos hoy» queda guardado mientras dura la prueba.
+  let practicadoHoy = false;
 
   return createFakeFetch(({ url, method, headers, body }) => {
     const path = url.replace(FAKE_API_URL, '');
@@ -121,6 +123,48 @@ export function createFakeBackend() {
     }
 
     if (!session) return errorResponse(401, 'Sesión no válida');
+
+    if (method === 'POST' && path === '/auth/logout') return jsonResponse(204);
+
+    // ─── Acudiente: solo su estudiante ───
+    const resumen = {
+      id: mockStudent.id,
+      displayName: 'Martín C.',
+      initials: 'MC',
+    };
+    if (session.role === 'guardian') {
+      if (method === 'GET' && path.startsWith('/estudiantes?')) {
+        return jsonResponse(200, {
+          items: [resumen],
+          total: 1,
+          page: 1,
+          limit: 50,
+        });
+      }
+      const propio = `/estudiantes/${mockStudent.id}`;
+      if (method === 'GET' && path === `${propio}/practica-semanal`) {
+        return jsonResponse(200, {
+          estudiante: resumen,
+          hoy: '2026-11-05',
+          dias: [{ fecha: '2026-11-05', practicado: practicadoHoy }],
+          practicadoHoy,
+        });
+      }
+      if (method === 'GET' && path.startsWith(`${propio}/observaciones`)) {
+        return jsonResponse(200, { items: [], total: 0, page: 1, limit: 1 });
+      }
+      if (method === 'GET' && path === `${propio}/actividades`) {
+        return jsonResponse(200, []);
+      }
+      if (method === 'PUT' && path === `${propio}/practica-casa/hoy`) {
+        practicadoHoy = true;
+        return jsonResponse(200, {});
+      }
+      // Otro estudiante: el backend responde 404 (no revela si existe).
+      if (path.startsWith('/estudiantes/')) {
+        return errorResponse(404, 'No existe');
+      }
+    }
 
     if (method === 'GET' && path === '/auth/me') {
       return jsonResponse(200, session);

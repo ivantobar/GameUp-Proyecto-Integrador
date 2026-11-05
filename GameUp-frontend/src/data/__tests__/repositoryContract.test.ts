@@ -306,4 +306,42 @@ describe.each(implementations)('contrato de la versión %s', (_name, create) => 
       ).resolves.toBe(undefined);
     });
   });
+
+  describe('espacio del acudiente', () => {
+    let guardianId: string;
+    beforeEach(async () => {
+      guardianId = (await signInAs('acudiente@gameup.test')).userId;
+    });
+
+    it('ve a su estudiante y su semana', async () => {
+      const students = await settle(repos.guardians.listStudents(guardianId));
+      const week = await settle(repos.guardians.getWeeklyPractice(guardianId));
+
+      expect(students.map((s) => s.id)).toContain(week.student.id);
+      expect(typeof week.practicedToday).toBe('boolean');
+      expect(week.vowel === null || typeof week.vowel === 'string').toBe(true);
+    });
+
+    it('«Lo practicamos hoy» queda registrado', async () => {
+      const before = await settle(
+        repos.guardians.getWeeklyPractice(guardianId),
+      );
+      await settle(
+        repos.guardians.markPracticedToday(guardianId, before.student.id),
+      );
+      const after = await settle(repos.guardians.getWeeklyPractice(guardianId));
+
+      expect(after.practicedToday).toBe(true);
+    });
+
+    it('no puede ver a otro estudiante', async () => {
+      await expect(
+        settle(repos.guardians.getWeeklyPractice(guardianId, 'est-demo-002')),
+      ).rejects.toThrow();
+    });
+
+    it('cerrar sesión no falla', async () => {
+      await expect(settle(repos.auth.signOut())).resolves.toBeUndefined();
+    });
+  });
 });

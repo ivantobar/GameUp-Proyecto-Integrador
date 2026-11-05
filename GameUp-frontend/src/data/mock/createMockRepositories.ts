@@ -67,6 +67,25 @@ function todayKey(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
+/** Lunes a domingo de la semana de hoy, como AAAA-MM-DD. */
+function weekKeys(): string[] {
+  const today = new Date(`${todayKey()}T12:00:00Z`);
+  const monday = new Date(today);
+  monday.setUTCDate(today.getUTCDate() - ((today.getUTCDay() + 6) % 7));
+  return Array.from({ length: 7 }, (_, i) => {
+    const day = new Date(monday);
+    day.setUTCDate(monday.getUTCDate() + i);
+    return day.toISOString().slice(0, 10);
+  });
+}
+
+/** Juego de una revisión (para la retroalimentación que ve la familia). */
+function gameOfReview(review: ReviewItem): GameId {
+  if (review.kind === 'speech') return 'speak';
+  if (review.kind === 'listening') return 'findMouth';
+  return review.game?.gameId ?? 'match';
+}
+
 /**
  * MAPEO PROVISIONAL para la demo: lo validado en los juegos de habla suma al
  * tema «Letras». Cómo se relacionan juegos y temas está pendiente de decidir
@@ -164,6 +183,7 @@ export function createMockRepositories({
 
   return {
     auth: {
+      signOut: () => respond(undefined),
       signIn: ({ email, password }) => {
         const session = mockAccounts[email.trim().toLowerCase()];
         if (!session || password !== MOCK_PASSWORD) {
@@ -378,10 +398,17 @@ export function createMockRepositories({
       },
     },
     guardians: {
-      getWeeklyPractice: (guardianId) => {
+      listStudents: (guardianId) => {
+        const studentId = mockGuardianStudents[guardianId];
+        return respond(studentId ? [summaryOf(studentId)] : []);
+      },
+      getWeeklyPractice: (guardianId, requested) => {
         const studentId = mockGuardianStudents[guardianId];
         if (!studentId)
           return fail('Este acudiente no tiene estudiantes asociados');
+        if (requested && requested !== studentId) {
+          return fail('Solo puedes ver a tu estudiante asociado');
+        }
         const speakTask = state.assignments.find(
           (a) => a.gameId === 'speak' && a.vowel,
         );
@@ -390,6 +417,24 @@ export function createMockRepositories({
           vowel: speakTask?.vowel ?? state.resumePoint.vowel,
           teacherNote: state.teacherNotes[studentId] ?? null,
           practicedToday: state.practicedDays.has(`${studentId}:${todayKey()}`),
+          days: weekKeys().map((date) => ({
+            date,
+            practiced: state.practicedDays.has(`${studentId}:${date}`),
+          })),
+          feedback: state.reviews
+            .filter(
+              (r) =>
+                r.student.id === studentId &&
+                r.status === 'rejected' &&
+                r.feedback,
+            )
+            .map((r) => ({
+              activityId: r.id,
+              title: findGameTitle(gameOfReview(r)),
+              gameId: gameOfReview(r),
+              status: 'rejected' as const,
+              text: r.feedback ?? '',
+            })),
         });
       },
       markPracticedToday: (guardianId, studentId) => {

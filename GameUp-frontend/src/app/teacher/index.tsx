@@ -12,6 +12,7 @@ import {
   StateView,
 } from '@/components/ui';
 import { useRefreshOnFocus } from '@/data/useRefreshOnFocus';
+import { SignOutButton } from '@/features/auth/components/SignOutButton';
 import { ReviewCard } from '@/features/review/components/ReviewCard';
 import {
   matchesFilter,
@@ -51,6 +52,7 @@ export default function TeacherReviewScreen() {
             ) : undefined
           }
           title="Por escuchar"
+          right={<SignOutButton />}
         />
       }
     >

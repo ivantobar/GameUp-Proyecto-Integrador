@@ -15,6 +15,7 @@ import type {
   SpeechAttempt,
   StarCount,
   StudentProfile,
+  StudentSummary,
   Vowel,
   VowelPractice,
   WeeklyPractice,
@@ -41,6 +42,11 @@ export interface AuthRepository {
    * como un problema de conexión.
    */
   signIn(credentials: Credentials): Promise<AuthSession>;
+  /**
+   * Cerrar sesión: la app olvida el token (y avisa al backend, si puede).
+   * Nunca falla: aunque no haya red, la sesión queda cerrada en el teléfono.
+   */
+  signOut(): Promise<void>;
 }
 
 export interface StudentRepository {
@@ -164,7 +170,16 @@ export interface ReviewFeatures {
  * tiene asociados; el backend debe verificarlo.
  */
 export interface GuardianRepository {
-  getWeeklyPractice(guardianId: string): Promise<WeeklyPractice>;
+  /** Estudiantes asociados al acudiente (puede tener varios). */
+  listStudents(guardianId: string): Promise<StudentSummary[]>;
+  /**
+   * Práctica de la semana de un estudiante del acudiente. Sin `studentId`,
+   * la del primero.
+   */
+  getWeeklyPractice(
+    guardianId: string,
+    studentId?: string,
+  ): Promise<WeeklyPractice>;
   /** «Lo practicamos hoy»: queda en el seguimiento. */
   markPracticedToday(guardianId: string, studentId: string): Promise<void>;
 }

@@ -11,7 +11,6 @@ import {
   InvalidCredentialsError,
 } from '../../authErrors';
 import { createHttpRepositories } from '../createHttpRepositories';
-import { NotConnectedYetError } from '../notConnectedRepositories';
 import { createMemoryTokenStore } from '../tokenStore';
 
 const BASE = 'http://api.prueba/api/v1';
@@ -158,13 +157,34 @@ describe('StudentRepository y StaffRepository (HTTP)', () => {
   );
 });
 
-describe('partes aún no conectadas', () => {
-  it('rechazan con NotConnectedYetError, sin llamar al servidor', async () => {
-    const { repos, fetchFn } = setup(() => jsonResponse(200, {}), 'jwt');
+describe('cerrar sesión', () => {
+  it('avisa al backend y olvida el token', async () => {
+    const { repos, tokens, requests } = setup(() => jsonResponse(204), 'jwt');
 
-    await expect(repos.guardians.getWeeklyPractice('4')).rejects.toBeInstanceOf(
-      NotConnectedYetError,
-    );
+    await repos.auth.signOut();
+
+    expect(requests[0]).toMatchObject({
+      url: `${BASE}/auth/logout`,
+      method: 'POST',
+      headers: { Authorization: 'Bearer jwt' },
+    });
+    await expect(tokens.get()).resolves.toBeNull();
+  });
+
+  it('sin red, la sesión se cierra igual en el teléfono', async () => {
+    const { repos, tokens } = setup(() => {
+      throw new TypeError('Network request failed');
+    }, 'jwt');
+
+    await expect(repos.auth.signOut()).resolves.toBeUndefined();
+    await expect(tokens.get()).resolves.toBeNull();
+  });
+
+  it('sin sesión no llama al servidor', async () => {
+    const { repos, fetchFn } = setup(() => jsonResponse(204));
+
+    await repos.auth.signOut();
+
     expect(fetchFn).not.toHaveBeenCalled();
   });
 });

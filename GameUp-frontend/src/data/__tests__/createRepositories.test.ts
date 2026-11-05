@@ -1,6 +1,5 @@
 import { parseDataSource } from '@/config/env';
 import { createRepositories } from '../createRepositories';
-import { NotConnectedYetError } from '../http/notConnectedRepositories';
 
 jest.mock('expo-secure-store', () => ({
   getItemAsync: jest.fn(() => Promise.resolve(null)),
@@ -32,14 +31,13 @@ describe('punto de composición', () => {
     await expect(pending).resolves.toHaveLength(5);
   });
 
-  it('con api, lo que aún no está conectado lo dice en vez de inventar datos', async () => {
-    const repos = createRepositories({
-      dataSource: 'api',
-      onSessionExpired: jest.fn(),
-    });
-    await expect(repos.guardians.getWeeklyPractice('x')).rejects.toBeInstanceOf(
-      NotConnectedYetError,
-    );
+  it('con api, también el acudiente pide sus datos al backend (sin datos inventados)', async () => {
+    const onSessionExpired = jest.fn();
+    const repos = createRepositories({ dataSource: 'api', onSessionExpired });
+
+    // Sin sesión: no inventa estudiantes, vuelve a «Iniciar sesión».
+    await expect(repos.guardians.listStudents('x')).rejects.toThrow();
+    expect(onSessionExpired).toHaveBeenCalledTimes(1);
   });
 
   it('con api y sin sesión, pedir datos vuelve a «Iniciar sesión»', async () => {
