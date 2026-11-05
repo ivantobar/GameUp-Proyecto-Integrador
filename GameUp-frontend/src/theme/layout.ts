@@ -64,8 +64,6 @@ export const sizes = {
   mouthOption: 88,
   /** Ficha de sonido (alto mínimo). */
   soundTile: 96,
-<<<<<<< HEAD
-=======
   /**
    * Juegos de «Pensar y recordar» (sin mockup: propuesta del equipo).
    * Tarjeta con dibujo en fila (Emparejar) y en cuadrícula (Secuenciar,
@@ -77,7 +75,6 @@ export const sizes = {
   pictureTile: 140,
   categoryBin: 180,
   sequenceSlot: 72,
->>>>>>> d35da8ccfdd8dc6504d71a290c9fdc1a1ad75028
   /** Logo completo de la fundación (guía: con lema, desde 200 px de ancho). */
   logo: 220,
 } as const;

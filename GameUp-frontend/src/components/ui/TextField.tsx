@@ -1,4 +1,4 @@
-import { useState, type ReactNode, type Ref } from 'react';
+import { useState, type ComponentRef, type ReactNode, type Ref } from 'react';
 import { StyleSheet, TextInput, View, type TextInputProps } from 'react-native';
 import { colors, radii, sizes, spacing, typography } from '@/theme';
 import { AppText } from './AppText';
@@ -35,7 +35,7 @@ interface TextFieldProps extends InputOptions {
   error?: string;
   /** Botón dentro del campo, a la derecha (por ejemplo, ver la contraseña). */
   trailing?: ReactNode;
-  inputRef?: Ref<TextInput>;
+  inputRef?: Ref<ComponentRef<typeof TextInput>>;
   testID?: string;
 }
 

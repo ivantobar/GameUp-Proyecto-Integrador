@@ -200,8 +200,6 @@ export interface AuthSession {
   role: UserRole;
   displayName: string;
 }
-<<<<<<< HEAD
-=======
 
 /*
  * Contenido de los juegos «Pensar y recordar» (Emparejar, Clasificar,
@@ -261,4 +259,3 @@ export interface MemoryBoard {
   id: string;
   pairs: PictureFace[];
 }
->>>>>>> d35da8ccfdd8dc6504d71a290c9fdc1a1ad75028
