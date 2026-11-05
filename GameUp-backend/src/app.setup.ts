@@ -2,6 +2,7 @@ import { ValidationPipe, type INestApplication } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import helmet from 'helmet';
 import type { EnvironmentVariables } from './config/env.validation.js';
+import { setupSwagger } from './docs/swagger.js';
 
 export const API_PREFIX = 'api/v1';
 
@@ -14,6 +15,13 @@ export function configureApp(app: INestApplication): void {
 
   // Todas las rutas quedan bajo /api/v1 (ej.: /api/v1/health).
   app.setGlobalPrefix(API_PREFIX);
+
+  // Detrás de Render (u otro proxy) permite que Express lea la IP y el
+  // protocolo reales del cliente. En local queda en 0.
+  app
+    .getHttpAdapter()
+    .getInstance()
+    .set('trust proxy', config.get('TRUST_PROXY_HOPS', { infer: true }));
 
   // Cabeceras HTTP de seguridad.
   app.use(helmet());
@@ -37,6 +45,10 @@ export function configureApp(app: INestApplication): void {
       transform: true,
     }),
   );
+
+  // Documentación Swagger en /api-docs (y /api-docs.json). Va después del
+  // prefijo global para que las rutas documentadas incluyan /api/v1.
+  setupSwagger(app, config.get('PUBLIC_URL', { infer: true }));
 
   app.enableShutdownHooks();
 }

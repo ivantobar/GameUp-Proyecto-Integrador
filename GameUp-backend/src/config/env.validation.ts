@@ -50,6 +50,22 @@ export class EnvironmentVariables {
   @IsString()
   CORS_ORIGINS?: string;
 
+  /**
+   * URL pública del backend cuando se despliegue (aparece como servidor
+   * "Producción" en Swagger). Ej.: https://gameup-backend.onrender.com
+   */
+  @IsOptional()
+  @IsUrl({ require_tld: false, protocols: ['http', 'https'] })
+  PUBLIC_URL?: string;
+
+  /**
+   * Cantidad de proxies delante del backend (Render, Railway, Nginx...).
+   * Permite que Express lea la IP real del cliente. 0 en local.
+   */
+  @IsInt()
+  @Min(0)
+  TRUST_PROXY_HOPS: number = 0;
+
   /** URL del proyecto de Supabase (para Auth y Storage): https://<ref>.supabase.co */
   @IsOptional()
   @IsUrl({ require_tld: false, protocols: ['http', 'https'] })

@@ -1,0 +1,38 @@
+# Blueprint de Render para el backend de GameUP (NestJS).
+# Render lo detecta al crear "New > Blueprint" con este repositorio.
+# Los secretos (DATABASE_URL, SUPABASE_SECRET_KEY) NO van aquí: Render los
+# pide al crear el servicio (sync: false) y se guardan solo en Render.
+services:
+  - type: web
+    name: gameup-backend
+    runtime: node
+    plan: free
+    region: oregon
+    branch: main
+    # El backend vive en una subcarpeta del repositorio.
+    rootDir: GameUp-backend
+    # --include=dev: el build necesita @nestjs/cli y typescript (devDependencies)
+    # aunque NODE_ENV sea production. postinstall ejecuta "prisma generate".
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm run start:prod
+    healthCheckPath: /api/v1/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NODE_ENV
+        value: production
+      # Render pone un proxy delante del servicio.
+      - key: TRUST_PROXY_HOPS
+        value: "1"
+      # Supabase > Connect > "Session pooler" (Render no tiene IPv6, así que
+      # la conexión directa db.<ref>.supabase.co no funciona).
+      - key: DATABASE_URL
+        sync: false
+      # URL que Render asigna, ej.: https://gameup-backend.onrender.com
+      - key: PUBLIC_URL
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SECRET_KEY
+        sync: false

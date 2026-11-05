@@ -113,13 +113,46 @@ Si al actualizar Prisma npm avisa de scripts bloqueados:
 | `NODE_ENV` | No | `development` | `development`, `production` o `test` |
 | `PORT` | No | `3000` | Puerto de la API |
 | `CORS_ORIGINS` | No | — | Solo para probar en navegador (Expo web). La app móvil no lo usa |
+| `PUBLIC_URL` | No | — | URL pública del backend desplegado (servidor "Producción" en Swagger) |
+| `TRUST_PROXY_HOPS` | No | `0` | Proxies delante del backend (`1` en Render) |
 | `SUPABASE_URL` | No | — | URL del proyecto de Supabase (Auth/Storage) |
 | `SUPABASE_SECRET_KEY` | No | — | Clave secreta de Supabase (**solo backend**) |
 
 Se validan al arrancar (`src/config/env.validation.ts`). Si falta
 `DATABASE_URL` o algo es inválido, la app no inicia y muestra el error.
 
-## 7. Diferencias con `proyecto-integrador-backend`
+## 7. Documentación con Swagger
+
+Con el backend encendido:
+
+- Página interactiva: http://localhost:3000/api-docs
+- Especificación OpenAPI (JSON): http://localhost:3000/api-docs.json
+
+Se configura en `src/docs/swagger.ts` con `@nestjs/swagger`. Para documentar
+un módulo nuevo, en su controlador:
+
+```ts
+@ApiTags('actividades')          // sección en la página
+@ApiBearerAuth(BEARER_AUTH)      // si pide token (botón "Authorize")
+@ApiOkResponse({ type: ActividadDto })
+```
+
+y en los DTO, `@ApiProperty({ example: ... })` en cada campo.
+
+## 8. Despliegue en Render
+
+El archivo `render.yaml` (en la raíz del repositorio) define el servicio.
+En Render: **New > Blueprint**, elegir el repositorio y completar
+`DATABASE_URL` (Supabase, *Session pooler*), `PUBLIC_URL` y, si se usan,
+`SUPABASE_URL` y `SUPABASE_SECRET_KEY`. Los secretos solo se guardan en Render.
+
+- API: `https://<servicio>.onrender.com/api/v1/health`
+- Swagger: `https://<servicio>.onrender.com/api-docs`
+
+En el plan gratuito el servicio se duerme tras 15 minutos sin uso; la primera
+petición después tarda cerca de un minuto.
+
+## 9. Diferencias con `proyecto-integrador-backend`
 
 | Clase | GameUP | Motivo |
 |---|---|---|
@@ -133,7 +166,7 @@ Igual que en clase: módulos ES, `strict`, `noUncheckedIndexedAccess`,
 `exactOptionalPropertyTypes`, `verbatimModuleSyntax`, Prisma 7 con
 `adapter-pg`, `prisma.config.ts` con `dotenv` y `allowScripts`.
 
-## 8. Estructura
+## 10. Estructura
 
 ```
 prisma/

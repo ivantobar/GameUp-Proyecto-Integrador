@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { validateEnv } from './config/env.validation.js';
+import { CrudModule } from './crud/crud.module.js';
 import { HealthModule } from './health/health.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { SupabaseModule } from './supabase/supabase.module.js';
@@ -14,6 +15,8 @@ import { SupabaseModule } from './supabase/supabase.module.js';
     // Servicios de Supabase (Auth y Storage para grabaciones), cuando se usen.
     SupabaseModule,
     HealthModule,
+    // CRUD genérico de PRUEBA (sin permisos por rol).
+    CrudModule,
     // Aquí se irán agregando: AuthModule, UsersModule, ActivitiesModule, ...
   ],
 })
