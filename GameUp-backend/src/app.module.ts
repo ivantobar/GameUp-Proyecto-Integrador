@@ -11,6 +11,7 @@ import { AuthModule } from './modules/auth/auth.module.js';
 import { CatalogoModule } from './modules/catalogo/catalogo.module.js';
 import { ConsentimientoModule } from './modules/consentimiento/consentimiento.module.js';
 import { EstudiantesModule } from './modules/estudiantes/estudiantes.module.js';
+import { IntentosModule } from './modules/intentos/intentos.module.js';
 import { ModulosModule } from './modules/modulos/modulos.module.js';
 import { UsuariosModule } from './modules/usuarios/usuarios.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
@@ -41,6 +42,8 @@ import { SupabaseModule } from './supabase/supabase.module.js';
     ModulosModule,
     // Fase 5: asignaciones y su avance.
     AsignacionesModule,
+    // Fase 6: intentos y grabaciones de Habla conmigo.
+    IntentosModule,
   ],
   providers: [
     // Traduce errores de dominio y de la base a { statusCode, error, message }.

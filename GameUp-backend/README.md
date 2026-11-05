@@ -12,11 +12,12 @@ Fundación ASISCO-UP.
 - Pensada para una **app móvil** (React Native + Expo Go): sin CORS por
   defecto y escuchando en la red local para que el celular pueda llegar.
 
-> Estado actual: fase 5. Base común (autenticación global con la API de
+> Estado actual: fase 6. Base común (autenticación global con la API de
 > seguridad, roles, errores uniformes), login/sesión, cuentas de GameUP,
 > estudiantes con sus vínculos, nivel y consentimiento de voz, y el catálogo
 > de contenido (módulos, archivos en Storage y actividades) y las
-> asignaciones con su avance. Los demás
+> asignaciones con su avance, y los intentos con las grabaciones de voz.
+> Los demás
 > módulos de negocio se agregan por fases. El
 > esquema de la base (20 tablas) está en `prisma/schema.prisma` y sus reglas
 > (triggers, CHECK, RLS) en `prisma/migrations/`.
@@ -222,6 +223,45 @@ La regla de relación vive en un solo lugar
 Los mensajes de validación (400) salen en español
 (`src/common/validacion/mensajes-validacion.ts`).
 
+### Intentos y grabaciones (fase 6)
+
+| Método y ruta | Quién | Notas |
+|---|---|---|
+| `POST /intentos` | E | `{ actividadId, resultado }` para los juegos sin voz. El resultado se valida con la estrategia del juego; `total`/`pairs` deben coincidir con la actividad |
+| `POST /intentos/habla-conmigo` | E | Multipart: `actividadId`, `duracionSeg?`, `audio?` (M4A/MP4, AAC o WebM; máx. 10 MB) |
+| `GET /intentos/:id` | E, T a cargo, A, D | Nunca incluye el audio |
+| `GET /estudiantes/me/practica-vocales`, `GET /estudiantes/me/punto-retorno` | E | Estrellas por vocal (0-3) y «Sigue donde ibas» |
+
+- El número de intento lo pone la base (trigger). Nada se aprueba solo: todo
+  queda pendiente de la tallerista. La app no califica la pronunciación.
+- **Voz:** antes de guardar se verifica el consentimiento vigente (falla
+  cerrado). Sin él, el intento se guarda **sin audio**. El audio va al bucket
+  privado `grabaciones` en `estudiante/<id>/intento/<id>.<ext>`, con
+  `codigo_version_terminos` y `consentimiento_verificado_en`. El estado queda en
+  `resultado.estadoGrabacion`: `ADJUNTA`, `NO_ENVIADA`, `SIN_CONSENTIMIENTO`,
+  `NO_VERIFICABLE` o `NO_GUARDADA` (falló Storage; el intento no se pierde).
+
+### Configuración de los juegos (`actividad.configuracion`)
+
+Una **cara** es lo que se ve en una tarjeta:
+`{ "etiqueta", "imagenContenidoId"?, "texto"?, "cantidad"?, "audioContenidoId"? }`
+(imagen o texto obligatorio; cantidad y audio exigen imagen).
+
+| Juego | Configuración | Resultado del intento |
+|---|---|---|
+| HABLA_CONMIGO | `{ "vocal": "a" }` | `{}` (el backend agrega `estadoGrabacion`) |
+| BUSCA_LA_BOCA | `{ "vocales": ["a","e","i"] }` | `{ firstTryCorrect, total }`, total = vocales |
+| EMPAREJAR | `{ "rondas": [{ pregunta, estimulo: Cara, opciones: [Cara ×2–4], respuesta }] }` | `{ firstTryCorrect, total }`, total = rondas |
+| CLASIFICAR | `{ "conjuntos": [{ pregunta, grupos: [Cara, Cara], elementos: [{ cara, grupo }] ×2–8 }] }` | total = elementos |
+| SECUENCIAR | `{ "rutinas": [{ titulo, pasos: [Cara ×2–4] }] }` (en orden) | total = pasos |
+| MEMORIA | `{ "tableros": [{ parejas: [Cara ×2–6] }] }` | `{ pairs, mismatches }`, pairs = parejas |
+
+- **Regla 11:** ninguna configuración ni resultado admite tiempo límite,
+  vidas o penalizaciones (cualquier campo así responde 422).
+- En EMPAREJAR, CLASIFICAR, SECUENCIAR y MEMORIA, `actividad_contenido` se
+  llena solo con las caras que tienen imagen (no se edita a mano): así esos
+  contenidos quedan protegidos y salen en las URLs del módulo.
+
 ### Asignaciones (fase 5)
 
 | Método y ruta | Quién | Notas |
@@ -256,12 +296,11 @@ aparte (`resumen.pendientesValidacion`) y no suman.
   bytes del archivo, no por el Content-Type. La API nunca devuelve rutas:
   solo URLs firmadas. Puerto `AlmacenArchivos` (`src/common/almacenamiento/`).
 - **Subidas a disco, no a memoria:** `@SubidaDeArchivo(campo, máximo)` escribe
-  el archivo en una carpeta temporal del servidor (`<tmp>/gameup-subidas`),
+  el archivo en una carpeta temporal del servidor (`<tmp>/gameup-subidas-<pid>`),
   lo envía a Storage como stream y lo **borra siempre** al terminar, también
   si la petición falla (413, 422, 403, 503...).
 - **Configuración por juego:** una estrategia por tipo de juego
-  (`src/modules/catalogo/domain/juegos/`). HABLA_CONMIGO: `{ "vocal": "a" }`.
-  Los demás juegos aceptan `{}` hasta que se defina su configuración.
+  (`src/modules/catalogo/domain/juegos/`). Ver «Configuración de los juegos».
 
 ### Primera directora
 
@@ -336,7 +375,8 @@ src/
 │   ├── consentimiento/      # Consentimiento de voz (API del núcleo familiar)
 │   ├── catalogo/            # Niveles, categorías, tipos de juego, música; estrategias por juego
 │   ├── modulos/             # Módulos, contenidos (Storage) y actividades
-│   └── asignaciones/        # Módulos asignados a estudiantes y su avance
+│   ├── asignaciones/        # Módulos asignados a estudiantes y su avance
+│   └── intentos/            # Intentos, grabaciones de voz y práctica de vocales
 ├── docs/
 │   └── swagger.ts           # /api-docs
 ├── prisma/

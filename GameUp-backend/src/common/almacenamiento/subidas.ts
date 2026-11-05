@@ -18,8 +18,15 @@ import type { Request } from 'express';
 import { catchError, from, mergeMap, throwError, type Observable } from 'rxjs';
 import type { ArchivoSubido } from './almacen-archivos.js';
 
-/** Carpeta de archivos temporales de subida (se vacía al terminar cada petición). */
-export const DIRECTORIO_SUBIDAS = join(tmpdir(), 'gameup-subidas');
+/**
+ * Carpeta de archivos temporales de subida (se vacía al terminar cada
+ * petición). Una por proceso: dos procesos (o dos archivos de prueba en
+ * paralelo) nunca comparten temporales.
+ */
+export const DIRECTORIO_SUBIDAS = join(
+  tmpdir(),
+  `gameup-subidas-${process.pid}`,
+);
 
 /** Bytes que se guardan del inicio del archivo para reconocer su formato. */
 export const BYTES_CABECERA = 64;

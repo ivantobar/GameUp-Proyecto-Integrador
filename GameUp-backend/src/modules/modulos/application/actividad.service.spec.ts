@@ -209,4 +209,98 @@ describe('ActividadService', () => {
       ).resolves.toEqual([]);
     });
   });
+
+  describe('contenidos derivados de la configuración', () => {
+    const secuencia = (pasos: Array<Record<string, string>>) => ({
+      tipoJuego: 'SECUENCIAR',
+      titulo: 'Rutina',
+      instruccionTexto: null,
+      configuracion: { rutinas: [{ titulo: 'Lavarse', pasos }] },
+      orden: 0,
+      activa: true,
+    });
+
+    it('crear guarda las caras con imagen en actividad_contenido', async () => {
+      const a = await servicio.crear(
+        TALLERISTA_2,
+        1n,
+        secuencia([
+          { etiqueta: 'abrir', imagenContenidoId: e.ids.imagen.toString() },
+          { etiqueta: 'secar', texto: 'Secar' },
+        ]),
+      );
+      expect(e.modulos.elementosPorActividad.get(a.id)).toEqual([
+        expect.objectContaining({
+          contenidoId: e.ids.imagen,
+          imagenContenidoId: e.ids.imagen,
+          palabra: 'abrir',
+          orden: 0,
+        }),
+      ]);
+    });
+
+    it('cambiar la configuración reemplaza los contenidos', async () => {
+      const a = await servicio.crear(
+        TALLERISTA_2,
+        1n,
+        secuencia([
+          { etiqueta: 'abrir', imagenContenidoId: e.ids.imagen.toString() },
+          { etiqueta: 'secar', texto: 'Secar' },
+        ]),
+      );
+      await servicio.actualizar(TALLERISTA_2, a.id, {
+        ...SIN_CAMBIOS,
+        configuracion: secuencia([
+          { etiqueta: 'uno', texto: '1' },
+          { etiqueta: 'dos', texto: '2' },
+        ]).configuracion,
+      });
+      expect(e.modulos.elementosPorActividad.get(a.id)).toEqual([]);
+    });
+
+    it('cambiar solo el título no toca los contenidos', async () => {
+      const a = await servicio.crear(
+        TALLERISTA_2,
+        1n,
+        secuencia([
+          { etiqueta: 'abrir', imagenContenidoId: e.ids.imagen.toString() },
+          { etiqueta: 'secar', texto: 'Secar' },
+        ]),
+      );
+      await servicio.actualizar(TALLERISTA_2, a.id, {
+        ...SIN_CAMBIOS,
+        titulo: 'Otra',
+      });
+      expect(e.modulos.elementosPorActividad.get(a.id)).toHaveLength(1);
+    });
+
+    it('una cara que cita un VIDEO como imagen → 422 sin crear nada', async () => {
+      const antes = e.modulos.actividades.length;
+      await expect(
+        servicio.crear(
+          TALLERISTA_2,
+          1n,
+          secuencia([
+            { etiqueta: 'abrir', imagenContenidoId: e.ids.video.toString() },
+            { etiqueta: 'secar', texto: 'Secar' },
+          ]),
+        ),
+      ).rejects.toThrow(/cita el contenido .* debe ser IMAGEN/);
+      expect(e.modulos.actividades).toHaveLength(antes);
+    });
+
+    it('en los juegos con caras no se editan los contenidos a mano (422)', async () => {
+      const a = await servicio.crear(
+        TALLERISTA_2,
+        1n,
+        secuencia([
+          { etiqueta: 'uno', texto: '1' },
+          { etiqueta: 'dos', texto: '2' },
+        ]),
+      );
+      await expect(
+        servicio.reemplazarElementos(TALLERISTA_2, a.id, []),
+      ).rejects.toThrow(/salen de la configuración/);
+    });
+  });
 });

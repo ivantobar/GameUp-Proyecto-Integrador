@@ -105,8 +105,21 @@ export interface ActividadRepository {
   listar(moduloId: bigint, soloActivas: boolean): Promise<Actividad[]>;
   buscarPorId(id: bigint): Promise<Actividad | null>;
   elementos(actividadId: bigint): Promise<ElementoActividad[]>;
-  crear(moduloId: bigint, datos: DatosActividad): Promise<Actividad>;
-  actualizar(id: bigint, cambios: CambiosActividad): Promise<Actividad>;
+  /**
+   * Crea la actividad y, si `elementos` no es null, sus contenidos
+   * (actividad_contenido), en una sola transacción.
+   */
+  crear(
+    moduloId: bigint,
+    datos: DatosActividad,
+    elementos: ElementoActividad[] | null,
+  ): Promise<Actividad>;
+  /** Igual: si `elementos` no es null, reemplaza los contenidos en la misma transacción. */
+  actualizar(
+    id: bigint,
+    cambios: CambiosActividad,
+    elementos: ElementoActividad[] | null,
+  ): Promise<Actividad>;
   eliminar(id: bigint): Promise<void>;
   tieneIntentos(id: bigint): Promise<boolean>;
   /** Reemplaza todos los elementos de la actividad en una transacción. */

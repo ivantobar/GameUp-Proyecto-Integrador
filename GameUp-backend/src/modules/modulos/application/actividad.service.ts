@@ -13,6 +13,7 @@ import {
 import {
   esCodigoJuego,
   type Configuracion,
+  type ConfiguracionValidada,
 } from '../../catalogo/domain/juegos/estrategia-juego.js';
 import {
   MAXIMO_ELEMENTOS,
@@ -101,18 +102,24 @@ export class ActividadService {
         `El tipo de juego ${datos.tipoJuego} no existe.`,
       );
     }
-    const configuracion = this.juegos
+    const validada = this.juegos
       .estrategia(tipo.codigo)
       .validarConfiguracion(datos.configuracion);
+    const elementos = await this.elementosDerivados(moduloId, validada);
 
-    return this.actividades.crear(moduloId, {
-      tipoJuegoId: tipo.id,
-      titulo: limpiarTitulo(datos.titulo),
-      instruccionTexto: datos.instruccionTexto?.trim() || null,
-      configuracion,
-      orden: datos.orden,
-      activa: datos.activa,
-    });
+    // Actividad y actividad_contenido se escriben en una sola transacción.
+    return this.actividades.crear(
+      moduloId,
+      {
+        tipoJuegoId: tipo.id,
+        titulo: limpiarTitulo(datos.titulo),
+        instruccionTexto: datos.instruccionTexto?.trim() || null,
+        configuracion: validada.configuracion,
+        orden: datos.orden,
+        activa: datos.activa,
+      },
+      elementos,
+    );
   }
 
   /** El tipo de juego no cambia (los intentos dependen de él): se crea otra actividad. */
@@ -123,16 +130,24 @@ export class ActividadService {
   ): Promise<Actividad> {
     const actividad = await this.existente(id);
     await this.editarModulo(actual, actividad.moduloId);
-    return this.actividades.actualizar(id, {
-      ...cambios,
-      titulo: cambios.titulo === null ? null : limpiarTitulo(cambios.titulo),
-      configuracion:
-        cambios.configuracion === null
-          ? null
-          : this.juegos
-              .estrategia(actividad.tipoJuego.codigo)
-              .validarConfiguracion(cambios.configuracion),
-    });
+    const validada =
+      cambios.configuracion === null
+        ? null
+        : this.juegos
+            .estrategia(actividad.tipoJuego.codigo)
+            .validarConfiguracion(cambios.configuracion);
+    const elementos = validada
+      ? await this.elementosDerivados(actividad.moduloId, validada)
+      : null;
+    return this.actividades.actualizar(
+      id,
+      {
+        ...cambios,
+        titulo: cambios.titulo === null ? null : limpiarTitulo(cambios.titulo),
+        configuracion: validada?.configuracion ?? null,
+      },
+      elementos,
+    );
   }
 
   /** Solo sin intentos (los intentos son historial del estudiante). */
@@ -152,6 +167,9 @@ export class ActividadService {
    * módulo (la base lo exige con un trigger; aquí se valida antes) y del
    * tipo correcto: imagen → IMAGEN, kinema → IMAGEN/ANIMACION/VIDEO,
    * audio → AUDIO. Si no se indica imagen, se usa el contenido si es IMAGEN.
+   *
+   * En EMPAREJAR, CLASIFICAR, SECUENCIAR y MEMORIA los contenidos salen de
+   * la configuración (sus caras): ahí no se editan a mano.
    */
   async reemplazarElementos(
     actual: UsuarioAutenticado,
@@ -160,6 +178,51 @@ export class ActividadService {
   ): Promise<ElementoActividad[]> {
     const actividad = await this.existente(id);
     await this.editarModulo(actual, actividad.moduloId);
+    if (this.juegos.estrategia(actividad.tipoJuego.codigo).derivaContenidos) {
+      throw new ReglaNegocioError(
+        `En ${actividad.tipoJuego.codigo} los contenidos salen de la configuración: modifica la configuración.`,
+      );
+    }
+    const normalizados = await this.validarElementos(
+      actividad.moduloId,
+      elementos,
+      (_e, i) => `Elemento ${i + 1}`,
+    );
+    return this.actividades.reemplazarElementos(id, normalizados);
+  }
+
+  /**
+   * Los contenidos que citan las caras de la configuración, como elementos
+   * de actividad_contenido (validados contra el módulo). null si el juego no
+   * los deriva de su configuración.
+   */
+  private async elementosDerivados(
+    moduloId: bigint,
+    validada: ConfiguracionValidada,
+  ): Promise<ElementoActividad[] | null> {
+    if (validada.elementos === null) return null;
+    const elementos: ElementoActividad[] = validada.elementos.map((e, i) => ({
+      contenidoId: e.imagenContenidoId,
+      rolEnJuego: null,
+      orden: i,
+      palabra: e.palabra,
+      imagenContenidoId: e.imagenContenidoId,
+      kinemaContenidoId: null,
+      audioContenidoId: e.audioContenidoId,
+    }));
+    return this.validarElementos(
+      moduloId,
+      elementos,
+      (e) => `La configuración cita el contenido ${e.contenidoId}`,
+    );
+  }
+
+  /** Todos los contenidos son del módulo y del tipo correcto (422 si no). */
+  private async validarElementos(
+    moduloId: bigint,
+    elementos: ElementoActividad[],
+    describir: (e: ElementoActividad, i: number) => string,
+  ): Promise<ElementoActividad[]> {
     if (elementos.length > MAXIMO_ELEMENTOS) {
       throw new ReglaNegocioError(
         `Una actividad admite hasta ${MAXIMO_ELEMENTOS} contenidos.`,
@@ -167,11 +230,11 @@ export class ActividadService {
     }
 
     const delModulo = new Map(
-      (await this.contenidos.listar(actividad.moduloId)).map((c) => [c.id, c]),
+      (await this.contenidos.listar(moduloId)).map((c) => [c.id, c]),
     );
     const vistos = new Set<bigint>();
-    const normalizados = elementos.map((e, i) => {
-      const posicion = `Elemento ${i + 1}`;
+    return elementos.map((e, i) => {
+      const posicion = describir(e, i);
       if (vistos.has(e.contenidoId)) {
         throw new ReglaNegocioError(`${posicion}: el contenido está repetido.`);
       }
@@ -214,7 +277,6 @@ export class ActividadService {
         imagenContenidoId: imagenId,
       };
     });
-    return this.actividades.reemplazarElementos(id, normalizados);
   }
 
   private async existente(id: bigint): Promise<Actividad> {

@@ -22,6 +22,10 @@ import {
 } from '../../src/modules/asignaciones/domain/asignacion.repository.js';
 import { CATALOGO_REPOSITORY } from '../../src/modules/catalogo/domain/catalogo.js';
 import {
+  INTENTO_ESCRITURA_REPOSITORY,
+  INTENTO_LECTURA_REPOSITORY,
+} from '../../src/modules/intentos/domain/intento.repository.js';
+import {
   ACTIVIDAD_REPOSITORY,
   CONTENIDO_REPOSITORY,
   MODULO_REPOSITORY,
@@ -42,6 +46,7 @@ import { SupabaseService } from '../../src/supabase/supabase.service.js';
 import { AsignacionesEnMemoria } from './asignaciones-en-memoria.js';
 import { AutenticadorFalso } from './autenticador-falso.js';
 import { EstudiantesEnMemoria } from './estudiantes-en-memoria.js';
+import { IntentosEnMemoria } from './intentos-en-memoria.js';
 import {
   AlmacenEnMemoria,
   CatalogoEnMemoria,
@@ -63,6 +68,8 @@ export interface OpcionesAppDePrueba {
   modulos?: ModulosEnMemoria;
   /** Asignaciones en memoria (fase 5). */
   asignaciones?: AsignacionesEnMemoria;
+  /** Intentos en memoria (fase 6). */
+  intentos?: IntentosEnMemoria;
   /** Si se da, reemplaza solo el CuentaRepository que usa el guard. */
   cuentas?: CuentaRepository;
   /** Controladores extra solo para la prueba. */
@@ -88,6 +95,8 @@ export async function crearAppDePrueba(
   const asignaciones =
     opciones.asignaciones ??
     new AsignacionesEnMemoria(usuarios, estudiantes, modulos);
+  const intentos =
+    opciones.intentos ?? new IntentosEnMemoria(asignaciones, modulos);
   let builder = Test.createTestingModule({
     imports: [AppModule],
     controllers: opciones.controllers ?? [],
@@ -129,7 +138,11 @@ export async function crearAppDePrueba(
     .overrideProvider(ASIGNACION_LECTURA_REPOSITORY)
     .useValue(asignaciones)
     .overrideProvider(ASIGNACION_ESCRITURA_REPOSITORY)
-    .useValue(asignaciones);
+    .useValue(asignaciones)
+    .overrideProvider(INTENTO_LECTURA_REPOSITORY)
+    .useValue(intentos)
+    .overrideProvider(INTENTO_ESCRITURA_REPOSITORY)
+    .useValue(intentos);
 
   for (const { provide, useValue } of opciones.reemplazos ?? []) {
     builder = builder.overrideProvider(provide).useValue(useValue);

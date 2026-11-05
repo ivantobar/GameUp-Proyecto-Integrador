@@ -147,8 +147,9 @@ describe('Catálogo, módulos, contenidos y actividades (e2e)', () => {
       await como('directora').post('/modulos/3/publicacion').expect(422);
       await como('directora')
         .post('/modulos/3/actividades', {
-          tipoJuego: 'MEMORIA',
-          titulo: 'Parejas',
+          tipoJuego: 'BUSCA_LA_BOCA',
+          titulo: 'Busca la boca',
+          configuracion: { vocales: ['a', 'e'] },
         })
         .expect(201);
       const res = await como('directora')
@@ -284,6 +285,76 @@ describe('Catálogo, módulos, contenidos y actividades (e2e)', () => {
       await como('tallerista2')
         .delete(`/contenidos/${e.ids.video}`)
         .expect(204);
+    });
+  });
+
+  describe('actividades con caras (configuración de juegos)', () => {
+    const memoria = () => ({
+      tipoJuego: 'MEMORIA',
+      titulo: 'Parejas',
+      configuracion: {
+        tableros: [
+          {
+            parejas: [
+              { etiqueta: 'avión', imagenContenidoId: e.ids.imagen.toString() },
+              { etiqueta: 'a', texto: 'A' },
+            ],
+          },
+        ],
+      },
+    });
+
+    it('MEMORIA: actividad_contenido sale de las caras; el contenido queda en uso', async () => {
+      const creada = await como('tallerista2')
+        .post('/modulos/1/actividades', memoria())
+        .expect(201);
+      const detalle = await como('tallerista2')
+        .get(`/actividades/${creada.body.id}`)
+        .expect(200);
+      expect(detalle.body.elementos).toEqual([
+        expect.objectContaining({
+          contenidoId: e.ids.imagen.toString(),
+          palabra: 'avión',
+          imagenContenidoId: e.ids.imagen.toString(),
+        }),
+      ]);
+      await como('tallerista2')
+        .delete(`/contenidos/${e.ids.imagen}`)
+        .expect(409);
+      // Sus contenidos no se editan a mano.
+      await como('tallerista2')
+        .put(`/actividades/${creada.body.id}/contenidos`, { elementos: [] })
+        .expect(422);
+    });
+
+    it('cita un VIDEO como imagen, o un contenido de otro módulo → 422', async () => {
+      const conVideo = memoria();
+      conVideo.configuracion.tableros[0]!.parejas[0]!.imagenContenidoId =
+        e.ids.video.toString();
+      await como('tallerista2')
+        .post('/modulos/1/actividades', conVideo)
+        .expect(422);
+      const ajeno = memoria();
+      ajeno.configuracion.tableros[0]!.parejas[0]!.imagenContenidoId = '999';
+      const res = await como('tallerista2')
+        .post('/modulos/1/actividades', ajeno)
+        .expect(422);
+      expect(res.body.message).toMatch(
+        /cita el contenido 999.*no es de este módulo/,
+      );
+    });
+
+    it('regla 11: tiempo límite, vidas o penalización → 422', async () => {
+      const res = await como('tallerista2')
+        .post('/modulos/1/actividades', {
+          tipoJuego: 'BUSCA_LA_BOCA',
+          titulo: 'Con reloj',
+          configuracion: { vocales: ['a'], tiempoLimiteSeg: 30 },
+        })
+        .expect(422);
+      expect(res.body.message).toMatch(
+        /no usa tiempo límite, vidas ni penalizaciones/,
+      );
     });
   });
 

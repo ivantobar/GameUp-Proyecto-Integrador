@@ -9,7 +9,9 @@ export type TipoMime =
   | 'image/jpeg'
   | 'image/webp'
   | 'audio/mpeg'
-  | 'audio/mp4';
+  | 'audio/mp4'
+  | 'audio/aac'
+  | 'audio/webm';
 
 export const EXTENSION: Record<TipoMime, string> = {
   'video/mp4': 'mp4',
@@ -18,6 +20,14 @@ export const EXTENSION: Record<TipoMime, string> = {
   'image/webp': 'webp',
   'audio/mpeg': 'mp3',
   'audio/mp4': 'm4a',
+  'audio/aac': 'aac',
+  'audio/webm': 'webm',
+};
+
+/** Nombres alternativos que mandan algunos celulares para el mismo formato. */
+const ALIAS: Record<string, TipoMime> = {
+  'audio/m4a': 'audio/mp4',
+  'audio/x-m4a': 'audio/mp4',
 };
 
 function empiezaCon(b: Buffer, firma: number[], desde = 0): boolean {
@@ -56,6 +66,12 @@ export function tiposCompatibles(b: Buffer): TipoMime[] {
       ? ['audio/mp4']
       : ['video/mp4', 'audio/mp4'];
   }
+  // WebM (Matroska): cabecera EBML.
+  if (empiezaCon(b, [0x1a, 0x45, 0xdf, 0xa3])) return ['audio/webm'];
+  // AAC crudo (ADTS): sincronía 0xFFF y capa 00 (0xFFF1 o 0xFFF9).
+  if (b.length >= 2 && b[0] === 0xff && ((b[1] ?? 0) & 0xf6) === 0xf0) {
+    return ['audio/aac'];
+  }
   // MP3: etiqueta ID3, o una trama MPEG (11 bits de sincronía en 1).
   if (ascii(b, 0, 3) === 'ID3') return ['audio/mpeg'];
   if (b.length >= 2 && b[0] === 0xff && ((b[1] ?? 0) & 0xe0) === 0xe0)
@@ -71,8 +87,14 @@ export function confirmarTipo(
   bytes: Buffer,
   declarado: string,
 ): TipoMime | null {
+  const tipo = ALIAS[declarado] ?? declarado;
   const reales = tiposCompatibles(bytes);
-  return (reales as string[]).includes(declarado)
-    ? (declarado as TipoMime)
-    : null;
+  return (reales as string[]).includes(tipo) ? (tipo as TipoMime) : null;
 }
+
+/** Formatos que acepta el bucket privado `grabaciones` (voz del estudiante). */
+export const FORMATOS_GRABACION: readonly TipoMime[] = [
+  'audio/mp4',
+  'audio/aac',
+  'audio/webm',
+];

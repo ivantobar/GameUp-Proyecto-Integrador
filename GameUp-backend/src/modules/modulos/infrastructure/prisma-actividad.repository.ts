@@ -72,23 +72,35 @@ export class PrismaActividadRepository implements ActividadRepository {
     }));
   }
 
-  async crear(moduloId: bigint, datos: DatosActividad): Promise<Actividad> {
-    const fila = await this.prisma.actividad.create({
-      data: {
-        modulo_id: moduloId,
-        tipo_juego_id: datos.tipoJuegoId,
-        titulo: datos.titulo,
-        instruccion_texto: datos.instruccionTexto,
-        configuracion: datos.configuracion as Prisma.InputJsonObject,
-        orden: datos.orden,
-        activa: datos.activa,
-      },
-      select: SELECCION_ACTIVIDAD,
+  async crear(
+    moduloId: bigint,
+    datos: DatosActividad,
+    elementos: ElementoActividad[] | null,
+  ): Promise<Actividad> {
+    const fila = await this.prisma.$transaction(async (tx) => {
+      const creada = await tx.actividad.create({
+        data: {
+          modulo_id: moduloId,
+          tipo_juego_id: datos.tipoJuegoId,
+          titulo: datos.titulo,
+          instruccion_texto: datos.instruccionTexto,
+          configuracion: datos.configuracion as Prisma.InputJsonObject,
+          orden: datos.orden,
+          activa: datos.activa,
+        },
+        select: SELECCION_ACTIVIDAD,
+      });
+      if (elementos !== null) await escribirElementos(tx, creada.id, elementos);
+      return creada;
     });
     return ModuloMapper.aActividad(fila);
   }
 
-  async actualizar(id: bigint, cambios: CambiosActividad): Promise<Actividad> {
+  async actualizar(
+    id: bigint,
+    cambios: CambiosActividad,
+    elementos: ElementoActividad[] | null,
+  ): Promise<Actividad> {
     const data: Prisma.actividadUncheckedUpdateInput = {};
     if (cambios.titulo !== null) data.titulo = cambios.titulo;
     if (cambios.orden !== null) data.orden = cambios.orden;
@@ -101,10 +113,14 @@ export class PrismaActividadRepository implements ActividadRepository {
         cambios.instruccionTexto === 'borrar' ? null : cambios.instruccionTexto;
     }
     // Cambiar `activa` dispara trg_actividad_recalcular (progreso de las asignaciones).
-    const fila = await this.prisma.actividad.update({
-      where: { id },
-      data,
-      select: SELECCION_ACTIVIDAD,
+    const fila = await this.prisma.$transaction(async (tx) => {
+      const actualizada = await tx.actividad.update({
+        where: { id },
+        data,
+        select: SELECCION_ACTIVIDAD,
+      });
+      if (elementos !== null) await escribirElementos(tx, id, elementos);
+      return actualizada;
     });
     return ModuloMapper.aActividad(fila);
   }
@@ -123,37 +139,46 @@ export class PrismaActividadRepository implements ActividadRepository {
     actividadId: bigint,
     elementos: ElementoActividad[],
   ): Promise<ElementoActividad[]> {
-    await this.prisma.$transaction(async (tx) => {
-      const { modulo_id } = await tx.actividad.findUniqueOrThrow({
-        where: { id: actividadId },
-        select: { modulo_id: true },
-      });
-      const contenidos = await tx.contenido.findMany({
-        where: { modulo_id },
-        select: { id: true, url_recurso: true },
-      });
-      const rutaPorId = new Map(contenidos.map((c) => [c.id, c.url_recurso]));
-      const ruta = (id: bigint | null) =>
-        id === null ? null : (rutaPorId.get(id) ?? null);
-
-      await tx.actividad_contenido.deleteMany({
-        where: { actividad_id: actividadId },
-      });
-      if (elementos.length === 0) return;
-      // trg_act_cont_modulo vuelve a comprobar que actividad y contenido sean del mismo módulo.
-      await tx.actividad_contenido.createMany({
-        data: elementos.map((e) => ({
-          actividad_id: actividadId,
-          contenido_id: e.contenidoId,
-          rol_en_juego: e.rolEnJuego,
-          orden: e.orden,
-          palabra: e.palabra,
-          url_imagen: rutaObligatoria(ruta(e.imagenContenidoId)),
-          url_kinema: ruta(e.kinemaContenidoId),
-          url_audio: ruta(e.audioContenidoId),
-        })),
-      });
-    });
+    await this.prisma.$transaction((tx) =>
+      escribirElementos(tx, actividadId, elementos),
+    );
     return this.elementos(actividadId);
   }
+}
+
+/** Reemplaza actividad_contenido (dentro de la transacción del llamador). */
+async function escribirElementos(
+  tx: Prisma.TransactionClient,
+  actividadId: bigint,
+  elementos: ElementoActividad[],
+): Promise<void> {
+  const { modulo_id } = await tx.actividad.findUniqueOrThrow({
+    where: { id: actividadId },
+    select: { modulo_id: true },
+  });
+  const contenidos = await tx.contenido.findMany({
+    where: { modulo_id },
+    select: { id: true, url_recurso: true },
+  });
+  const rutaPorId = new Map(contenidos.map((c) => [c.id, c.url_recurso]));
+  const ruta = (id: bigint | null) =>
+    id === null ? null : (rutaPorId.get(id) ?? null);
+
+  await tx.actividad_contenido.deleteMany({
+    where: { actividad_id: actividadId },
+  });
+  if (elementos.length === 0) return;
+  // trg_act_cont_modulo vuelve a comprobar que actividad y contenido sean del mismo módulo.
+  await tx.actividad_contenido.createMany({
+    data: elementos.map((e) => ({
+      actividad_id: actividadId,
+      contenido_id: e.contenidoId,
+      rol_en_juego: e.rolEnJuego,
+      orden: e.orden,
+      palabra: e.palabra,
+      url_imagen: rutaObligatoria(ruta(e.imagenContenidoId)),
+      url_kinema: ruta(e.kinemaContenidoId),
+      url_audio: ruta(e.audioContenidoId),
+    })),
+  });
 }

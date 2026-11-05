@@ -468,7 +468,7 @@ export class ModulosEnMemoria {
           .sort((a, b) => a.orden - b.orden || Number(a.id - b.id)),
       buscarPorId: async (id) => buscar(id),
       elementos: async (id) => this.elementosPorActividad.get(id) ?? [],
-      crear: async (moduloId, d) => {
+      crear: async (moduloId, d, elementos) => {
         const tipo = this.catalogo.tipos.find((t) => t.id === d.tipoJuegoId)!;
         const a: Actividad = {
           id: this.id(),
@@ -481,9 +481,11 @@ export class ModulosEnMemoria {
           activa: d.activa,
         };
         this.actividades.push(a);
+        if (elementos !== null)
+          this.elementosPorActividad.set(a.id, [...elementos]);
         return a;
       },
-      actualizar: async (id, c) => {
+      actualizar: async (id, c, elementos) => {
         const a = buscar(id)!;
         const nueva: Actividad = {
           ...a,
@@ -499,6 +501,8 @@ export class ModulosEnMemoria {
                 : c.instruccionTexto,
         };
         this.actividades.splice(this.actividades.indexOf(a), 1, nueva);
+        if (elementos !== null)
+          this.elementosPorActividad.set(id, [...elementos]);
         return nueva;
       },
       eliminar: async (id) => {
