@@ -14,6 +14,7 @@ import { EstudiantesModule } from './modules/estudiantes/estudiantes.module.js';
 import { IntentosModule } from './modules/intentos/intentos.module.js';
 import { ModulosModule } from './modules/modulos/modulos.module.js';
 import { UsuariosModule } from './modules/usuarios/usuarios.module.js';
+import { ValidacionesModule } from './modules/validaciones/validaciones.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { SupabaseModule } from './supabase/supabase.module.js';
 
@@ -44,6 +45,8 @@ import { SupabaseModule } from './supabase/supabase.module.js';
     AsignacionesModule,
     // Fase 6: intentos y grabaciones de Habla conmigo.
     IntentosModule,
+    // Fase 7: validación, borrado del audio y progreso oficial.
+    ValidacionesModule,
   ],
   providers: [
     // Traduce errores de dominio y de la base a { statusCode, error, message }.

@@ -86,6 +86,12 @@ describe('Swagger (e2e)', () => {
       ],
     ).toBeDefined();
     expect(paths['/api/v1/estudiantes/me/practica-vocales'].get).toBeDefined();
+    // Fase 7.
+    expect(paths['/api/v1/revisiones/pendientes'].get).toBeDefined();
+    expect(paths['/api/v1/intentos/{id}/grabacion'].get).toBeDefined();
+    expect(paths['/api/v1/intentos/{id}/validacion'].post).toBeDefined();
+    expect(paths['/api/v1/validaciones/lote'].post).toBeDefined();
+    expect(paths['/api/v1/estudiantes/{id}/progreso'].get).toBeDefined();
     expect(res.body.components.securitySchemes.bearerAuth).toMatchObject({
       type: 'http',
       scheme: 'bearer',

@@ -40,6 +40,7 @@ describe('AsignacionService y AvanceAsignacionService', () => {
       e.asignaciones,
       e.modulos.actividadRepo,
       servicio,
+      new AccesoEstudianteService(e.estudiantes),
     );
   });
 

@@ -42,6 +42,9 @@ services:
       # Nunca true en producción (la app no arrancaría).
       - key: CONSENTIMIENTO_SIMULADO
         value: "false"
+      # Limpieza de grabaciones de voz (minutos; 0 la desactiva).
+      - key: LIMPIEZA_GRABACIONES_MIN
+        value: "30"
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_SECRET_KEY

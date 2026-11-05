@@ -12,6 +12,7 @@ import {
 import type {
   ActividadPendiente,
   DetalleAsignacion,
+  ProgresoOficial,
 } from '../application/avance-asignacion.service.js';
 import {
   Asignacion,
@@ -21,6 +22,7 @@ import {
   type IntentoResumen,
 } from '../domain/asignacion.entity.js';
 import type {
+  ProgresoOficialDto,
   ActividadPendienteDto,
   AsignacionDetalleDto,
   AsignacionDto,
@@ -136,6 +138,24 @@ export const AsignacionMapper = {
       ...AsignacionMapper.aDto(d.asignacion),
       actividades: d.actividades.map(AsignacionMapper.aAvanceDto),
       resumen: d.resumen,
+    };
+  },
+
+  aProgresoDto(p: ProgresoOficial): ProgresoOficialDto {
+    return {
+      modulos: p.modulos.map(({ asignacion, resumen }) => ({
+        asignacionId: idATexto(asignacion.id),
+        modulo: {
+          id: idATexto(asignacion.modulo.id),
+          nombre: asignacion.modulo.nombre,
+        },
+        estado: asignacion.estado,
+        progreso: asignacion.progreso,
+        validadas: resumen.aprobadas,
+        total: resumen.total,
+        pendientesValidacion: resumen.pendientesValidacion,
+      })),
+      pendientesValidacion: p.pendientesValidacion,
     };
   },
 

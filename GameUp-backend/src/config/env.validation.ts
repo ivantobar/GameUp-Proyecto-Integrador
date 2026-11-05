@@ -114,6 +114,16 @@ export class EnvironmentVariables {
   )
   @IsBoolean({ message: 'CONSENTIMIENTO_SIMULADO debe ser true o false' })
   CONSENTIMIENTO_SIMULADO: boolean = false;
+
+  /**
+   * Cada cuántos minutos se borran de Storage las grabaciones ya validadas
+   * que falten y las que vencieron (30 días sin validar). 0 la desactiva
+   * (también corre al arrancar y tras cada validación).
+   */
+  @IsInt()
+  @Min(0)
+  @Max(1440)
+  LIMPIEZA_GRABACIONES_MIN: number = 30;
 }
 
 /**

@@ -33,9 +33,7 @@ describe('SQL crudo seguro', () => {
   it('las consultas crudas son plantillas etiquetadas, no llamadas con texto', () => {
     const llamadas = CARPETAS.flatMap((c) => archivosTs(join(RAIZ, c))).filter(
       (ruta) =>
-        /\$(query|execute)Raw(<[^`(]*>)?\(/.test(
-          readFileSync(ruta, 'utf8'),
-        ),
+        /\$(query|execute)Raw(<[^`(]*>)?\(/.test(readFileSync(ruta, 'utf8')),
     );
     expect(llamadas.map((r) => relative(RAIZ, r))).toEqual([]);
   });

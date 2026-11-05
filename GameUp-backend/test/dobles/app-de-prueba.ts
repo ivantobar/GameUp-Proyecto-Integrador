@@ -41,12 +41,18 @@ import {
   USUARIO_ESCRITURA_REPOSITORY,
   USUARIO_LECTURA_REPOSITORY,
 } from '../../src/modules/usuarios/domain/usuario.repository.js';
+import {
+  GRABACION_REPOSITORY,
+  REVISION_LECTURA_REPOSITORY,
+  VALIDACION_ESCRITURA_REPOSITORY,
+} from '../../src/modules/validaciones/domain/validacion.repository.js';
 import { PrismaService } from '../../src/prisma/prisma.service.js';
 import { SupabaseService } from '../../src/supabase/supabase.service.js';
 import { AsignacionesEnMemoria } from './asignaciones-en-memoria.js';
 import { AutenticadorFalso } from './autenticador-falso.js';
 import { EstudiantesEnMemoria } from './estudiantes-en-memoria.js';
 import { IntentosEnMemoria } from './intentos-en-memoria.js';
+import { ValidacionesEnMemoria } from './validaciones-en-memoria.js';
 import {
   AlmacenEnMemoria,
   CatalogoEnMemoria,
@@ -70,6 +76,8 @@ export interface OpcionesAppDePrueba {
   asignaciones?: AsignacionesEnMemoria;
   /** Intentos en memoria (fase 6). */
   intentos?: IntentosEnMemoria;
+  /** Validaciones y grabaciones en memoria (fase 7). */
+  validaciones?: ValidacionesEnMemoria;
   /** Si se da, reemplaza solo el CuentaRepository que usa el guard. */
   cuentas?: CuentaRepository;
   /** Controladores extra solo para la prueba. */
@@ -97,6 +105,9 @@ export async function crearAppDePrueba(
     new AsignacionesEnMemoria(usuarios, estudiantes, modulos);
   const intentos =
     opciones.intentos ?? new IntentosEnMemoria(asignaciones, modulos);
+  const validaciones =
+    opciones.validaciones ??
+    new ValidacionesEnMemoria(usuarios, estudiantes, modulos, asignaciones);
   let builder = Test.createTestingModule({
     imports: [AppModule],
     controllers: opciones.controllers ?? [],
@@ -142,7 +153,13 @@ export async function crearAppDePrueba(
     .overrideProvider(INTENTO_LECTURA_REPOSITORY)
     .useValue(intentos)
     .overrideProvider(INTENTO_ESCRITURA_REPOSITORY)
-    .useValue(intentos);
+    .useValue(intentos)
+    .overrideProvider(REVISION_LECTURA_REPOSITORY)
+    .useValue(validaciones)
+    .overrideProvider(VALIDACION_ESCRITURA_REPOSITORY)
+    .useValue(validaciones)
+    .overrideProvider(GRABACION_REPOSITORY)
+    .useValue(validaciones);
 
   for (const { provide, useValue } of opciones.reemplazos ?? []) {
     builder = builder.overrideProvider(provide).useValue(useValue);

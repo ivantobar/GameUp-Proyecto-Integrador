@@ -17,6 +17,7 @@ import {
   ASIGNACION_LECTURA_REPOSITORY,
   type AsignacionLecturaRepository,
 } from '../domain/asignacion.repository.js';
+import { AccesoEstudianteService } from '../../estudiantes/application/acceso-estudiante.service.js';
 import { AsignacionService } from './asignacion.service.js';
 
 export interface ResumenAvance {
@@ -29,6 +30,13 @@ export interface DetalleAsignacion {
   asignacion: Asignacion;
   actividades: AvanceActividad[];
   resumen: ResumenAvance;
+}
+
+/** Progreso oficial de un estudiante: una entrada por asignación. */
+export interface ProgresoOficial {
+  modulos: Array<{ asignacion: Asignacion; resumen: ResumenAvance }>;
+  /** Actividades que esperan validación (todos los módulos): se informan aparte y no suman. */
+  pendientesValidacion: number;
 }
 
 export interface ActividadPendiente {
@@ -58,7 +66,44 @@ export class AvanceAsignacionService {
     @Inject(ACTIVIDAD_REPOSITORY)
     private readonly actividades: ActividadRepository,
     private readonly asignaciones: AsignacionService,
+    private readonly acceso: AccesoEstudianteService,
   ) {}
+
+  /**
+   * Progreso oficial por módulo: solo cuentan las actividades activas con
+   * un intento APROBADO (igual que la base). Las pendientes se informan
+   * aparte. Directora, tallerista a cargo, acudiente o el propio estudiante.
+   */
+  async progreso(
+    actual: UsuarioAutenticado,
+    estudianteId: bigint,
+  ): Promise<ProgresoOficial> {
+    await this.acceso.verificar(actual, estudianteId);
+    const pagina = await this.lectura.listar(
+      { tipo: 'todos' },
+      { estudianteId, moduloId: null, estado: null },
+      { page: 1, limit: 50 },
+    );
+    const intentos = await this.lectura.intentos(pagina.items.map((a) => a.id));
+    const modulos: ProgresoOficial['modulos'] = [];
+    for (const asignacion of pagina.items) {
+      const actividades = await this.actividades.listar(
+        asignacion.modulo.id,
+        true,
+      );
+      const avances = actividades.map((a) =>
+        avanceDe(aActividadAsignada(a), intentos.get(asignacion.id) ?? []),
+      );
+      modulos.push({ asignacion, resumen: resumir(avances) });
+    }
+    return {
+      modulos,
+      pendientesValidacion: modulos.reduce(
+        (n, m) => n + m.resumen.pendientesValidacion,
+        0,
+      ),
+    };
+  }
 
   async detalle(
     actual: UsuarioAutenticado,

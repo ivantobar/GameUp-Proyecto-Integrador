@@ -34,6 +34,7 @@ import {
   CrearAsignacionDto,
   ListarAsignacionesQueryDto,
   PaginaAsignacionesDto,
+  ProgresoOficialDto,
 } from './dto/asignacion.dto.js';
 
 @ApiTags('asignaciones')
@@ -145,6 +146,39 @@ export class PendientesController {
   ): Promise<ActividadPendienteDto[]> {
     return (await this.avance.pendientesDelEstudiante(actual)).map(
       AsignacionMapper.aPendienteDto,
+    );
+  }
+
+  @Get('me/progreso')
+  @Roles('ESTUDIANTE')
+  @ApiTags('progreso')
+  @ApiOperation({ summary: 'Mi progreso oficial (estudiante)' })
+  @ApiOkResponse({ type: ProgresoOficialDto })
+  @ApiErrores(401, 403)
+  async miProgreso(
+    @UsuarioActual() actual: UsuarioAutenticado,
+  ): Promise<ProgresoOficialDto> {
+    return AsignacionMapper.aProgresoDto(
+      await this.avance.progreso(actual, actual.id),
+    );
+  }
+
+  @Get(':id/progreso')
+  @Roles('DIRECTORA', 'TALLERISTA', 'ACUDIENTE')
+  @ApiTags('progreso')
+  @ApiOperation({
+    summary: 'Progreso oficial de un estudiante por módulo',
+    description:
+      'Solo cuentan las actividades validadas (APROBADO); las pendientes se informan aparte. Estudiante ajeno → 404.',
+  })
+  @ApiOkResponse({ type: ProgresoOficialDto })
+  @ApiErrores(400, 401, 403, 404)
+  async progreso(
+    @UsuarioActual() actual: UsuarioAutenticado,
+    @Param('id', ParseBigIntPipe) id: bigint,
+  ): Promise<ProgresoOficialDto> {
+    return AsignacionMapper.aProgresoDto(
+      await this.avance.progreso(actual, id),
     );
   }
 }

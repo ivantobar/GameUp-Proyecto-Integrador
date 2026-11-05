@@ -160,3 +160,40 @@ export class ActividadPendienteDto extends AvanceActividadDto {
   })
   fechaSugerida: string | null;
 }
+
+/** Avance de un módulo asignado (ModuleProgress en la app). */
+export class ProgresoModuloDto {
+  @ApiProperty({ example: '12' }) asignacionId: string;
+  @ApiProperty({ type: NivelDto, description: 'Módulo { id, nombre }' })
+  modulo: NivelDto;
+  @ApiProperty({ enum: ESTADOS_ASIGNACION, example: 'EN_CURSO' })
+  estado: EstadoAsignacion;
+  @ApiProperty({
+    example: 50,
+    description: 'Progreso oficial 0-100 (lo calcula la base)',
+  })
+  progreso: number;
+  @ApiProperty({
+    example: 2,
+    description: 'Actividades activas con un intento APROBADO',
+  })
+  validadas: number;
+  @ApiProperty({ example: 4, description: 'Actividades activas del módulo' })
+  total: number;
+  @ApiProperty({
+    example: 1,
+    description: 'Actividades cuyo último intento espera validación; no suman',
+  })
+  pendientesValidacion: number;
+}
+
+/** Progreso oficial (OfficialProgress en la app): solo lo validado. */
+export class ProgresoOficialDto {
+  @ApiProperty({ type: [ProgresoModuloDto] }) modulos: ProgresoModuloDto[];
+  @ApiProperty({
+    example: 1,
+    description:
+      'Actividades que esperan validación, sumando todos los módulos',
+  })
+  pendientesValidacion: number;
+}

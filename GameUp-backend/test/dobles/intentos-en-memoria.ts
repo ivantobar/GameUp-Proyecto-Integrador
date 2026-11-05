@@ -24,7 +24,12 @@ export type FilaIntento = IntentoResumen & {
   id?: bigint;
   resultado?: Configuracion;
   estrellas?: number;
-  grabacion?: { id: bigint; eliminadaEn: Date | null } | null;
+  grabacion?: {
+    id: bigint;
+    eliminadaEn: Date | null;
+    ruta?: string;
+    creadaEn?: Date;
+  } | null;
 };
 
 /**
@@ -122,6 +127,8 @@ export class IntentosEnMemoria
     this.filas.find((f) => f.id === d.intentoId)!.grabacion = {
       id: BigInt(this.grabaciones.length),
       eliminadaEn: null,
+      ruta: d.ruta,
+      creadaEn: AHORA_PRUEBA,
     };
   }
 

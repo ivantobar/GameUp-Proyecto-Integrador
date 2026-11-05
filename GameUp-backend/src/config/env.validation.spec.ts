@@ -75,6 +75,17 @@ describe('validateEnv', () => {
     ).toThrow(/no se puede activar en producción/);
   });
 
+  it('LIMPIEZA_GRABACIONES_MIN: 30 por defecto, 0 la desactiva', () => {
+    expect(validateEnv({ DATABASE_URL: DB }).LIMPIEZA_GRABACIONES_MIN).toBe(30);
+    expect(
+      validateEnv({ DATABASE_URL: DB, LIMPIEZA_GRABACIONES_MIN: '0' })
+        .LIMPIEZA_GRABACIONES_MIN,
+    ).toBe(0);
+    expect(() =>
+      validateEnv({ DATABASE_URL: DB, LIMPIEZA_GRABACIONES_MIN: '-1' }),
+    ).toThrow(/inválidas/);
+  });
+
   it('Supabase es opcional', () => {
     const env = validateEnv({ DATABASE_URL: DB, NODE_ENV: 'production' });
     expect(env.SUPABASE_URL).toBeUndefined();

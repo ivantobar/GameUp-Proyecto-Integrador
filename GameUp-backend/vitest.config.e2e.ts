@@ -16,6 +16,8 @@ export default defineConfig({
     env: {
       DATABASE_URL: 'postgresql://test:test@localhost:5432/test',
       CONSENTIMIENTO_SIMULADO: 'false',
+      // Sin limpieza periódica en las pruebas (se prueba llamándola a mano).
+      LIMPIEZA_GRABACIONES_MIN: '0',
     },
   },
 });

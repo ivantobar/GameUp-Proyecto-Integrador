@@ -62,10 +62,12 @@ export function setupSwagger(app: INestApplication, publicUrl?: string): void {
     )
     .addTag('modulos', 'Módulos, contenidos (archivos) y actividades')
     .addTag('asignaciones', 'Módulos asignados a estudiantes y su avance')
+    .addTag('intentos', 'Intentos de los juegos, grabaciones de voz y práctica')
     .addTag(
-      'intentos',
-      'Intentos de los juegos, grabaciones de voz y práctica',
-    );
+      'validacion',
+      'Bandeja de revisión, validación y audio de los intentos',
+    )
+    .addTag('progreso', 'Progreso oficial por módulo (solo lo validado)');
 
   const document = SwaggerModule.createDocument(app, builder.build());
 

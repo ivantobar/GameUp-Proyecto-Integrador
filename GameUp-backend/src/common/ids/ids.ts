@@ -37,9 +37,14 @@ export function idATexto(id: bigint): string {
  * Decorador para DTO de entrada: el campo es un id numérico en texto
  * (ej.: "42"). Después, el mapper lo convierte con `aBigInt`.
  */
-export function IsIdNumerico(): PropertyDecorator {
+export function IsIdNumerico(
+  opciones: { each?: boolean } = {},
+): PropertyDecorator {
   return Matches(PATRON_ID, {
+    each: opciones.each ?? false,
     message: ({ property }) =>
-      `${property} debe ser un id numérico en texto (ej.: "42")`,
+      opciones.each
+        ? `${property} debe ser una lista de ids numéricos en texto (ej.: ["42"])`
+        : `${property} debe ser un id numérico en texto (ej.: "42")`,
   });
 }
