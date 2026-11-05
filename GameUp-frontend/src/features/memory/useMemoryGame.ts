@@ -1,6 +1,6 @@
 import { useCallback, useReducer } from 'react';
 import { memoryBoards } from '@/data/mock/gameContent';
-import type { PictureFace } from '@/data/types';
+import type { MemoryBoard, PictureFace } from '@/data/types';
 import { useNarration } from '@/features/narration/useNarration';
 import {
   cardView,
@@ -16,14 +16,18 @@ export const MEMORY_INSTRUCTION = 'Voltea dos cartas iguales';
 
 /**
  * Estado y acciones de «Memoria». La pantalla solo pinta.
- * Contenido de ejemplo: `memoryBoards` (ver `data/mock/gameContent.ts`).
+ * `content`: los tableros de la actividad; si el juego es libre, el
+ * contenido de ejemplo (`memoryBoards`, ver `data/mock/gameContent.ts`).
  */
-export function useMemoryGame(onFinish: (state: MemoryState) => void) {
-  const [state, dispatch] = useReducer(memoryReducer, memoryBoards, (boards) =>
+export function useMemoryGame(
+  onFinish: (state: MemoryState) => void,
+  content: readonly MemoryBoard[] = memoryBoards,
+) {
+  const [state, dispatch] = useReducer(memoryReducer, content, (boards) =>
     createMemory(boards),
   );
   const { narrate } = useNarration();
-  const board = memoryBoards[state.board];
+  const board = content[state.board];
   const faceOf = useCallback(
     (faceId: string): PictureFace | undefined =>
       board?.pairs.find((face) => face.id === faceId),
@@ -58,7 +62,6 @@ export function useMemoryGame(onFinish: (state: MemoryState) => void) {
   const next = useCallback(() => {
     if (!solved) return;
     dispatch({ type: 'next' });
-    // PENDIENTE (backend): aquí se enviará el resultado para el docente.
     if (isLast) onFinish(state);
   }, [solved, isLast, state, onFinish]);
 

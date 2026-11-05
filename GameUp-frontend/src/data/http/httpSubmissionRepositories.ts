@@ -5,8 +5,17 @@ import type {
   IntentoVozDto,
   RegistrarIntentoDto,
 } from './dto/intentos';
-import { freePlayListeningResult, freePlaySpeechAttempt } from './freePlay';
-import { toListeningResult, toSpeechAttempt } from './mappers/attemptMapper';
+import {
+  freePlayGameResult,
+  freePlayListeningResult,
+  freePlaySpeechAttempt,
+} from './freePlay';
+import {
+  toGameResult,
+  toListeningResult,
+  toResultado,
+  toSpeechAttempt,
+} from './mappers/attemptMapper';
 import { withSilentRetry } from './silentRetry';
 
 /** Nombre y tipo con que se sube la voz (la grabadora de la app hace .m4a). */
@@ -61,6 +70,17 @@ export function createHttpResultRepository(api: ApiClient): ResultRepository {
         api.post<IntentoDto>('/intentos', body),
       );
       return toListeningResult(dto, input);
+    },
+    async submitGameResult(input) {
+      if (!input.activityId) return freePlayGameResult(input);
+      const body: RegistrarIntentoDto = {
+        actividadId: input.activityId,
+        resultado: toResultado(input.score),
+      };
+      const dto = await withSilentRetry(() =>
+        api.post<IntentoDto>('/intentos', body),
+      );
+      return toGameResult(dto, input);
     },
   };
 }

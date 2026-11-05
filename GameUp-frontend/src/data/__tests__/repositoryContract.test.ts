@@ -203,4 +203,64 @@ describe.each(implementations)('contrato de la versión %s', (_name, create) => 
       });
     });
   });
+
+  describe('juegos de «Pensar y recordar»', () => {
+    beforeEach(async () => {
+      await signInAs('estudiante@gameup.test');
+    });
+
+    it.each([
+      ['act-demo-003', 'match'],
+      ['act-demo-004', 'classify'],
+      ['act-demo-005', 'sequence'],
+      ['act-demo-006', 'memory'],
+    ] as const)(
+      'la actividad %s trae el contenido de %s',
+      async (id, gameId) => {
+        const content = await settle(repos.activities.getActivity(id));
+
+        expect(content.gameId).toBe(gameId);
+        const items =
+          content.gameId === 'match'
+            ? content.rounds
+            : content.gameId === 'classify'
+              ? content.sets
+              : content.gameId === 'sequence'
+                ? content.routines
+                : content.gameId === 'memory'
+                  ? content.boards
+                  : [];
+        expect(items.length).toBeGreaterThan(0);
+      },
+    );
+
+    it('desde una tarea, el resultado llega al docente', async () => {
+      const result = await settle(
+        repos.results.submitGameResult({
+          studentId: 'me',
+          gameId: 'match',
+          score: { kind: 'turns', firstTryCorrect: 2, total: 3 },
+          activityId: 'act-demo-003',
+        }),
+      );
+
+      expect(result).toMatchObject({
+        gameId: 'match',
+        status: 'pending_validation',
+        sentForReview: true,
+      });
+    });
+
+    it('en juego libre no se envía', async () => {
+      const result = await settle(
+        repos.results.submitGameResult({
+          studentId: 'me',
+          gameId: 'memory',
+          score: { kind: 'memory', pairs: 3, mismatches: 0 },
+        }),
+      );
+
+      expect(result.sentForReview).toBe(false);
+    });
+  });
 });

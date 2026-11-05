@@ -22,6 +22,10 @@ export function parseDelivery(value: unknown): Delivery {
     : 'review';
 }
 
+/** Para el niño, cuando el juego llegó al docente. */
+export const REVIEW_TEXT =
+  'Tu profe va a revisar tu juego antes de sumarlo a tu progreso';
+
 /** Para el niño, en juego libre o si no se pudo enviar. */
 export const PRACTICE_TEXT = 'Sigue practicando cuando quieras';
 

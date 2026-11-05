@@ -12,6 +12,12 @@ import {
   type TeacherNote,
   type VowelPractice,
 } from '../types';
+import {
+  classifySets,
+  matchRounds,
+  memoryBoards,
+  sequenceRoutines,
+} from './gameContent';
 
 /**
  * Datos ficticios para desarrollo. Ningún dato corresponde a un niño real.
@@ -65,6 +71,31 @@ export const mockActivities: Record<string, ActivityContent> = {
     gameId: 'speak',
     title: 'Di la o',
     vowel: 'o',
+  },
+  // Sin tarea asignada: sirven para abrir estos juegos con `actividadId`.
+  'act-demo-003': {
+    activityId: 'act-demo-003',
+    gameId: 'match',
+    title: 'Emparejar',
+    rounds: matchRounds,
+  },
+  'act-demo-004': {
+    activityId: 'act-demo-004',
+    gameId: 'classify',
+    title: 'Clasificar',
+    sets: classifySets,
+  },
+  'act-demo-005': {
+    activityId: 'act-demo-005',
+    gameId: 'sequence',
+    title: 'Secuenciar',
+    routines: sequenceRoutines,
+  },
+  'act-demo-006': {
+    activityId: 'act-demo-006',
+    gameId: 'memory',
+    title: 'Memoria',
+    boards: memoryBoards,
   },
 };
 

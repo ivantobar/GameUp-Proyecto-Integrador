@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { router } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 import { AppText } from '@/components/ui';
 import { PictureCard, type PictureCardState } from '@/components/gameup';
@@ -7,12 +7,17 @@ import {
   phaseMessage,
   RoundGameScreen,
 } from '@/features/games/components/RoundGameScreen';
+import { GameContentGate } from '@/features/games/components/GameContentGate';
+import { parseActivityId } from '@/features/games/delivery';
+import { useActivityContent } from '@/features/games/useActivityContent';
+import { useGameFinish } from '@/features/games/useGameFinish';
+import { turnScore, type TurnGameState } from '@/features/games/turnGame';
 import { SequenceSlots } from '@/features/sequence/components/SequenceSlots';
 import {
   sequenceQuestion,
   useSequenceGame,
 } from '@/features/sequence/useSequenceGame';
-import type { PictureFace } from '@/data/types';
+import type { PictureFace, SequenceRoutine } from '@/data/types';
 import { spacing } from '@/theme';
 
 /** Agrupa las opciones de dos en dos (cuadrícula 2 × 2). */
@@ -22,11 +27,37 @@ function pairs(items: readonly PictureFace[]): PictureFace[][] {
   return rows;
 }
 
-/** Secuenciar: el niño toca, en orden, los pasos de una rutina. */
+/**
+ * Secuenciar: el niño toca, en orden, los pasos de una rutina. Con
+ * `actividadId`, juega las rutinas de esa tarea y su resultado va al docente.
+ */
 export default function SequenceScreen() {
-  const onFinish = useCallback(() => {
-    router.replace('/student/sequence/done');
-  }, []);
+  const params = useLocalSearchParams<{ actividadId?: string }>();
+  const activityId = parseActivityId(params.actividadId);
+  const { resource, reload } = useActivityContent(activityId, 'sequence');
+  return (
+    <GameContentGate resource={resource} reload={reload}>
+      {(activity) => (
+        <SequenceGame routines={activity?.routines} activityId={activityId} />
+      )}
+    </GameContentGate>
+  );
+}
+
+interface SequenceGameProps {
+  /** Rutinas de la tarea; sin ellas, el contenido de ejemplo. */
+  routines: readonly SequenceRoutine[] | undefined;
+  activityId: string | null;
+}
+
+function SequenceGame({ routines, activityId }: SequenceGameProps) {
+  const { saving, finish } = useGameFinish('sequence', activityId);
+  const onFinish = useCallback(
+    (state: TurnGameState) => {
+      finish(turnScore(state)).catch(() => {});
+    },
+    [finish],
+  );
   const {
     routine,
     placed,
@@ -38,7 +69,7 @@ export default function SequenceScreen() {
     isLast,
     choose,
     next,
-  } = useSequenceGame(onFinish);
+  } = useSequenceGame(onFinish, routines);
 
   if (!routine) return null;
 
@@ -58,6 +89,7 @@ export default function SequenceScreen() {
       solved={solved}
       isLast={isLast}
       onNext={next}
+      saving={saving}
       pendingHint="Primero ordena todos los pasos"
       message={phaseMessage(phase)}
     >

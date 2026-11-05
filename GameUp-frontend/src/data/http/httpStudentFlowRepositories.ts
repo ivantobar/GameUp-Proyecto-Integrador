@@ -6,14 +6,18 @@ import type {
   PracticeRepository,
   ProgressRepository,
 } from '../repositories';
-import type { ActividadDetalleDto } from './dto/actividades';
+import type { ActividadDetalleDto, ContenidoUrlDto } from './dto/actividades';
 import type {
   ActividadPendienteDto,
   ProgresoOficialDto,
 } from './dto/asignaciones';
 import type { ConsentimientoVozDto } from './dto/estudiantes';
 import type { PracticaVocalDto, PuntoRetornoDto } from './dto/intentos';
-import { toActivityContent } from './mappers/activityMapper';
+import {
+  imageIdsOf,
+  toActivityContent,
+  type ImageUrls,
+} from './mappers/activityMapper';
 import { toAssignment } from './mappers/assignmentMapper';
 import { toResumePoint, toVowelPractice } from './mappers/practiceMapper';
 import { toOfficialProgress } from './mappers/progressMapper';
@@ -66,13 +70,43 @@ export function createHttpActivityRepository(
   api: ApiClient,
 ): ActivityRepository {
   return {
-    getActivity: async (activityId) =>
-      toActivityContent(
-        await api.get<ActividadDetalleDto>(
-          `/actividades/${encodeURIComponent(activityId)}`,
-        ),
-      ),
+    getActivity: async (activityId) => {
+      const dto = await api.get<ActividadDetalleDto>(
+        `/actividades/${encodeURIComponent(activityId)}`,
+      );
+      return toActivityContent(dto, await imageUrlsFor(api, dto));
+    },
   };
+}
+
+/**
+ * URLs firmadas de las imágenes de la actividad, en una sola llamada por
+ * módulo. Solo si la actividad usa imágenes. Si no se pueden traer, el
+ * juego sigue: las tarjetas muestran su texto o su etiqueta.
+ */
+async function imageUrlsFor(
+  api: ApiClient,
+  dto: ActividadDetalleDto,
+): Promise<ImageUrls> {
+  const ids = new Set(imageIdsOf(dto.configuracion));
+  if (ids.size === 0) return new Map();
+  try {
+    const urls = await api.get<ContenidoUrlDto[]>(
+      `/modulos/${encodeURIComponent(dto.moduloId)}/contenidos/urls`,
+    );
+    return new Map(
+      requireList(urls, 'contenidos/urls')
+        .map((item) => item as ContenidoUrlDto)
+        .filter((c) => ids.has(c.contenidoId) && typeof c.url === 'string')
+        .map((c) => [c.contenidoId, c.url]),
+    );
+  } catch (error) {
+    console.warn(
+      '[GameUP] No se pudieron cargar las imágenes de la actividad',
+      error instanceof Error ? error.name : 'Error',
+    );
+    return new Map();
+  }
 }
 
 export function createHttpProgressRepository(

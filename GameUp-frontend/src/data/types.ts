@@ -140,14 +140,58 @@ export interface NewListeningResult {
   activityId?: string | null;
 }
 
+/** Juegos de «Pensar y recordar»: envían su resultado con `POST /intentos`. */
+export type ThinkingGameId = 'match' | 'classify' | 'sequence' | 'memory';
+
 /**
- * Contenido de una actividad asignada, según su juego. En la fase 2a solo
- * «Busca la boca» (qué vocales) y «Habla conmigo» (qué vocal); los demás
- * juegos se agregan con su configuración.
+ * Lo que se informa al docente al terminar (no es una nota):
+ * - `turns`: Emparejar, Clasificar y Secuenciar, cuántos turnos resolvió al
+ *   primer intento de cuántos tenía el juego;
+ * - `memory`: parejas del juego y veces que abrió dos cartas distintas.
+ * Sin tiempos, vidas ni penalizaciones (Regla 11).
+ */
+export type GameScore =
+  | { kind: 'turns'; firstTryCorrect: number; total: number }
+  | { kind: 'memory'; pairs: number; mismatches: number };
+
+export interface NewGameResult {
+  studentId: string;
+  gameId: ThinkingGameId;
+  score: GameScore;
+  /** Actividad asignada de la que viene, o nada si el juego se abrió libre. */
+  activityId?: string | null;
+}
+
+export interface GameResult {
+  id: string;
+  studentId: string;
+  gameId: ThinkingGameId;
+  status: ActivityStatus;
+  createdAt: string;
+  /** ¿Llegó al docente? (ver `SpeechAttempt.sentForReview`). */
+  sentForReview: boolean;
+}
+
+interface ActivityBase {
+  activityId: string;
+  title: string;
+}
+
+/**
+ * Contenido de una actividad asignada, según su juego: qué vocales juega
+ * «Busca la boca», qué vocal «Habla conmigo», y las rondas, conjuntos,
+ * rutinas o tableros de los juegos de «Pensar y recordar».
  */
 export type ActivityContent =
-  | { activityId: string; gameId: 'findMouth'; title: string; vowels: Vowel[] }
-  | { activityId: string; gameId: 'speak'; title: string; vowel: Vowel };
+  | (ActivityBase & { gameId: 'findMouth'; vowels: Vowel[] })
+  | (ActivityBase & { gameId: 'speak'; vowel: Vowel })
+  | (ActivityBase & { gameId: 'match'; rounds: readonly MatchRound[] })
+  | (ActivityBase & { gameId: 'classify'; sets: readonly ClassifySet[] })
+  | (ActivityBase & {
+      gameId: 'sequence';
+      routines: readonly SequenceRoutine[];
+    })
+  | (ActivityBase & { gameId: 'memory'; boards: readonly MemoryBoard[] });
 
 /** Persona adulta con sesión (docente o acudiente). */
 export interface StaffProfile {
@@ -246,6 +290,11 @@ export interface AuthSession {
 export interface PictureFace {
   id: string;
   label: string;
+  /**
+   * Imagen de la fundación (URL firmada del backend). Si no hay, se usa el
+   * dibujo provisional (`emoji`) o la palabra.
+   */
+  imageUri?: string;
   emoji?: string;
   count?: number;
   text?: string;

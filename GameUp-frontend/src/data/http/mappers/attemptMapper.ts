@@ -1,5 +1,8 @@
 import type {
+  GameResult,
+  GameScore,
   ListeningResult,
+  NewGameResult,
   NewListeningResult,
   NewSpeechAttempt,
   SpeechAttempt,
@@ -39,6 +42,32 @@ export function toListeningResult(
     gameId: 'findMouth',
     firstTryCorrect: input.firstTryCorrect,
     total: input.total,
+    status: toAttemptStatus(dto.estado),
+    createdAt: requireText(dto.fecha, 'fecha'),
+    sentForReview: true,
+  };
+}
+
+/**
+ * `resultado` que pide el backend para cada juego (decisión 11 de la fase 0):
+ * Emparejar, Clasificar y Secuenciar, `{ firstTryCorrect, total }`; Memoria,
+ * `{ pairs, mismatches }`. Nada más: ni tiempos, ni vidas, ni penalizaciones.
+ */
+export function toResultado(score: GameScore): Record<string, number> {
+  return score.kind === 'turns'
+    ? { firstTryCorrect: score.firstTryCorrect, total: score.total }
+    : { pairs: score.pairs, mismatches: score.mismatches };
+}
+
+/** Resultado de Emparejar, Clasificar, Secuenciar o Memoria guardado. */
+export function toGameResult(
+  dto: IntentoDto,
+  input: NewGameResult,
+): GameResult {
+  return {
+    id: requireText(dto.id, 'id'),
+    studentId: input.studentId,
+    gameId: input.gameId,
     status: toAttemptStatus(dto.estado),
     createdAt: requireText(dto.fecha, 'fecha'),
     sentForReview: true,

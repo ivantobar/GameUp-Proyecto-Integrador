@@ -1,7 +1,8 @@
-import { StyleSheet, View } from 'react-native';
+import type { ReactNode } from 'react';
+import { Image, StyleSheet, View } from 'react-native';
 import { AppText } from '@/components/ui';
 import type { PictureFace } from '@/data/types';
-import { spacing, type TextVariant } from '@/theme';
+import { radii, sizes, spacing, type TextVariant } from '@/theme';
 
 export type PictogramSize = 'md' | 'lg';
 
@@ -15,31 +16,56 @@ interface PictogramProps {
   size?: PictogramSize;
 }
 
+/** Números y letras sueltas, grandes; palabras, en tamaño título. */
+function textVariant(text: string): TextVariant {
+  return text.length <= 2 ? 'glyph' : 'title';
+}
+
 /**
- * Lo que muestra una tarjeta de juego: el dibujo (repetido si es una
- * cantidad) o la palabra o el número. Es decorativo: el elemento que lo
- * contiene dice al lector de pantalla qué es (`face.label`).
+ * Lo que muestra una tarjeta de juego: la imagen de la fundación (o, si no
+ * hay, el dibujo provisional), repetida si es una cantidad; y la palabra o
+ * el número. Si no hay nada que dibujar, se muestra la etiqueta. Es
+ * decorativo: el elemento que lo contiene dice al lector de pantalla qué es
+ * (`face.label`).
  */
 export function Pictogram({ face, size = 'md' }: PictogramProps) {
   const count = Math.max(1, face.count ?? 1);
+  const side = sizes.pictogramImage[size];
+  const repeat = (render: (index: number) => ReactNode) =>
+    Array.from({ length: count }, (_, index) => render(index));
+  const fallbackText =
+    !face.imageUri && !face.emoji && !face.text ? face.label : null;
+
   return (
     <View
       style={styles.wrap}
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
     >
-      {face.emoji
-        ? Array.from({ length: count }, (_, index) => (
-            <AppText key={index} variant={emojiVariant[size]}>
-              {face.emoji}
-            </AppText>
+      {face.imageUri
+        ? repeat((index) => (
+            <Image
+              key={index}
+              source={{ uri: face.imageUri }}
+              style={[styles.image, { width: side, height: side }]}
+              resizeMode="contain"
+              accessible={false}
+              testID="pictogram-image"
+            />
           ))
-        : null}
+        : face.emoji
+          ? // Respaldo: dibujo provisional cuando no hay imagen.
+            repeat((index) => (
+              <AppText key={index} variant={emojiVariant[size]}>
+                {face.emoji}
+              </AppText>
+            ))
+          : null}
       {face.text ? (
-        // Números y letras sueltas, grandes; palabras, en tamaño título.
-        <AppText variant={face.text.length <= 2 ? 'glyph' : 'title'}>
-          {face.text}
-        </AppText>
+        <AppText variant={textVariant(face.text)}>{face.text}</AppText>
+      ) : null}
+      {fallbackText ? (
+        <AppText variant={textVariant(fallbackText)}>{fallbackText}</AppText>
       ) : null}
     </View>
   );
@@ -52,5 +78,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.xxs,
+  },
+  image: {
+    borderRadius: radii.md,
   },
 });

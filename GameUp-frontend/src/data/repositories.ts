@@ -3,7 +3,9 @@ import type {
   Assignment,
   AuthSession,
   Credentials,
+  GameResult,
   ListeningResult,
+  NewGameResult,
   NewListeningResult,
   NewSpeechAttempt,
   OfficialProgress,
@@ -97,6 +99,12 @@ export interface ResultRepository {
    * igual que los intentos de habla: solo se envía si trae `activityId`.
    */
   submitFindMouthResult(result: NewListeningResult): Promise<ListeningResult>;
+  /**
+   * Envía el resultado de Emparejar, Clasificar, Secuenciar o Memoria.
+   * Solo se envía si trae `activityId`; el juego libre se practica sin
+   * enviar (`sentForReview: false`).
+   */
+  submitGameResult(result: NewGameResult): Promise<GameResult>;
 }
 
 export interface ProgressRepository {

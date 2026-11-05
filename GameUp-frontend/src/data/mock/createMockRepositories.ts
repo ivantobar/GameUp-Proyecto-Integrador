@@ -3,6 +3,7 @@ import type { Repositories } from '../repositories';
 import {
   MAX_STARS,
   type Assignment,
+  type GameResult,
   type ListeningResult,
   type OfficialProgress,
   type ReviewItem,
@@ -77,6 +78,7 @@ export function createMockRepositories({
     attempts: [] as SpeechAttempt[],
     assignments: clone<Assignment[]>(mockAssignments),
     listeningResults: [] as ListeningResult[],
+    gameResults: [] as GameResult[],
     progress: clone<OfficialProgress>(mockOfficialProgress),
     reviews: createSeedReviews(),
     teacherNotes: {
@@ -258,6 +260,23 @@ export function createMockRepositories({
           },
         });
         markSubmitted('findMouth', activityId);
+        return respond(result);
+      },
+      submitGameResult: ({ activityId, studentId, gameId }) => {
+        // Como antes de conectar estos juegos: el juego libre no se envía.
+        // Desde una tarea, queda guardado y la tarea pasa a «realizada».
+        const result: GameResult = {
+          id: `jue-demo-${state.gameResults.length + 1}`,
+          studentId,
+          gameId,
+          status: activityId ? 'pending_validation' : 'submitted',
+          createdAt: new Date().toISOString(),
+          sentForReview: Boolean(activityId),
+        };
+        if (activityId) {
+          state.gameResults.push(result);
+          markSubmitted(gameId, activityId);
+        }
         return respond(result);
       },
     },

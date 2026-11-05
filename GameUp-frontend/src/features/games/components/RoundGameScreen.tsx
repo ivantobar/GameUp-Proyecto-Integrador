@@ -40,6 +40,8 @@ interface RoundGameScreenProps {
   pendingHint: string;
   /** Mensaje de apoyo bajo la pregunta (pista o felicitación). */
   message: string | null;
+  /** Se está guardando el resultado al terminar: el botón espera. */
+  saving?: boolean;
   children: ReactNode;
 }
 
@@ -59,6 +61,7 @@ export function RoundGameScreen({
   onNext,
   pendingHint,
   message,
+  saving = false,
   children,
 }: RoundGameScreenProps) {
   return (
@@ -74,7 +77,8 @@ export function RoundGameScreen({
         <Button
           label={isLast ? 'Terminar' : 'Siguiente'}
           size="large"
-          disabled={!solved}
+          disabled={!solved || saving}
+          loading={saving}
           accessibilityHint={solved ? undefined : pendingHint}
           onPress={onNext}
         />

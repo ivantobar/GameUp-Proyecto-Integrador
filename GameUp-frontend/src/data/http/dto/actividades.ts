@@ -4,6 +4,13 @@
  */
 import type { CodigoJuego } from './juegos';
 
+/** Un elemento de `GET /modulos/:id/contenidos/urls` (URLs firmadas, 60 min). */
+export interface ContenidoUrlDto {
+  contenidoId: string;
+  url: string;
+  expiraEn: string;
+}
+
 /** Respuesta de `GET /actividades/:id`. */
 export interface ActividadDetalleDto {
   id: string;

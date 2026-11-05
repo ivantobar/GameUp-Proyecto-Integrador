@@ -8,7 +8,7 @@ import {
   mockStudent,
   mockVowelPractice,
 } from '@/data/mock/fixtures';
-import type { GameId } from '@/data/types';
+import type { ActivityContent, GameId, PictureFace } from '@/data/types';
 import { createFakeFetch, errorResponse, jsonResponse } from './fakeFetch';
 
 export const FAKE_API_URL = 'http://api.prueba/api/v1';
@@ -22,6 +22,53 @@ const CODIGOS: Record<GameId, string> = {
   speak: 'HABLA_CONMIGO',
   findMouth: 'BUSCA_LA_BOCA',
 };
+
+/** Tarjeta de la app → «cara» del backend (solo texto en el backend falso). */
+const cara = (face: PictureFace) => ({
+  etiqueta: face.label,
+  texto: face.text ?? face.label,
+});
+
+/** Contenido de la app → `configuracion` del backend (al revés que el mapeador). */
+function configuracionDe(content: ActivityContent): Record<string, unknown> {
+  switch (content.gameId) {
+    case 'findMouth':
+      return { vocales: content.vowels };
+    case 'speak':
+      return { vocal: content.vowel };
+    case 'match':
+      return {
+        rondas: content.rounds.map((r) => ({
+          pregunta: r.question,
+          estimulo: cara(r.prompt),
+          opciones: r.options.map(cara),
+          respuesta: r.options.findIndex((o) => o.id === r.answerId),
+        })),
+      };
+    case 'classify':
+      return {
+        conjuntos: content.sets.map((set) => ({
+          pregunta: set.question,
+          grupos: set.categories.map(cara),
+          elementos: set.items.map((item) => ({
+            cara: cara(item),
+            grupo: set.categories.findIndex((c) => c.id === item.categoryId),
+          })),
+        })),
+      };
+    case 'sequence':
+      return {
+        rutinas: content.routines.map((r) => ({
+          titulo: r.title,
+          pasos: r.steps.map(cara),
+        })),
+      };
+    case 'memory':
+      return {
+        tableros: content.boards.map((b) => ({ parejas: b.pairs.map(cara) })),
+      };
+  }
+}
 
 /** Un intento recién guardado, como lo devuelve el backend. */
 function intentoGuardado(actividadId: string, tipoJuego: string) {
@@ -158,17 +205,21 @@ export function createFakeBackend() {
         },
         titulo: content.title,
         instruccionTexto: null,
-        configuracion:
-          content.gameId === 'findMouth'
-            ? { vocales: content.vowels }
-            : { vocal: content.vowel },
+        configuracion: configuracionDe(content),
         orden: 0,
         activa: true,
       });
     }
     if (method === 'POST' && path === '/intentos') {
       const { actividadId } = body as { actividadId: string };
-      return jsonResponse(201, intentoGuardado(actividadId, 'BUSCA_LA_BOCA'));
+      const content = mockActivities[actividadId];
+      return jsonResponse(
+        201,
+        intentoGuardado(
+          actividadId,
+          content ? CODIGOS[content.gameId] : 'BUSCA_LA_BOCA',
+        ),
+      );
     }
     if (method === 'POST' && path === '/intentos/habla-conmigo') {
       return jsonResponse(201, {

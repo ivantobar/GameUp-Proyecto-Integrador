@@ -1,5 +1,7 @@
 import type {
+  GameResult,
   ListeningResult,
+  NewGameResult,
   NewListeningResult,
   NewSpeechAttempt,
   SpeechAttempt,
@@ -33,6 +35,17 @@ export function freePlayListeningResult(
     gameId: 'findMouth',
     firstTryCorrect: input.firstTryCorrect,
     total: input.total,
+    status: 'submitted',
+    createdAt: new Date().toISOString(),
+    sentForReview: false,
+  };
+}
+
+export function freePlayGameResult(input: NewGameResult): GameResult {
+  return {
+    id: localId('practica-juego'),
+    studentId: input.studentId,
+    gameId: input.gameId,
     status: 'submitted',
     createdAt: new Date().toISOString(),
     sentForReview: false,

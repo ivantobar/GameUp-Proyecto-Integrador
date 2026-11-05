@@ -264,12 +264,6 @@ describe('contenido de una actividad', () => {
     ).toThrow(ServerError);
   });
 
-  it('los demás juegos llegan en la fase 2b', () => {
-    expect(() =>
-      toActivityContent({
-        ...actividad,
-        tipoJuego: { id: '1', codigo: 'EMPAREJAR', nombre: 'Emparejar' },
-      }),
-    ).toThrow('todavía no disponible');
-  });
+  // Los juegos de «Pensar y recordar» (fase 2b) se prueban en
+  // thinkingGamesMappers.test.ts.
 });

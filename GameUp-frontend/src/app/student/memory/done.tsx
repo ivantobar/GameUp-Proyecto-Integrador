@@ -5,7 +5,7 @@ export default function MemoryDone() {
   return (
     <GameDoneScreen
       message="Encontraste todas las parejas"
-      replayHref="/student/memory"
+      replayPath="/student/memory"
     />
   );
 }

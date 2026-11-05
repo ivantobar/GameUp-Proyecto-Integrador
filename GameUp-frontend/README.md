@@ -8,7 +8,7 @@ App móvil de **GameUP**, el aula virtual inclusiva de la Fundación ASISCO-UP.
 - Se prueba en el celular con **Expo Go**.
 - Se comunica con el backend **NestJS** (`GameUp-backend`) por su API REST.
 
-> **Estado actual (conexión con la API, fase 2a):** sistema de diseño,
+> **Estado actual (conexión con la API, fase 2b):** sistema de diseño,
 > componentes base, personaje y bocas en SVG, pantallas del estudiante
 > **Inicio**, **Juegos**, **Mi progreso**, el flujo completo de **Habla
 > conmigo** (selección de vocal, **Mira**, **Dilo** y **Listo**), **Busca la
@@ -19,8 +19,11 @@ App móvil de **GameUP**, el aula virtual inclusiva de la Fundación ASISCO-UP.
 > (`EXPO_PUBLIC_DATA_SOURCE=mock`). Con `EXPO_PUBLIC_DATA_SOURCE=api` ya
 > funcionan contra el backend **Iniciar sesión**, el perfil, y del estudiante:
 > tareas pendientes, «Mi progreso» (temas dinámicos), estrellas de práctica,
-> «Sigue donde ibas», consentimiento de voz, **Busca la boca** y **Habla
-> conmigo**. La revisión del docente y el espacio del acudiente se conectan
+> «Sigue donde ibas», consentimiento de voz y los seis juegos: **Busca la
+> boca**, **Habla conmigo**, **Emparejar**, **Clasificar**, **Secuenciar** y
+> **Memoria** (estos cuatro juegan el contenido de su actividad; las
+> tarjetas muestran la imagen de la fundación y, si no hay, el dibujo
+> provisional o la palabra). La revisión del docente y el espacio del acudiente se conectan
 > en las fases 3 y 4 (mientras tanto muestran su aviso con «Reintentar»).
 > Los permisos de cada rol los verifica el backend.
 >
@@ -101,8 +104,10 @@ npm start                # las demás veces
      Debe aparecer «Backend conectado».
    - **Ver la app como → Estudiante**: Inicio, Juegos, Mi progreso, Habla
      conmigo, Busca la boca, Emparejar, Clasificar, Secuenciar y Memoria.
-     El contenido de estos cuatro está en `src/data/mock/gameContent.ts`
-     (dibujos provisionales con emojis) y todavía no se envía al docente.
+     El contenido de ejemplo de estos cuatro está en
+     `src/data/mock/gameContent.ts` (dibujos provisionales con emojis); se
+     usa en el juego libre. Abiertos desde una tarea, juegan el contenido de
+     su actividad y envían el resultado al docente.
    - **Ver la app como → Docente**: «Por escuchar». Lo que hizo el
      estudiante en esta sesión aparece aquí. «Lo logró» lo valida y sube
      el progreso; «Practicar más» pide una indicación que llega a la
