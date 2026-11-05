@@ -44,6 +44,54 @@ describe('Swagger (e2e)', () => {
     expect(res.body.info.title).toBe('GameUP API');
     // Las rutas documentadas incluyen el prefijo global.
     expect(res.body.paths['/api/v1/health']).toBeDefined();
+    // Fase 2: login es público; me y usuarios piden token.
+    const paths = res.body.paths;
+    expect(paths['/api/v1/auth/login'].post.security).toBeUndefined();
+    expect(paths['/api/v1/auth/me'].get.security).toEqual([{ bearerAuth: [] }]);
+    expect(paths['/api/v1/auth/logout'].post).toBeDefined();
+    expect(paths['/api/v1/usuarios'].post.security).toEqual([
+      { bearerAuth: [] },
+    ]);
+    expect(paths['/api/v1/usuarios/{id}/estado'].patch).toBeDefined();
+    expect(res.body.components.schemas.ErrorRespuestaDto).toBeDefined();
+    // Fase 3.
+    expect(paths['/api/v1/estudiantes/me'].get).toBeDefined();
+    expect(paths['/api/v1/estudiantes/{id}/nivel'].put).toBeDefined();
+    expect(
+      paths['/api/v1/estudiantes/{id}/acudientes/{acudienteId}'].patch,
+    ).toBeDefined();
+    expect(
+      paths['/api/v1/estudiantes/{id}/consentimiento-voz'].get,
+    ).toBeDefined();
+    // Fase 4.
+    expect(paths['/api/v1/tipos-juego'].get).toBeDefined();
+    expect(
+      paths['/api/v1/modulos/{id}/contenidos'].post.requestBody.content[
+        'multipart/form-data'
+      ],
+    ).toBeDefined();
+    expect(paths['/api/v1/modulos/{id}/publicacion'].post).toBeDefined();
+    expect(paths['/api/v1/actividades/{id}/contenidos'].put).toBeDefined();
+    // Fase 5.
+    expect(paths['/api/v1/asignaciones'].post).toBeDefined();
+    expect(paths['/api/v1/asignaciones/{id}'].delete).toBeDefined();
+    expect(
+      paths['/api/v1/estudiantes/me/actividades-pendientes'].get,
+    ).toBeDefined();
+    // Fase 6.
+    expect(paths['/api/v1/intentos'].post).toBeDefined();
+    expect(
+      paths['/api/v1/intentos/habla-conmigo'].post.requestBody.content[
+        'multipart/form-data'
+      ],
+    ).toBeDefined();
+    expect(paths['/api/v1/estudiantes/me/practica-vocales'].get).toBeDefined();
+    // Fase 7.
+    expect(paths['/api/v1/revisiones/pendientes'].get).toBeDefined();
+    expect(paths['/api/v1/intentos/{id}/grabacion'].get).toBeDefined();
+    expect(paths['/api/v1/intentos/{id}/validacion'].post).toBeDefined();
+    expect(paths['/api/v1/validaciones/lote'].post).toBeDefined();
+    expect(paths['/api/v1/estudiantes/{id}/progreso'].get).toBeDefined();
     expect(res.body.components.securitySchemes.bearerAuth).toMatchObject({
       type: 'http',
       scheme: 'bearer',

@@ -29,6 +29,63 @@ describe('validateEnv', () => {
     ).toThrow(/debe empezar por postgresql/);
   });
 
+  it('API de seguridad: URL opcional y valores por defecto de timeout y caché', () => {
+    const env = validateEnv({ DATABASE_URL: DB });
+    expect(env.SEGURIDAD_API_URL).toBeUndefined();
+    expect(env.SEGURIDAD_API_TIMEOUT_MS).toBe(5000);
+    expect(env.AUTH_CACHE_TTL_SEG).toBe(300);
+  });
+
+  it('la caché de tokens no puede pasar de 5 minutos', () => {
+    expect(() =>
+      validateEnv({ DATABASE_URL: DB, AUTH_CACHE_TTL_SEG: '301' }),
+    ).toThrow(/inválidas/);
+  });
+
+  it('rechaza una SEGURIDAD_API_URL que no es URL', () => {
+    expect(() =>
+      validateEnv({ DATABASE_URL: DB, SEGURIDAD_API_URL: 'no es url' }),
+    ).toThrow(/inválidas/);
+  });
+
+  it('CONSENTIMIENTO_SIMULADO: false por defecto y lectura estricta', () => {
+    expect(validateEnv({ DATABASE_URL: DB }).CONSENTIMIENTO_SIMULADO).toBe(
+      false,
+    );
+    expect(
+      validateEnv({ DATABASE_URL: DB, CONSENTIMIENTO_SIMULADO: 'false' })
+        .CONSENTIMIENTO_SIMULADO,
+    ).toBe(false);
+    expect(
+      validateEnv({ DATABASE_URL: DB, CONSENTIMIENTO_SIMULADO: 'true' })
+        .CONSENTIMIENTO_SIMULADO,
+    ).toBe(true);
+    expect(() =>
+      validateEnv({ DATABASE_URL: DB, CONSENTIMIENTO_SIMULADO: 'si' }),
+    ).toThrow(/true o false/);
+  });
+
+  it('CONSENTIMIENTO_SIMULADO está prohibido en producción', () => {
+    expect(() =>
+      validateEnv({
+        DATABASE_URL: DB,
+        NODE_ENV: 'production',
+        CONSENTIMIENTO_SIMULADO: 'true',
+      }),
+    ).toThrow(/no se puede activar en producción/);
+  });
+
+  it('LIMPIEZA_GRABACIONES_MIN: 30 por defecto, 0 la desactiva', () => {
+    expect(validateEnv({ DATABASE_URL: DB }).LIMPIEZA_GRABACIONES_MIN).toBe(30);
+    expect(
+      validateEnv({ DATABASE_URL: DB, LIMPIEZA_GRABACIONES_MIN: '0' })
+        .LIMPIEZA_GRABACIONES_MIN,
+    ).toBe(0);
+    expect(() =>
+      validateEnv({ DATABASE_URL: DB, LIMPIEZA_GRABACIONES_MIN: '-1' }),
+    ).toThrow(/inválidas/);
+  });
+
   it('Supabase es opcional', () => {
     const env = validateEnv({ DATABASE_URL: DB, NODE_ENV: 'production' });
     expect(env.SUPABASE_URL).toBeUndefined();

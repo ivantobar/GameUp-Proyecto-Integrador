@@ -32,6 +32,19 @@ services:
       # URL que Render asigna, ej.: https://gameup-backend.onrender.com
       - key: PUBLIC_URL
         sync: false
+      # URL base de la API de seguridad (login y perfil), sin /api al final.
+      - key: SEGURIDAD_API_URL
+        sync: false
+      - key: SEGURIDAD_API_TIMEOUT_MS
+        value: "5000"
+      - key: AUTH_CACHE_TTL_SEG
+        value: "300"
+      # Nunca true en producción (la app no arrancaría).
+      - key: CONSENTIMIENTO_SIMULADO
+        value: "false"
+      # Limpieza de grabaciones de voz (minutos; 0 la desactiva).
+      - key: LIMPIEZA_GRABACIONES_MIN
+        value: "30"
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_SECRET_KEY

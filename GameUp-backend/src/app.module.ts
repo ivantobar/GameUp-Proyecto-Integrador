@@ -1,8 +1,23 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { APP_FILTER } from '@nestjs/core';
+import { AlmacenamientoModule } from './common/almacenamiento/almacenamiento.module.js';
+import { FiltroErroresGlobal } from './common/errors/filtro-errores.filter.js';
+import { RelojModule } from './common/reloj/reloj.module.js';
 import { validateEnv } from './config/env.validation.js';
-import { CrudModule } from './crud/crud.module.js';
 import { HealthModule } from './health/health.module.js';
+import { AsignacionesModule } from './modules/asignaciones/asignaciones.module.js';
+import { AuthModule } from './modules/auth/auth.module.js';
+import { CatalogoModule } from './modules/catalogo/catalogo.module.js';
+import { ConsentimientoModule } from './modules/consentimiento/consentimiento.module.js';
+import { EstudiantesModule } from './modules/estudiantes/estudiantes.module.js';
+import { IntentosModule } from './modules/intentos/intentos.module.js';
+import { ModulosModule } from './modules/modulos/modulos.module.js';
+import { NotificacionesModule } from './modules/notificaciones/notificaciones.module.js';
+import { ObservacionesModule } from './modules/observaciones/observaciones.module.js';
+import { PracticaCasaModule } from './modules/practica-casa/practica-casa.module.js';
+import { UsuariosModule } from './modules/usuarios/usuarios.module.js';
+import { ValidacionesModule } from './modules/validaciones/validaciones.module.js';
 import { PrismaModule } from './prisma/prisma.module.js';
 import { SupabaseModule } from './supabase/supabase.module.js';
 
@@ -12,12 +27,37 @@ import { SupabaseModule } from './supabase/supabase.module.js';
     ConfigModule.forRoot({ isGlobal: true, validate: validateEnv }),
     // Base de datos (PostgreSQL) mediante Prisma.
     PrismaModule,
-    // Servicios de Supabase (Auth y Storage para grabaciones), cuando se usen.
+    // Servicios de Supabase (Storage para contenidos y grabaciones).
     SupabaseModule,
+    // Hora actual inyectable (puerto Reloj).
+    RelojModule,
+    // Archivos en Storage (puerto AlmacenArchivos).
+    AlmacenamientoModule,
+    // Autenticación global: toda ruta exige token salvo las @Public().
+    AuthModule,
     HealthModule,
-    // CRUD genérico de PRUEBA (sin permisos por rol).
-    CrudModule,
-    // Aquí se irán agregando: AuthModule, UsersModule, ActivitiesModule, ...
+    // Fase 2: cuentas de GameUP (directora).
+    UsuariosModule,
+    // Fase 3: estudiantes, vínculos, nivel y consentimiento de voz.
+    EstudiantesModule,
+    ConsentimientoModule,
+    // Fase 4: catálogo, módulos, contenidos y actividades.
+    CatalogoModule,
+    ModulosModule,
+    // Fase 5: asignaciones y su avance.
+    AsignacionesModule,
+    // Fase 6: intentos y grabaciones de Habla conmigo.
+    IntentosModule,
+    // Fase 7: validación, borrado del audio y progreso oficial.
+    ValidacionesModule,
+    // Fase 8: acudiente, observaciones, notificaciones y práctica en casa.
+    ObservacionesModule,
+    NotificacionesModule,
+    PracticaCasaModule,
+  ],
+  providers: [
+    // Traduce errores de dominio y de la base a { statusCode, error, message }.
+    { provide: APP_FILTER, useClass: FiltroErroresGlobal },
   ],
 })
 export class AppModule {}

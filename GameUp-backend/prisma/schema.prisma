@@ -4,8 +4,11 @@
 // Los modelos se generaron con `npx prisma db pull` a partir de las migraciones
 // de prisma/migrations. Los triggers, las restricciones CHECK, RLS y los
 // buckets de Storage viven solo en esas migraciones (Prisma no los modela).
-// Después de cada cambio:
-//   npm run db:migrate -- --name descripcion_del_cambio
+// NO uses `prisma migrate dev`, `migrate reset` ni `db push` contra Supabase.
+// Para cambiar el esquema: escribe una migración nueva en
+// prisma/migrations/<timestamp>_<nombre>/migration.sql, pruébala en una base
+// PostgreSQL local (prisma/pruebas/README.md), actualiza este archivo con
+// `npx prisma db pull` contra esa base local y ejecuta `npm run db:generate`.
  
 generator client {
   provider            = "prisma-client"
@@ -138,8 +141,9 @@ model estudiante {
   usuario               usuario                 @relation(fields: [usuario_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   historial_nivel       historial_nivel[]
   observacion           observacion[]
+  practica_casa         practica_casa[]
   tallerista_estudiante tallerista_estudiante[]
- 
+
   @@index([nivel_id], map: "ix_estudiante_nivel")
 }
  
@@ -276,7 +280,23 @@ model observacion {
   @@index([autor_id], map: "ix_observacion_autor")
   @@index([estudiante_id, fecha(sort: Desc)], map: "ix_observacion_estudiante")
 }
- 
+
+/// Migración 20261105120000_practica_casa. Escrito a mano (no hay base local para `db pull`):
+/// al aplicarla en una base local, compáralo con lo que genere `npx prisma db pull`.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model practica_casa {
+  estudiante_id BigInt
+  acudiente_id  BigInt
+  fecha         DateTime   @db.Date
+  registrada_en DateTime   @default(now()) @db.Timestamptz(6)
+  usuario       usuario    @relation(fields: [acudiente_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  estudiante    estudiante @relation(fields: [estudiante_id], references: [usuario_id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([estudiante_id, acudiente_id, fecha])
+  @@index([acudiente_id], map: "ix_practica_casa_acudiente")
+}
+
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model rol {
@@ -331,6 +351,7 @@ model usuario {
   modulo                modulo[]
   notificacion          notificacion[]
   observacion           observacion[]
+  practica_casa         practica_casa[]
   tallerista_estudiante tallerista_estudiante[]
   rol                   rol                     @relation(fields: [rol_id], references: [id])
   validacion            validacion[]
