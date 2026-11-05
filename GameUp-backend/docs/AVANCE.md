@@ -23,7 +23,8 @@ Cada fase vive en su rama, creada desde la rama de la fase anterior. Todas está
 - Pasan las 475 pruebas unitarias (41 archivos) y las 152 e2e (11 archivos).
 - Swagger documenta 54 rutas (70 operaciones).
 - No se agregaron dependencias en ninguna fase.
-- La migración `20261105120000_practica_casa` está escrita, **sin aplicar** en Supabase: primero se prueba contra PostgreSQL real.
+- La migración `20261105120000_practica_casa` se probó contra PostgreSQL real y está **aplicada en Supabase** (2026-11-05).
+- Falta la prueba HTTP de `PUT /estudiantes/:id/practica-casa/hoy` contra Supabase: aún no hay cuenta de prueba de acudiente.
 - En una máquina cargada, la e2e «no se elimina un contenido en uso (409)» de `modulos.e2e-spec.ts` puede fallar por tiempo (tardó 38 s una vez). Pasa al repetirla: no es un fallo de lógica.
 
 Nota para Windows: Git convierte los archivos a CRLF al descargarlos, y
@@ -223,7 +224,7 @@ actividades del estudiante viven en `asignaciones` (reutilizan el cálculo del p
 - RLS sin políticas, `revoke all` para `anon`/`authenticated` y `revoke execute` en la función nueva.
 - El modelo de `schema.prisma` se escribió a mano: hay que compararlo con `prisma db pull` al aplicarla en local.
 - Prueba SQL: `prisma/pruebas/practica_casa.sql`.
-- **Requiere confirmación antes de aplicarse en Supabase.** Mientras no esté aplicada, las dos rutas de práctica en casa fallan; el resto de la API no se ve afectado.
+- Probada contra PostgreSQL real (`practica_casa.sql` y `ajustes_revision.sql` pasan; `prisma db pull` coincide con el modelo escrito a mano) y **aplicada en Supabase** el 2026-11-05 con `npm run db:deploy`.
 
 **Fuera de la fase 8:** la nota de voz para la familia (`nota-voz`), que quedó pospuesta.
 

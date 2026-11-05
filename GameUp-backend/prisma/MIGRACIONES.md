@@ -12,19 +12,17 @@ npx prisma migrate resolve --applied 0_esquema_inicial   # ya existe: no se ejec
 npm run db:deploy                                        # aplica los ajustes
 ```
 
-**`20261105120000_practica_casa` (fase 8): PENDIENTE de aplicar en Supabase.**
+**`20261105120000_practica_casa` (fase 8): aplicada en Supabase el 2026-11-05.**
 Crea la tabla `practica_casa` («Lo practicamos hoy» del acudiente), con un trigger
 de rol (ACUDIENTE), otro de vínculo con el estudiante, RLS sin políticas y sin
-permisos para `anon`/`authenticated`. Antes de aplicarla en Supabase:
+permisos para `anon`/`authenticated`. Antes de aplicarla se hizo esto:
 
-1. Aplicarla en una base local y correr `prisma/pruebas/practica_casa.sql`.
-2. Comparar el modelo `practica_casa` de `schema.prisma` (escrito a mano) con
-   el que genere `npx prisma db pull` contra esa base local.
-3. **Pedir confirmación** y solo entonces ejecutar `npm run db:deploy` contra Supabase.
-
-Mientras no esté aplicada, las rutas de práctica en casa
-(`/estudiantes/:id/practica-semanal` y `/estudiantes/:id/practica-casa/hoy`)
-fallan porque la tabla no existe; el resto de la API no se ve afectado.
+1. Se aplicó en PostgreSQL real y pasaron `prisma/pruebas/practica_casa.sql` y
+   `prisma/pruebas/ajustes_revision.sql`.
+2. `npx prisma db pull` dio el mismo modelo `practica_casa` que `schema.prisma`.
+3. Con confirmación, `npx prisma migrate status` (3 aplicadas, 1 pendiente) y
+   `npm run db:deploy` contra Supabase. Después se comprobaron en Supabase las
+   columnas, la PK, RLS, los dos triggers y que `anon`/`authenticated` no tengan permisos.
 
 **En una base local nueva**: `npm run db:deploy` aplica todas. La base local
 necesita el esquema `storage` con la tabla `buckets`, que Supabase trae por defecto
