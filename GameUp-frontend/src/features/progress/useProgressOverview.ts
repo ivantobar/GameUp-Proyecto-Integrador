@@ -2,7 +2,7 @@ import { useCallback } from 'react';
 import { toPercent } from '@/components/ui';
 import { useRepositories } from '@/data/RepositoryProvider';
 import { useResource } from '@/data/useResource';
-import { moduleCatalog, type ModuleDefinition } from './modules';
+import { moduleDefinitionFor, type ModuleDefinition } from './modules';
 
 export interface ModuleProgressItem {
   module: ModuleDefinition;
@@ -19,7 +19,8 @@ export interface ProgressOverview {
 /**
  * «Mi progreso»: porcentaje por tema calculado SOLO con actividades
  * validadas por el docente (regla de negocio 2). Lo pendiente de validación
- * no suma. Un tema sin datos se muestra en 0 %.
+ * no suma. Los temas son dinámicos: se muestran los que llegan, en ese
+ * orden y con su nombre.
  */
 export function useProgressOverview() {
   const { students, progress } = useRepositories();
@@ -28,13 +29,10 @@ export function useProgressOverview() {
     const student = await students.getCurrentStudent();
     const official = await progress.getOfficialProgress(student.id);
     return {
-      modules: moduleCatalog.map((module) => {
-        const item = official.modules.find((m) => m.moduleId === module.id);
-        return {
-          module,
-          percent: item ? toPercent(item.validated, item.total) : 0,
-        };
-      }),
+      modules: official.modules.map((item) => ({
+        module: moduleDefinitionFor(item),
+        percent: toPercent(item.validated, item.total),
+      })),
       pendingValidation: official.pendingValidation,
     };
   }, [students, progress]);

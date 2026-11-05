@@ -83,11 +83,16 @@ describe('datos del estudiante con los repositorios simulados', () => {
     expect(data.pendingValidation).toBe(1);
   });
 
-  it('Mi progreso: un tema sin datos aparece en 0 %', async () => {
+  // Módulos dinámicos (decisión de la fase 2a): se muestran los que llegan,
+  // no una lista fija. Antes, un tema sin datos aparecía en 0 %.
+  it('Mi progreso: solo muestra los temas que llegan, con su nombre', async () => {
     const repositories = createMockRepositories({ delayMs: 0 });
     repositories.progress.getOfficialProgress = () =>
       Promise.resolve({
-        modules: [{ moduleId: 'colors', validated: 3, total: 4 }],
+        modules: [
+          { moduleId: 'colors', title: 'Colores', validated: 3, total: 4 },
+          { moduleId: '7', title: 'vocales de prueba', validated: 0, total: 7 },
+        ],
         pendingValidation: 0,
       });
     const { result } = await renderHook(() => useProgressOverview(), {
@@ -96,9 +101,17 @@ describe('datos del estudiante con los repositorios simulados', () => {
     await waitFor(() => expect(result.current.resource.status).toBe('ready'));
     if (result.current.resource.status !== 'ready') return;
 
-    expect(result.current.resource.data.modules.map((m) => m.percent)).toEqual([
-      75, 0, 0, 0,
+    const modules = result.current.resource.data.modules;
+    expect(modules.map((m) => [m.module.title, m.percent])).toEqual([
+      ['Colores', 75],
+      ['vocales de prueba', 0],
     ]);
+    // Un tema que no está en el catálogo usa sus dos primeras letras.
+    expect(modules[0]?.module.symbol).toEqual({
+      kind: 'icon',
+      icon: 'palette',
+    });
+    expect(modules[1]?.module.symbol).toEqual({ kind: 'text', text: 'Vo' });
   });
 
   it('si los datos no llegan, queda en error y se puede reintentar', async () => {

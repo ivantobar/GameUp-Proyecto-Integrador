@@ -3,6 +3,10 @@ import { act, screen, userEvent } from '@testing-library/react-native';
 import { renderRouter } from 'expo-router/testing-library';
 import StudentTabsLayout from '@/app/student/(tabs)/_layout';
 
+// Cargar el router real la primera vez (sin caché de Babel) puede tardar
+// más que el límite común de 30 s.
+jest.setTimeout(90000);
+
 /**
  * SDK 58: si el layout no declara sus pantallas, Expo Router no dibuja nada
  * (pantalla en blanco al entrar como estudiante). Se prueba con el router

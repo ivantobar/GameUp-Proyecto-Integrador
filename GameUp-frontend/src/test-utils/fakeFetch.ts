@@ -6,7 +6,10 @@ export interface FakeRequest {
   url: string;
   method: string;
   headers: Record<string, string>;
+  /** Cuerpo JSON ya leído (o `undefined`). */
   body: unknown;
+  /** Cuerpo tal como se envió (por ejemplo, un FormData). */
+  rawBody: unknown;
 }
 
 export type FakeHandler = (
@@ -36,6 +39,7 @@ export function createFakeFetch(handler: FakeHandler) {
       method: init?.method ?? 'GET',
       headers: { ...(init?.headers as Record<string, string> | undefined) },
       body: typeof init?.body === 'string' ? JSON.parse(init.body) : undefined,
+      rawBody: init?.body,
     };
     requests.push(request);
     return handler(request);

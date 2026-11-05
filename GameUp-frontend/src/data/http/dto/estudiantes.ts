@@ -9,6 +9,14 @@ export interface NivelDto {
   nombre: string;
 }
 
+/** Respuesta de `GET /estudiantes/me/consentimiento-voz`. */
+export interface ConsentimientoVozDto {
+  /** `true` solo si se verificó y está aceptado. Si es `false`, la app no graba. */
+  concedido: boolean;
+  motivo: string;
+  verificadoEn: string;
+}
+
 /** Respuesta de `GET /estudiantes/me`. */
 export interface EstudiantePropioDto {
   id: string;

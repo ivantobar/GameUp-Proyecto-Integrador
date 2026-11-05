@@ -5,16 +5,19 @@ import type { Assignment, ResumePoint, StudentProfile } from '@/data/types';
 import {
   findGame,
   gameCatalog,
+  nextAssignment,
   type GameDefinition,
 } from '@/features/games/catalog';
-import { moduleCatalog } from '@/features/progress/modules';
 
 export interface StudentHomeData {
   student: StudentProfile;
   /** Cuántas tareas tiene pendientes («Hoy tienes 2 juegos»). */
   pendingCount: number;
   resume: ResumePoint | null;
-  /** La tarea nueva más reciente que dejó el docente, si hay. */
+  /**
+   * La próxima tarea que dejó el docente: primero las nuevas y luego las
+   * que pidió practicar otra vez.
+   */
   newAssignment: { assignment: Assignment; game: GameDefinition } | null;
   gamesCount: number;
   /** Temas que se ven en «Mi progreso». */
@@ -23,26 +26,28 @@ export interface StudentHomeData {
 
 /** Datos de la pantalla Inicio del estudiante. */
 export function useStudentHome() {
-  const { students, practice, assignments } = useRepositories();
+  const { students, practice, assignments, progress } = useRepositories();
 
   const load = useCallback(async (): Promise<StudentHomeData> => {
     const student = await students.getCurrentStudent();
-    const [resume, pending] = await Promise.all([
+    const [resume, pending, official] = await Promise.all([
       practice.getResumePoint(student.id),
       assignments.listPendingForStudent(student.id),
+      progress.getOfficialProgress(student.id),
     ]);
-    const firstNew = pending.find((a) => a.isNew) ?? null;
+    const next = nextAssignment(pending);
     return {
       student,
       pendingCount: pending.length,
       resume,
-      newAssignment: firstNew
-        ? { assignment: firstNew, game: findGame(firstNew.gameId) }
+      newAssignment: next
+        ? { assignment: next, game: findGame(next.gameId) }
         : null,
       gamesCount: gameCatalog.length,
-      modulesCount: moduleCatalog.length,
+      // Los temas son dinámicos: se cuentan los que tiene asignados.
+      modulesCount: official.modules.length,
     };
-  }, [students, practice, assignments]);
+  }, [students, practice, assignments, progress]);
 
   return useResource(load);
 }

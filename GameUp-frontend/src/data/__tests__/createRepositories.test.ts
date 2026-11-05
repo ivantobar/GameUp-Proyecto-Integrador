@@ -37,7 +37,7 @@ describe('punto de composición', () => {
       dataSource: 'api',
       onSessionExpired: jest.fn(),
     });
-    await expect(repos.practice.getVowelPractice('x')).rejects.toBeInstanceOf(
+    await expect(repos.reviews.listPendingReviews('x')).rejects.toBeInstanceOf(
       NotConnectedYetError,
     );
   });

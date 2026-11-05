@@ -15,6 +15,11 @@ import {
   Character,
   NarrationButton,
 } from '@/components/gameup';
+import {
+  NOT_SENT_ADULT_TEXT,
+  parseActivityId,
+  PRACTICE_TEXT,
+} from '@/features/games/delivery';
 import { exitPractice } from '@/features/speak/components/PracticeHeader';
 import { usePracticeSession } from '@/features/speak/PracticeSession';
 import { useAttemptPlayback } from '@/features/speak/useAttemptPlayback';
@@ -26,8 +31,12 @@ import { colors, sizes, spacing } from '@/theme';
  * no califica: la grabación queda pendiente de validación del profe.
  */
 export default function DoneStep() {
-  const params = useLocalSearchParams<{ vowel: string }>();
+  const params = useLocalSearchParams<{
+    vowel: string;
+    actividadId?: string;
+  }>();
   const vowel = parseVowel(params.vowel);
+  const activityId = parseActivityId(params.actividadId);
   const letter = vowel.toUpperCase();
   const { outcome } = usePracticeSession();
   const audioUri = outcome?.vowel === vowel ? outcome.attempt.audioUri : null;
@@ -39,9 +48,15 @@ export default function DoneStep() {
 
   const name = outcome?.studentName;
   const cheer = name ? `¡Muy bien, ${name}!` : '¡Muy bien!';
-  const reviewText = audioUri
-    ? 'Tu profe lo va a escuchar antes de sumarlo a tu progreso'
-    : 'Tu profe lo revisará contigo en la próxima sesión';
+  // Solo si llegó al docente se habla de la profe (en práctica libre no
+  // recibe nada). Sin envío no hay «Tu profe…».
+  const delivery = outcome?.vowel === vowel ? outcome.delivery : 'review';
+  const reviewText =
+    delivery !== 'review'
+      ? PRACTICE_TEXT
+      : audioUri
+        ? 'Tu profe lo va a escuchar antes de sumarlo a tu progreso'
+        : 'Tu profe lo revisará contigo en la próxima sesión';
 
   return (
     <Screen
@@ -74,9 +89,12 @@ export default function DoneStep() {
             variant="secondary"
             size="large"
             onPress={() =>
+              // Otra vez la misma tarea (si venía de una) o práctica libre.
               router.replace({
                 pathname: '/student/speak/[vowel]/say',
-                params: { vowel },
+                params: activityId
+                  ? { vowel, actividadId: activityId }
+                  : { vowel },
               })
             }
           />
@@ -130,6 +148,11 @@ export default function DoneStep() {
             {reviewText}
           </AppText>
         </View>
+        {delivery === 'notSent' ? (
+          <AppText variant="support" tone="secundario">
+            {NOT_SENT_ADULT_TEXT}
+          </AppText>
+        ) : null}
         {!voiceConsent && outcome ? (
           <AppText variant="support" tone="secundario">
             Tu voz no se grabó porque no hay autorización de tu acudiente.

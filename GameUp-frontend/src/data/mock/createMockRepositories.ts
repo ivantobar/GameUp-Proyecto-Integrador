@@ -17,6 +17,7 @@ import {
   createSeedReviews,
   MOCK_PASSWORD,
   mockAccounts,
+  mockActivities,
   mockAssignments,
   mockGuardian,
   mockGuardianStudents,
@@ -109,6 +110,27 @@ export function createMockRepositories({
       (r) => r.student.id === studentId && r.status === 'pending_validation',
     ).length;
 
+  /**
+   * Una tarea hecha pasa a «realizada»: ya no sale como pendiente, pero
+   * espera la validación del docente. Con `activityId`, solo esa tarea; sin
+   * él (juego libre), todas las de ese juego, como antes.
+   */
+  const markSubmitted = (
+    gameId: Assignment['gameId'],
+    activityId: string | null | undefined,
+  ) => {
+    state.assignments
+      .filter((a) =>
+        activityId
+          ? a.activityId === activityId
+          : a.gameId === gameId && a.status === 'assigned',
+      )
+      .forEach((a) => {
+        a.status = 'submitted';
+        a.isNew = false;
+      });
+  };
+
   /** Cambia el estado de la revisión y del intento original. */
   const setReviewStatus = (
     reviewId: string,
@@ -153,6 +175,12 @@ export function createMockRepositories({
       listPendingForStudent: () =>
         respond(state.assignments.filter((a) => a.status === 'assigned')),
     },
+    activities: {
+      getActivity: (activityId) => {
+        const activity = mockActivities[activityId];
+        return activity ? respond(activity) : fail('Actividad no encontrada');
+      },
+    },
     progress: {
       getOfficialProgress: (studentId) =>
         respond({
@@ -164,7 +192,7 @@ export function createMockRepositories({
       hasVoiceRecordingConsent: () => respond(voiceConsent()),
     },
     recordings: {
-      submitSpeechAttempt: (input) => {
+      submitSpeechAttempt: ({ activityId, ...input }) => {
         const consent = voiceConsent();
         const attempt: SpeechAttempt = {
           id: `int-demo-${state.attempts.length + 1}`,
@@ -173,8 +201,11 @@ export function createMockRepositories({
           audioUri: consent ? input.audioUri : null,
           status: 'pending_validation',
           createdAt: new Date().toISOString(),
+          // En la demo todo llega a «Por escuchar», también el juego libre.
+          sentForReview: true,
         };
         state.attempts.push(attempt);
+        if (activityId) markSubmitted('speak', activityId);
 
         // Aparece en «Por escuchar» del docente: «intento n de n».
         const sameSound = state.reviews.filter(
@@ -205,13 +236,14 @@ export function createMockRepositories({
       },
     },
     results: {
-      submitFindMouthResult: (input) => {
+      submitFindMouthResult: ({ activityId, ...input }) => {
         const result: ListeningResult = {
           id: `res-demo-${state.listeningResults.length + 1}`,
           ...input,
           gameId: 'findMouth',
           status: 'pending_validation',
           createdAt: new Date().toISOString(),
+          sentForReview: true,
         };
         state.listeningResults.push(result);
         state.reviews.unshift({
@@ -225,14 +257,7 @@ export function createMockRepositories({
             total: input.total,
           },
         });
-        // La tarea de Busca la boca pasa a «realizada»: ya no sale como
-        // pendiente en Inicio, pero espera la validación del docente.
-        state.assignments
-          .filter((a) => a.gameId === 'findMouth' && a.status === 'assigned')
-          .forEach((a) => {
-            a.status = 'submitted';
-            a.isNew = false;
-          });
+        markSubmitted('findMouth', activityId);
         return respond(result);
       },
     },

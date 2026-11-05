@@ -162,7 +162,7 @@ describe('partes aún no conectadas', () => {
   it('rechazan con NotConnectedYetError, sin llamar al servidor', async () => {
     const { repos, fetchFn } = setup(() => jsonResponse(200, {}), 'jwt');
 
-    await expect(repos.practice.getVowelPractice('31')).rejects.toBeInstanceOf(
+    await expect(repos.reviews.listPendingReviews('3')).rejects.toBeInstanceOf(
       NotConnectedYetError,
     );
     expect(fetchFn).not.toHaveBeenCalled();

@@ -48,3 +48,27 @@ export const moduleCatalog: readonly ModuleDefinition[] = [
     tone: 'neutral',
   },
 ];
+
+/**
+ * Cómo se ve un tema de «Mi progreso». Los temas son dinámicos (los crea la
+ * fundación): si el id está en el catálogo, se usan su ícono y su tono; si
+ * no, sus dos primeras letras en un recuadro neutro. El nombre siempre es
+ * el que llega con los datos.
+ */
+export function moduleDefinitionFor(progress: {
+  moduleId: ModuleId;
+  title: string;
+}): ModuleDefinition {
+  const known = moduleCatalog.find((module) => module.id === progress.moduleId);
+  if (known) return { ...known, title: progress.title || known.title };
+  const letters = progress.title.trim().slice(0, 2);
+  return {
+    id: progress.moduleId,
+    title: progress.title,
+    symbol: {
+      kind: 'text',
+      text: letters.charAt(0).toUpperCase() + letters.slice(1).toLowerCase(),
+    },
+    tone: 'neutral',
+  };
+}

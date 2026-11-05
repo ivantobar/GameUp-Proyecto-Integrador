@@ -35,23 +35,30 @@ export interface QuizState {
 
 export type QuizAction = { type: 'choose'; vowel: Vowel } | { type: 'next' };
 
-/** Crea las rondas: cada vocal una vez, con 2 bocas distractoras. */
+/**
+ * Crea las rondas: cada vocal de la actividad una vez, con 2 bocas
+ * distractoras. Las distractoras salen de las cinco vocales, así siempre hay
+ * 3 bocas aunque la actividad tenga menos.
+ */
 export function buildRounds(
   random: Random = Math.random,
   vowels: readonly Vowel[] = VOWELS,
 ): QuizRound[] {
   return shuffle(vowels, random).map((target) => {
     const distractors = shuffle(
-      vowels.filter((v) => v !== target),
+      VOWELS.filter((v) => v !== target),
       random,
     ).slice(0, OPTIONS_PER_ROUND - 1);
     return { target, options: shuffle([target, ...distractors], random) };
   });
 }
 
-export function createQuiz(random: Random = Math.random): QuizState {
+export function createQuiz(
+  random: Random = Math.random,
+  vowels: readonly Vowel[] = VOWELS,
+): QuizState {
   return {
-    rounds: buildRounds(random),
+    rounds: buildRounds(random, vowels),
     index: 0,
     phase: 'asking',
     firstTryCorrect: 0,

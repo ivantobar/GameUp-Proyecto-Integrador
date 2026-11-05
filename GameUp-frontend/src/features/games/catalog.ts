@@ -110,18 +110,68 @@ export function gameHref(game: GameDefinition): Href {
 }
 
 /**
+ * ¿La tarea se ofrece para abrirla? Las nuevas (sin abrir) y las que el
+ * docente pidió practicar otra vez. Una ya empezada aparece en «Sigue donde
+ * ibas».
+ */
+function isOffered(assignment: Assignment): boolean {
+  return assignment.isNew || assignment.status === 'rejected';
+}
+
+/**
+ * Próxima tarea para abrir (de un juego, o de cualquiera): primero las
+ * nuevas y luego las que el docente pidió repetir. `null` si no hay.
+ */
+export function nextAssignment(
+  pendingAssignments: readonly Assignment[],
+  gameId?: GameId,
+): Assignment | null {
+  const offered = pendingAssignments.filter(
+    (a) => isOffered(a) && (gameId === undefined || a.gameId === gameId),
+  );
+  return offered.find((a) => a.isNew) ?? offered[0] ?? null;
+}
+
+/**
  * Insignia de un juego:
- * - «Tarea» si el docente lo asignó y el estudiante aún no la ha abierto
- *   (una tarea ya empezada aparece en «Sigue donde ibas»);
+ * - «Tarea» si tiene una tarea para abrir (nueva o para repetir);
  * - si no, «Nuevo» si el juego es nuevo en la app.
  */
 export function gameBadge(
   game: GameDefinition,
   pendingAssignments: readonly Assignment[],
 ): string | undefined {
-  if (pendingAssignments.some((a) => a.gameId === game.id && a.isNew)) {
-    return 'Tarea';
-  }
+  if (nextAssignment(pendingAssignments, game.id)) return 'Tarea';
   if (game.isNewGame) return 'Nuevo';
   return undefined;
+}
+
+/**
+ * A dónde lleva una tarea: al juego, con `actividadId` en la ruta para que
+ * el resultado llegue al docente. «Habla conmigo» va directo a su vocal.
+ * Sin actividad (o sin vocal), el juego se abre libre.
+ */
+export function assignmentHref(assignment: Assignment): Href {
+  const game = findGame(assignment.gameId);
+  const actividadId = assignment.activityId;
+  if (!actividadId) return gameHref(game);
+  switch (assignment.gameId) {
+    case 'speak':
+      return assignment.vowel
+        ? {
+            pathname: '/student/speak/[vowel]/look',
+            params: { vowel: assignment.vowel, actividadId },
+          }
+        : gameHref(game);
+    case 'findMouth':
+      return { pathname: '/student/find-mouth', params: { actividadId } };
+    case 'match':
+      return { pathname: '/student/match', params: { actividadId } };
+    case 'classify':
+      return { pathname: '/student/classify', params: { actividadId } };
+    case 'sequence':
+      return { pathname: '/student/sequence', params: { actividadId } };
+    case 'memory':
+      return { pathname: '/student/memory', params: { actividadId } };
+  }
 }

@@ -5,13 +5,19 @@ import { AppText, Button, Screen } from '@/components/ui';
 import { Character, VideoPlaceholder } from '@/components/gameup';
 import { useNarration } from '@/features/narration/useNarration';
 import { PracticeHeader } from '@/features/speak/components/PracticeHeader';
+import { parseActivityId } from '@/features/games/delivery';
 import { parseVowel, vowelContent } from '@/features/speak/vowelContent';
 import { spacing } from '@/theme';
 
 /** Pantalla 4 · Paso 1 «Mira»: letra, boca del personaje y apoyos. */
 export default function LookStep() {
-  const params = useLocalSearchParams<{ vowel: string }>();
+  const params = useLocalSearchParams<{
+    vowel: string;
+    actividadId?: string;
+  }>();
   const vowel = parseVowel(params.vowel);
+  // Si viene de una tarea, el intento llega al docente (sigue hasta «Dilo»).
+  const activityId = parseActivityId(params.actividadId);
   const { hint, mouth } = vowelContent[vowel];
   const letter = vowel.toUpperCase();
   const { narrate } = useNarration();
@@ -33,7 +39,9 @@ export default function LookStep() {
           onPress={() =>
             router.push({
               pathname: '/student/speak/[vowel]/say',
-              params: { vowel },
+              params: activityId
+                ? { vowel, actividadId: activityId }
+                : { vowel },
             })
           }
         />

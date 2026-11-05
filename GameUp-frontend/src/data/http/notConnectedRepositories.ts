@@ -17,22 +17,12 @@ const notYet = (what: string) => () =>
 
 /**
  * PROVISIONAL: cada fase reemplaza un grupo por su repositorio HTTP
- * (fase 2: estudiante; fase 3: tallerista; fase 4: acudiente).
+ * (fase 3: tallerista; fase 4: acudiente).
  */
-export const notConnectedRepositories: Omit<
+export const notConnectedRepositories: Pick<
   Repositories,
-  'auth' | 'students' | 'staff'
+  'reviews' | 'guardians'
 > = {
-  practice: {
-    getVowelPractice: notYet('práctica por vocal'),
-    getResumePoint: notYet('punto de retorno'),
-    recordPracticeCycle: notYet('estrellas de práctica'),
-  },
-  assignments: { listPendingForStudent: notYet('actividades pendientes') },
-  progress: { getOfficialProgress: notYet('progreso oficial') },
-  consent: { hasVoiceRecordingConsent: notYet('consentimiento de voz') },
-  recordings: { submitSpeechAttempt: notYet('intentos de voz') },
-  results: { submitFindMouthResult: notYet('resultados de juegos') },
   reviews: {
     listPendingReviews: notYet('revisiones pendientes'),
     validate: notYet('validar'),

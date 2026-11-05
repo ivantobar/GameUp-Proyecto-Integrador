@@ -21,6 +21,8 @@ export type SayPhase = 'ready' | 'recording' | 'saving' | 'error';
 export function useSayStep(
   vowel: Vowel,
   onDone: (outcome: PracticeOutcome) => void,
+  /** Actividad asignada de la que viene, o `null` si es práctica libre. */
+  activityId: string | null = null,
 ) {
   const repositories = useRepositories();
   const { students, consent } = repositories;
@@ -42,7 +44,12 @@ export function useSayStep(
     setPhase('saving');
     try {
       const audioUri = voiceConsent ? await recorder.stop() : null;
-      const outcome = await completePractice(repositories, vowel, audioUri);
+      const outcome = await completePractice(
+        repositories,
+        vowel,
+        audioUri,
+        activityId,
+      );
       onDone(outcome);
     } catch (error) {
       console.warn('[GameUP] No se pudo guardar el intento', error);
@@ -50,7 +57,7 @@ export function useSayStep(
     } finally {
       finishing.current = false;
     }
-  }, [voiceConsent, recorder, repositories, vowel, onDone]);
+  }, [voiceConsent, recorder, repositories, vowel, activityId, onDone]);
 
   /** Toque en el micrófono: empieza a grabar, o termina si ya graba. */
   const toggleRecording = useCallback(async () => {

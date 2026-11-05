@@ -8,7 +8,7 @@ App móvil de **GameUP**, el aula virtual inclusiva de la Fundación ASISCO-UP.
 - Se prueba en el celular con **Expo Go**.
 - Se comunica con el backend **NestJS** (`GameUp-backend`) por su API REST.
 
-> **Estado actual (conexión con la API, fase 1):** sistema de diseño,
+> **Estado actual (conexión con la API, fase 2a):** sistema de diseño,
 > componentes base, personaje y bocas en SVG, pantallas del estudiante
 > **Inicio**, **Juegos**, **Mi progreso**, el flujo completo de **Habla
 > conmigo** (selección de vocal, **Mira**, **Dilo** y **Listo**), **Busca la
@@ -17,10 +17,20 @@ App móvil de **GameUP**, el aula virtual inclusiva de la Fundación ASISCO-UP.
 > docente **Por escuchar** y la del acudiente **Practicar en casa**.
 > Por defecto todo funciona con datos simulados en memoria
 > (`EXPO_PUBLIC_DATA_SOURCE=mock`). Con `EXPO_PUBLIC_DATA_SOURCE=api` ya
-> funcionan contra el backend **Iniciar sesión** y el perfil de quien entra;
-> el resto de pantallas se conecta en las fases siguientes (mientras tanto
-> muestran su aviso de error con «Reintentar»). Los permisos de cada rol los
-> verifica el backend.
+> funcionan contra el backend **Iniciar sesión**, el perfil, y del estudiante:
+> tareas pendientes, «Mi progreso» (temas dinámicos), estrellas de práctica,
+> «Sigue donde ibas», consentimiento de voz, **Busca la boca** y **Habla
+> conmigo**. La revisión del docente y el espacio del acudiente se conectan
+> en las fases 3 y 4 (mientras tanto muestran su aviso con «Reintentar»).
+> Los permisos de cada rol los verifica el backend.
+>
+> **Tareas y juego libre:** el aviso «Tu profe te dejó…» de Inicio y las
+> tarjetas con la insignia «Tarea» abren la actividad con su `actividadId`
+> en la ruta: su resultado llega al docente. Abierto de otra forma, el juego
+> es libre: con la API no se envía ni suma estrellas, y la pantalla final
+> dice «Sigue practicando cuando quieras». Si un envío falla, se reintenta en
+> silencio; si aun así no se puede, el niño celebra igual y aparece un aviso
+> para el adulto (Regla 11).
 
 ---
 

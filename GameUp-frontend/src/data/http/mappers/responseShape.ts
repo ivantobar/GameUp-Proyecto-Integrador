@@ -12,3 +12,16 @@ export function requireText(value: unknown, field: string): string {
   if (typeof value !== 'string' || value.length === 0) throw unexpected(field);
   return value;
 }
+
+/** Entero mayor o igual a 0. */
+export function requireCount(value: unknown, field: string): number {
+  if (typeof value !== 'number' || !Number.isInteger(value) || value < 0) {
+    throw unexpected(field);
+  }
+  return value;
+}
+
+export function requireList(value: unknown, field: string): unknown[] {
+  if (!Array.isArray(value)) throw unexpected(field);
+  return value;
+}

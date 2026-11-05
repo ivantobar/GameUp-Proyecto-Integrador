@@ -1,4 +1,5 @@
 import type {
+  ActivityContent,
   Assignment,
   AuthSession,
   Credentials,
@@ -51,8 +52,10 @@ export interface PracticeRepository {
   /** Dónde se quedó el estudiante, o `null` si no hay nada a medias. */
   getResumePoint(studentId: string): Promise<ResumePoint | null>;
   /**
-   * Registra un ciclo completo Mira → Dilo → Listo: suma 1 estrella de
-   * práctica (máximo 3) y devuelve cuántas tiene ahora esa vocal.
+   * Registra un ciclo completo Mira → Dilo → Listo y devuelve cuántas
+   * estrellas de práctica (máximo 3) tiene ahora esa vocal. Las estrellas
+   * son práctica, no progreso oficial. Con la API las suma el backend al
+   * recibir el intento de una actividad (un juego libre no suma).
    */
   recordPracticeCycle(studentId: string, vowel: Vowel): Promise<StarCount>;
 }
@@ -66,19 +69,32 @@ export interface ConsentRepository {
 }
 
 export interface RecordingRepository {
-  /** Envía un intento de habla; queda pendiente de validación del docente. */
+  /**
+   * Envía un intento de habla; queda pendiente de validación del docente.
+   * Con la API solo se envía si trae `activityId` (juego abierto desde una
+   * actividad); si no, devuelve el intento con `sentForReview: false`.
+   */
   submitSpeechAttempt(attempt: NewSpeechAttempt): Promise<SpeechAttempt>;
 }
 
 export interface AssignmentRepository {
-  /** Tareas que el docente asignó y el estudiante todavía no ha hecho. */
+  /**
+   * Tareas que el docente asignó y el estudiante todavía no ha hecho (o que
+   * el docente pidió practicar más).
+   */
   listPendingForStudent(studentId: string): Promise<Assignment[]>;
+}
+
+export interface ActivityRepository {
+  /** Contenido de una actividad asignada (por ejemplo, qué vocales juega). */
+  getActivity(activityId: string): Promise<ActivityContent>;
 }
 
 export interface ResultRepository {
   /**
    * Envía el resultado de «Busca la boca». Queda pendiente de validación y,
-   * si había una tarea de ese juego, la marca como realizada.
+   * si había una tarea de ese juego, la marca como realizada. Con la API,
+   * igual que los intentos de habla: solo se envía si trae `activityId`.
    */
   submitFindMouthResult(result: NewListeningResult): Promise<ListeningResult>;
 }
@@ -125,6 +141,7 @@ export interface Repositories {
   students: StudentRepository;
   practice: PracticeRepository;
   assignments: AssignmentRepository;
+  activities: ActivityRepository;
   progress: ProgressRepository;
   consent: ConsentRepository;
   recordings: RecordingRepository;

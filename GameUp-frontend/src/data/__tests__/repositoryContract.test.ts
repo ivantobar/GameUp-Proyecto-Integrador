@@ -111,4 +111,96 @@ describe.each(implementations)('contrato de la versión %s', (_name, create) => 
       displayName: guardian.displayName,
     });
   });
+
+  describe('flujo del estudiante', () => {
+    beforeEach(async () => {
+      await signInAs('estudiante@gameup.test');
+    });
+
+    it('práctica: las cinco vocales, con 0 a 3 estrellas', async () => {
+      const practice = await settle(repos.practice.getVowelPractice('me'));
+
+      expect(practice.map((p) => p.vowel)).toEqual(['a', 'e', 'i', 'o', 'u']);
+      practice.forEach((p) => {
+        expect(p.stars).toBeGreaterThanOrEqual(0);
+        expect(p.stars).toBeLessThanOrEqual(3);
+      });
+    });
+
+    it('tareas pendientes: cada una con su actividad para abrirla', async () => {
+      const pending = await settle(
+        repos.assignments.listPendingForStudent('me'),
+      );
+
+      expect(pending.length).toBeGreaterThan(0);
+      pending.forEach((a) => {
+        expect(typeof a.activityId).toBe('string');
+        expect(typeof a.isNew).toBe('boolean');
+      });
+    });
+
+    it('la actividad de Busca la boca trae sus vocales', async () => {
+      const pending = await settle(
+        repos.assignments.listPendingForStudent('me'),
+      );
+      const task = pending.find((a) => a.gameId === 'findMouth');
+      if (!task?.activityId) throw new Error('Falta la tarea de Busca la boca');
+
+      const activity = await settle(
+        repos.activities.getActivity(task.activityId),
+      );
+
+      expect(activity).toMatchObject({ gameId: 'findMouth' });
+      if (activity.gameId === 'findMouth') {
+        expect(activity.vowels.length).toBeGreaterThan(0);
+      }
+    });
+
+    it('progreso: módulos con id y nombre; lo pendiente va aparte', async () => {
+      const progress = await settle(repos.progress.getOfficialProgress('me'));
+
+      progress.modules.forEach((m) => {
+        expect(typeof m.moduleId).toBe('string');
+        expect(typeof m.title).toBe('string');
+        expect(m.validated).toBeLessThanOrEqual(m.total);
+      });
+      expect(typeof progress.pendingValidation).toBe('number');
+    });
+
+    it('el consentimiento es un sí o un no', async () => {
+      const consent = await settle(
+        repos.consent.hasVoiceRecordingConsent('me'),
+      );
+      expect(typeof consent).toBe('boolean');
+    });
+
+    it('un juego abierto desde una actividad llega al docente', async () => {
+      const result = await settle(
+        repos.results.submitFindMouthResult({
+          studentId: 'me',
+          firstTryCorrect: 4,
+          total: 5,
+          activityId: 'act-demo-001',
+        }),
+      );
+      const attempt = await settle(
+        repos.recordings.submitSpeechAttempt({
+          studentId: 'me',
+          vowel: 'o',
+          audioUri: null,
+          activityId: 'act-demo-002',
+        }),
+      );
+
+      expect(result).toMatchObject({
+        status: 'pending_validation',
+        sentForReview: true,
+      });
+      expect(attempt).toMatchObject({
+        status: 'pending_validation',
+        sentForReview: true,
+        audioUri: null,
+      });
+    });
+  });
 });

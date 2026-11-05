@@ -8,7 +8,7 @@ import {
   StateView,
 } from '@/components/ui';
 import { GameCard, NarrationButton } from '@/components/gameup';
-import { gameHref } from '@/features/games/catalog';
+import { assignmentHref, gameHref } from '@/features/games/catalog';
 import { useGameList, type GameListItem } from '@/features/games/useGameList';
 import { spacing } from '@/theme';
 
@@ -68,7 +68,7 @@ export default function GamesScreen() {
                   key={row.map((item) => item.game.id).join('-')}
                   style={styles.row}
                 >
-                  {row.map(({ game, badge }) => (
+                  {row.map(({ game, badge, assignment }) => (
                     <GameCard
                       key={game.id}
                       title={game.title}
@@ -76,7 +76,15 @@ export default function GamesScreen() {
                       icon={game.icon}
                       tone={game.tone}
                       badge={badge}
-                      onPress={() => router.push(gameHref(game))}
+                      // Con «Tarea», abre esa actividad (su resultado llega
+                      // al docente); si no, el juego libre.
+                      onPress={() =>
+                        router.push(
+                          assignment
+                            ? assignmentHref(assignment)
+                            : gameHref(game),
+                        )
+                      }
                     />
                   ))}
                   {/* Si la fila queda impar, un hueco mantiene el ancho. */}

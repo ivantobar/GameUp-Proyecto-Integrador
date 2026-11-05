@@ -47,6 +47,11 @@ export interface ResumePoint {
 
 export interface Assignment {
   id: string;
+  /**
+   * Actividad que se abre (va en la ruta como `actividadId`). Solo los
+   * juegos abiertos desde una actividad envían su resultado al docente.
+   */
+  activityId?: string;
   gameId: GameId;
   /** Vocal concreta, si la tarea es de un juego de habla. */
   vowel?: Vowel;
@@ -57,13 +62,16 @@ export interface Assignment {
 
 /**
  * Módulos educativos (universo del discurso: colores, números, letras…).
- * La lista del MVP sale de la imagen de referencia de «Mi progreso».
+ * Son dinámicos: los crea la fundación en el backend. Los datos simulados
+ * usan ids de texto ('colors', 'letters'…) y la API, ids numéricos.
  */
-export type ModuleId = 'colors' | 'numbers' | 'letters' | 'stories';
+export type ModuleId = string;
 
 /** Avance de un módulo: actividades validadas sobre el total asignado. */
 export interface ModuleProgress {
   moduleId: ModuleId;
+  /** Nombre del módulo («Vocales»). */
+  title: string;
   validated: number;
   total: number;
 }
@@ -92,12 +100,19 @@ export interface SpeechAttempt {
   audioUri: string | null;
   status: ActivityStatus;
   createdAt: string;
+  /**
+   * ¿Llegó al docente? `false` en un juego libre con la API: se practica,
+   * pero no se envía (solo cuentan los juegos abiertos desde una actividad).
+   */
+  sentForReview: boolean;
 }
 
 export interface NewSpeechAttempt {
   studentId: string;
   vowel: Vowel;
   audioUri: string | null;
+  /** Actividad asignada de la que viene, o nada si el juego se abrió libre. */
+  activityId?: string | null;
 }
 
 /**
@@ -113,13 +128,26 @@ export interface ListeningResult {
   total: number;
   status: ActivityStatus;
   createdAt: string;
+  /** ¿Llegó al docente? (ver `SpeechAttempt.sentForReview`). */
+  sentForReview: boolean;
 }
 
 export interface NewListeningResult {
   studentId: string;
   firstTryCorrect: number;
   total: number;
+  /** Actividad asignada de la que viene, o nada si el juego se abrió libre. */
+  activityId?: string | null;
 }
+
+/**
+ * Contenido de una actividad asignada, según su juego. En la fase 2a solo
+ * «Busca la boca» (qué vocales) y «Habla conmigo» (qué vocal); los demás
+ * juegos se agregan con su configuración.
+ */
+export type ActivityContent =
+  | { activityId: string; gameId: 'findMouth'; title: string; vowels: Vowel[] }
+  | { activityId: string; gameId: 'speak'; title: string; vowel: Vowel };
 
 /** Persona adulta con sesión (docente o acudiente). */
 export interface StaffProfile {

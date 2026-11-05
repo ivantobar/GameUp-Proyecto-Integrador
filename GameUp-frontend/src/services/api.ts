@@ -1,5 +1,5 @@
 import { env } from '../config/env';
-import { REQUEST_TIMEOUT_MS } from '../config/http';
+import { REQUEST_TIMEOUT_MS, UPLOAD_TIMEOUT_MS } from '../config/http';
 import {
   ConnectionError,
   ForbiddenError,
@@ -19,6 +19,15 @@ export interface ApiClient {
   get<T>(path: string, options?: RequestOptions): Promise<T>;
   post<T>(path: string, body?: unknown, options?: RequestOptions): Promise<T>;
   put<T>(path: string, body?: unknown, options?: RequestOptions): Promise<T>;
+  /**
+   * POST `multipart/form-data` (por ejemplo, un audio). `fetch` pone la
+   * cabecera con su separador; espera más, porque sube un archivo.
+   */
+  postForm<T>(
+    path: string,
+    form: FormData,
+    options?: RequestOptions,
+  ): Promise<T>;
 }
 
 export interface RequestOptions {
@@ -45,6 +54,16 @@ export interface ApiClientConfig {
 }
 
 type Method = 'GET' | 'POST' | 'PUT';
+
+/** Qué lleva el cuerpo de la petición. */
+type Payload =
+  | { kind: 'none' }
+  | { kind: 'json'; value: unknown }
+  | { kind: 'form'; value: FormData };
+
+const NO_BODY: Payload = { kind: 'none' };
+const json = (value: unknown): Payload =>
+  value === undefined ? NO_BODY : { kind: 'json', value };
 
 /** El backend responde los errores como `{ statusCode, error, message }`. */
 function messageFrom(body: unknown, status: number): string {
@@ -88,11 +107,13 @@ export function createApiClient({
   async function request<T>(
     method: Method,
     path: string,
-    body: unknown,
+    payload: Payload,
     { authenticated = true }: RequestOptions = {},
+    waitMs = timeoutMs,
   ): Promise<T> {
     const headers: Record<string, string> = { Accept: 'application/json' };
-    if (body !== undefined) headers['Content-Type'] = 'application/json';
+    // En multipart no se pone Content-Type: `fetch` agrega el separador.
+    if (payload.kind === 'json') headers['Content-Type'] = 'application/json';
     if (authenticated) {
       const token = await getToken();
       if (!token) {
@@ -109,13 +130,18 @@ export function createApiClient({
     }
 
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    const timer = setTimeout(() => controller.abort(), waitMs);
     let response: Response;
     try {
       response = await (fetchFn ?? fetch)(`${baseUrl}${path}`, {
         method,
         headers,
-        body: body === undefined ? undefined : JSON.stringify(body),
+        body:
+          payload.kind === 'json'
+            ? JSON.stringify(payload.value)
+            : payload.kind === 'form'
+              ? payload.value
+              : undefined,
         signal: controller.signal,
       });
     } catch {
@@ -144,9 +170,17 @@ export function createApiClient({
   }
 
   return {
-    get: (path, options) => request('GET', path, undefined, options),
-    post: (path, body, options) => request('POST', path, body, options),
-    put: (path, body, options) => request('PUT', path, body, options),
+    get: (path, options) => request('GET', path, NO_BODY, options),
+    post: (path, body, options) => request('POST', path, json(body), options),
+    put: (path, body, options) => request('PUT', path, json(body), options),
+    postForm: (path, form, options) =>
+      request(
+        'POST',
+        path,
+        { kind: 'form', value: form },
+        options,
+        UPLOAD_TIMEOUT_MS,
+      ),
   };
 }
 
