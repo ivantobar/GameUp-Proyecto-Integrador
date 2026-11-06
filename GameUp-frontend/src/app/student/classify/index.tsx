@@ -7,8 +7,10 @@ import { CategoryBin } from '@/features/classify/components/CategoryBin';
 import { useClassifyGame } from '@/features/classify/useClassifyGame';
 import type { ClassifySet } from '@/data/types';
 import { GameContentGate } from '@/features/games/components/GameContentGate';
-import { parseActivityId } from '@/features/games/delivery';
-import { useActivityContent } from '@/features/games/useActivityContent';
+import {
+  useGameContent,
+  type GameRouteParams,
+} from '@/features/games/useGameContent';
 import { useGameFinish } from '@/features/games/useGameFinish';
 import { turnScore, type TurnGameState } from '@/features/games/turnGame';
 import {
@@ -24,13 +26,16 @@ const HINT = '¡Casi! Prueba donde está la manito';
  * `actividadId`, juega los conjuntos de esa tarea y su resultado va al docente.
  */
 export default function ClassifyScreen() {
-  const params = useLocalSearchParams<{ actividadId?: string }>();
-  const activityId = parseActivityId(params.actividadId);
-  const { resource, reload } = useActivityContent(activityId, 'classify');
+  const params = useLocalSearchParams<GameRouteParams>();
+  const { resource, reload } = useGameContent(params, 'classify');
   return (
     <GameContentGate resource={resource} reload={reload}>
-      {(activity) => (
-        <ClassifyGame sets={activity?.sets} activityId={activityId} />
+      {(source) => (
+        <ClassifyGame
+          sets={source.content?.sets}
+          activityId={source.activityId}
+          ladder={source.ladder}
+        />
       )}
     </GameContentGate>
   );
@@ -40,10 +45,12 @@ interface ClassifyGameProps {
   /** Conjuntos de la tarea; sin ellos, el contenido de ejemplo. */
   sets: readonly ClassifySet[] | undefined;
   activityId: string | null;
+  /** Abierto en su nivel de la escalera (para «Jugar otra vez»). */
+  ladder: boolean;
 }
 
-function ClassifyGame({ sets, activityId }: ClassifyGameProps) {
-  const { saving, finish } = useGameFinish('classify', activityId);
+function ClassifyGame({ sets, activityId, ladder }: ClassifyGameProps) {
+  const { saving, finish } = useGameFinish('classify', activityId, ladder);
   const onFinish = useCallback(
     (state: TurnGameState) => {
       finish(turnScore(state)).catch(() => {});
@@ -98,6 +105,7 @@ function ClassifyGame({ sets, activityId }: ClassifyGameProps) {
             items={placed.filter((p) => p.categoryId === category.id)}
             hint={phase === 'hinted' && item?.categoryId === category.id}
             disabled={!item}
+            compact={set.categories.length > 2}
             onPress={() => choose(category.id)}
           />
         ))}

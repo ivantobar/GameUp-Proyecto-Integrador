@@ -114,6 +114,7 @@ export class PrismaAsignacionRepository
       orderBy: [{ actividad_id: 'asc' }, { numero_intento: 'asc' }],
     });
     for (const f of filas) {
+      if (f.asignacion_id === null) continue; // no pasa: se filtró por asignación
       resultado.get(f.asignacion_id)?.push(AsignacionMapper.aIntento(f));
     }
     return resultado;

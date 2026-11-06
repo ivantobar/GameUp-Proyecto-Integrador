@@ -1,7 +1,7 @@
 import type { Href } from 'expo-router';
 import type { IconName } from '@/components/ui';
 import type { GameCardTone } from '@/components/gameup';
-import type { Assignment, GameId } from '@/data/types';
+import type { Assignment, GameId, LadderGameId } from '@/data/types';
 
 export type GameSectionId = 'sounds' | 'thinking';
 
@@ -107,6 +107,24 @@ export function gameHref(game: GameDefinition): Href {
       params: { game: game.id },
     }
   );
+}
+
+/**
+ * El juego en el nivel actual de su escalera (fase 9): la pantalla pide la
+ * actividad del nivel y su resultado llega a la profe.
+ */
+export function ladderHref(gameId: LadderGameId): Href {
+  const params = { escalera: '1' };
+  switch (gameId) {
+    case 'match':
+      return { pathname: '/student/match', params };
+    case 'classify':
+      return { pathname: '/student/classify', params };
+    case 'sequence':
+      return { pathname: '/student/sequence', params };
+    case 'memory':
+      return { pathname: '/student/memory', params };
+  }
 }
 
 /**

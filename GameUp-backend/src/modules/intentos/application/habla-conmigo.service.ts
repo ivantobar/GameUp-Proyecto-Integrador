@@ -114,7 +114,8 @@ export class HablaConmigoService {
     const estrellas = estrellasDePractica(previos);
 
     const intento = await this.escritura.registrar({
-      asignacionId: asignacion.id,
+      asignacionId: asignacion?.id ?? null,
+      estudianteId: actual.id,
       actividadId: actividad.id,
       resultado: { estadoGrabacion: estado },
       estrellas,

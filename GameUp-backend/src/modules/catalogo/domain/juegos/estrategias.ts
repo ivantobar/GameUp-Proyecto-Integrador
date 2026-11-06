@@ -6,6 +6,11 @@ import type {
   MedidaResultado,
 } from './estrategia-juego.js';
 import {
+  exigirCantidadDelNivel,
+  reglaDelNivel,
+  type TablaNiveles,
+} from './niveles-juego.js';
+import {
   entero,
   leerCara,
   lista,
@@ -31,6 +36,11 @@ function esVocal(valor: unknown): valor is Vocal {
 abstract class JuegoConCaras implements EstrategiaJuego {
   abstract readonly codigo: EstrategiaJuego['codigo'];
   readonly derivaContenidos = true;
+  /** Emparejar, Clasificar, Secuenciar y Memoria tienen escalera de niveles. */
+  readonly tieneEscalera = true;
+
+  /** Configuración ya normalizada por `validarConfiguracion`. */
+  abstract validarNivel(configuracion: Configuracion, nivel: number): void;
 
   validarConfiguracion(configuracion: Configuracion): ConfiguracionValidada {
     rechazarPresion(configuracion);
@@ -63,12 +73,55 @@ abstract class JuegoConCaras implements EstrategiaJuego {
 }
 
 /**
+ * Escalera de Emparejar: opciones por ronda. En los niveles 4 y 5 la tarjeta
+ * de arriba es una palabra o una cantidad (`texto` o `cantidad`).
+ */
+export const NIVELES_EMPAREJAR: TablaNiveles<{
+  opciones: number;
+  palabraOCantidad: boolean;
+}> = {
+  1: { opciones: 2, palabraOCantidad: false },
+  2: { opciones: 3, palabraOCantidad: false },
+  3: { opciones: 4, palabraOCantidad: false },
+  4: { opciones: 3, palabraOCantidad: true },
+  5: { opciones: 4, palabraOCantidad: true },
+};
+
+/**
  * EMPAREJAR (MatchRound): una tarjeta arriba y de 2 a 4 opciones.
  *   { "rondas": [{ "pregunta", "estimulo": Cara, "opciones": [Cara], "respuesta": 0 }] }
  * Turnos: uno por ronda.
  */
 export class EmparejarEstrategia extends JuegoConCaras {
   readonly codigo = 'EMPAREJAR' as const;
+
+  validarNivel(c: Configuracion, nivel: number): void {
+    const regla = reglaDelNivel(NIVELES_EMPAREJAR, nivel);
+    const rondas = c['rondas'] as Array<{
+      estimulo: Configuracion;
+      opciones: unknown[];
+    }>;
+    rondas.forEach((r, i) => {
+      const ruta = `configuracion.rondas[${i}]`;
+      exigirCantidadDelNivel(
+        'Emparejar',
+        nivel,
+        ruta,
+        'opciones',
+        regla.opciones,
+        r.opciones.length,
+      );
+      if (
+        regla.palabraOCantidad &&
+        r.estimulo['texto'] === undefined &&
+        r.estimulo['cantidad'] === undefined
+      ) {
+        throw new ReglaNegocioError(
+          `Emparejar nivel ${nivel}: ${ruta}.estimulo necesita una palabra (texto) o una cantidad.`,
+        );
+      }
+    });
+  }
 
   protected leer(
     c: Configuracion,
@@ -107,13 +160,52 @@ export class EmparejarEstrategia extends JuegoConCaras {
   }
 }
 
+/** Escalera de Clasificar: grupos y elementos de cada conjunto. */
+export const NIVELES_CLASIFICAR: TablaNiveles<{
+  grupos: number;
+  elementos: number;
+}> = {
+  1: { grupos: 2, elementos: 4 },
+  2: { grupos: 2, elementos: 6 },
+  3: { grupos: 2, elementos: 8 },
+  4: { grupos: 3, elementos: 6 },
+  5: { grupos: 3, elementos: 9 },
+};
+
 /**
- * CLASIFICAR (ClassifySet): 2 grupos y de 2 a 8 elementos por conjunto.
+ * CLASIFICAR (ClassifySet): 2 o 3 grupos y de 2 a 9 elementos por conjunto.
  *   { "conjuntos": [{ "pregunta", "grupos": [Cara, Cara], "elementos": [{ "cara": Cara, "grupo": 0 }] }] }
  * Turnos: uno por elemento. Cada grupo recibe al menos un elemento.
  */
 export class ClasificarEstrategia extends JuegoConCaras {
   readonly codigo = 'CLASIFICAR' as const;
+
+  validarNivel(c: Configuracion, nivel: number): void {
+    const regla = reglaDelNivel(NIVELES_CLASIFICAR, nivel);
+    const conjuntos = c['conjuntos'] as Array<{
+      grupos: unknown[];
+      elementos: unknown[];
+    }>;
+    conjuntos.forEach((s, i) => {
+      const ruta = `configuracion.conjuntos[${i}]`;
+      exigirCantidadDelNivel(
+        'Clasificar',
+        nivel,
+        ruta,
+        'grupos',
+        regla.grupos,
+        s.grupos.length,
+      );
+      exigirCantidadDelNivel(
+        'Clasificar',
+        nivel,
+        ruta,
+        'elementos',
+        regla.elementos,
+        s.elementos.length,
+      );
+    });
+  }
 
   protected leer(
     c: Configuracion,
@@ -129,21 +221,21 @@ export class ClasificarEstrategia extends JuegoConCaras {
       const ruta = `configuracion.conjuntos[${i}]`;
       const s = objeto(valor, ruta);
       soloClaves(s, ['pregunta', 'grupos', 'elementos'], ruta);
-      const grupos = lista(s['grupos'], `${ruta}.grupos`, 2, 2).map((g, j) =>
+      const grupos = lista(s['grupos'], `${ruta}.grupos`, 2, 3).map((g, j) =>
         cara(g, `${ruta}.grupos[${j}]`),
       );
-      const elementos = lista(s['elementos'], `${ruta}.elementos`, 2, 8).map(
+      const elementos = lista(s['elementos'], `${ruta}.elementos`, 2, 9).map(
         (e, j) => {
           const rutaE = `${ruta}.elementos[${j}]`;
           const el = objeto(e, rutaE);
           soloClaves(el, ['cara', 'grupo'], rutaE);
           return {
             cara: cara(el['cara'], `${rutaE}.cara`),
-            grupo: entero(el['grupo'], `${rutaE}.grupo`, 0, 1),
+            grupo: entero(el['grupo'], `${rutaE}.grupo`, 0, grupos.length - 1),
           };
         },
       );
-      for (const grupo of [0, 1]) {
+      for (let grupo = 0; grupo < grupos.length; grupo++) {
         if (!elementos.some((e) => e.grupo === grupo)) {
           throw new ReglaNegocioError(
             `${ruta}: el grupo ${grupo} no tiene elementos.`,
@@ -169,13 +261,36 @@ export class ClasificarEstrategia extends JuegoConCaras {
   }
 }
 
+/** Escalera de Secuenciar: pasos de cada rutina. */
+export const NIVELES_SECUENCIAR: TablaNiveles<number> = {
+  1: 2,
+  2: 3,
+  3: 4,
+  4: 5,
+  5: 6,
+};
+
 /**
- * SECUENCIAR (SequenceRoutine): una rutina con sus pasos EN ORDEN (2 a 4).
+ * SECUENCIAR (SequenceRoutine): una rutina con sus pasos EN ORDEN (2 a 6).
  *   { "rutinas": [{ "titulo", "pasos": [Cara] }] }
  * Turnos: uno por paso. La app los mezcla; aquí se guardan en orden.
  */
 export class SecuenciarEstrategia extends JuegoConCaras {
   readonly codigo = 'SECUENCIAR' as const;
+
+  validarNivel(c: Configuracion, nivel: number): void {
+    const pasos = reglaDelNivel(NIVELES_SECUENCIAR, nivel);
+    (c['rutinas'] as Array<{ pasos: unknown[] }>).forEach((r, i) =>
+      exigirCantidadDelNivel(
+        'Secuenciar',
+        nivel,
+        `configuracion.rutinas[${i}]`,
+        'pasos',
+        pasos,
+        r.pasos.length,
+      ),
+    );
+  }
 
   protected leer(
     c: Configuracion,
@@ -189,7 +304,7 @@ export class SecuenciarEstrategia extends JuegoConCaras {
         soloClaves(r, ['titulo', 'pasos'], ruta);
         return {
           titulo: texto(r['titulo'], `${ruta}.titulo`, 120),
-          pasos: lista(r['pasos'], `${ruta}.pasos`, 2, 4).map((p, j) =>
+          pasos: lista(r['pasos'], `${ruta}.pasos`, 2, 6).map((p, j) =>
             cara(p, `${ruta}.pasos[${j}]`),
           ),
         };
@@ -208,6 +323,15 @@ export class SecuenciarEstrategia extends JuegoConCaras {
   }
 }
 
+/** Escalera de Memoria: parejas de cada tablero (el doble de cartas). */
+export const NIVELES_MEMORIA: TablaNiveles<number> = {
+  1: 2,
+  2: 3,
+  3: 4,
+  4: 5,
+  5: 6,
+};
+
 /**
  * MEMORIA (MemoryBoard): cada cara aparece en dos cartas (2 a 6 parejas).
  *   { "tableros": [{ "parejas": [Cara] }] }
@@ -215,6 +339,20 @@ export class SecuenciarEstrategia extends JuegoConCaras {
  */
 export class MemoriaEstrategia extends JuegoConCaras {
   readonly codigo = 'MEMORIA' as const;
+
+  validarNivel(c: Configuracion, nivel: number): void {
+    const parejas = reglaDelNivel(NIVELES_MEMORIA, nivel);
+    (c['tableros'] as Array<{ parejas: unknown[] }>).forEach((t, i) =>
+      exigirCantidadDelNivel(
+        'Memoria',
+        nivel,
+        `configuracion.tableros[${i}]`,
+        'parejas',
+        parejas,
+        t.parejas.length,
+      ),
+    );
+  }
 
   protected leer(
     c: Configuracion,
@@ -284,6 +422,11 @@ export class MemoriaEstrategia extends JuegoConCaras {
 export class BuscaLaBocaEstrategia implements EstrategiaJuego {
   readonly codigo = 'BUSCA_LA_BOCA' as const;
   readonly derivaContenidos = false;
+  readonly tieneEscalera = false;
+
+  validarNivel(): never {
+    throw new ReglaNegocioError('Busca la boca no tiene escalera de niveles.');
+  }
 
   validarConfiguracion(c: Configuracion): ConfiguracionValidada {
     rechazarPresion(c);
@@ -320,6 +463,11 @@ export class BuscaLaBocaEstrategia implements EstrategiaJuego {
 export class HablaConmigoEstrategia implements EstrategiaJuego {
   readonly codigo = 'HABLA_CONMIGO' as const;
   readonly derivaContenidos = false;
+  readonly tieneEscalera = false;
+
+  validarNivel(): never {
+    throw new ReglaNegocioError('Habla conmigo no tiene escalera de niveles.');
+  }
 
   validarConfiguracion(c: Configuracion): ConfiguracionValidada {
     rechazarPresion(c);

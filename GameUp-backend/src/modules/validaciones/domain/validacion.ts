@@ -49,9 +49,19 @@ export interface ItemRevision {
   tipoJuego: CodigoJuego;
   resultado: Configuracion;
   estudiante: PersonaResumen;
-  actividad: { id: bigint; titulo: string; vocal: string | null };
+  actividad: {
+    id: bigint;
+    titulo: string;
+    vocal: string | null;
+    /** Nivel de la escalera (1-5), o null si es de un módulo. */
+    nivelJuego: number | null;
+  };
   modulo: { id: bigint; nombre: string };
-  /** Intentos pendientes de la misma actividad y asignación (este incluido). */
+  /**
+   * Intentos pendientes de la misma actividad y asignación (este incluido).
+   * En la escalera, la bandeja muestra solo el más reciente de cada nivel:
+   * este número dice cuántos esperan (aprobar uno basta para subir).
+   */
   pendientesMismaActividad: number;
   /**
    * Solo si se guardó audio. `disponible`: aún se puede escuchar.

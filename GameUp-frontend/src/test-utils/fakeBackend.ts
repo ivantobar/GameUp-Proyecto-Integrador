@@ -8,7 +8,14 @@ import {
   mockStudent,
   mockVowelPractice,
 } from '@/data/mock/fixtures';
-import type { ActivityContent, GameId, PictureFace } from '@/data/types';
+import { ladderContent } from '@/data/mock/ladderContent';
+import {
+  LADDER_GAMES,
+  type ActivityContent,
+  type GameId,
+  type LadderGameId,
+  type PictureFace,
+} from '@/data/types';
 import { createFakeFetch, errorResponse, jsonResponse } from './fakeFetch';
 
 export const FAKE_API_URL = 'http://api.prueba/api/v1';
@@ -70,11 +77,40 @@ function configuracionDe(content: ActivityContent): Record<string, unknown> {
   }
 }
 
+/** `escalera-memory-2` → juego y nivel (actividad de la escalera). */
+function deEscalera(actividadId: string) {
+  const m = /^escalera-(\w+)-([1-5])$/.exec(actividadId);
+  const gameId = m?.[1] as LadderGameId | undefined;
+  return m && gameId && LADDER_GAMES.includes(gameId)
+    ? { gameId, nivel: Number(m[2]) }
+    : null;
+}
+
+/** Actividad como la devuelve `GET /actividades/:id`. */
+function actividadDto(content: ActivityContent, nivelJuego: number | null) {
+  return {
+    id: content.activityId,
+    moduloId: nivelJuego === null ? '1' : '90',
+    tipoJuego: {
+      id: '1',
+      codigo: CODIGOS[content.gameId],
+      nombre: content.title,
+    },
+    titulo: content.title,
+    instruccionTexto: null,
+    configuracion: configuracionDe(content),
+    orden: 0,
+    activa: true,
+    nivelJuego,
+  };
+}
+
 /** Un intento recién guardado, como lo devuelve el backend. */
 function intentoGuardado(actividadId: string, tipoJuego: string) {
   return {
     id: `int-${actividadId}`,
-    asignacionId: '1',
+    asignacionId: deEscalera(actividadId) ? null : '1',
+    nivelJuego: deEscalera(actividadId)?.nivel ?? null,
     actividadId,
     tipoJuego,
     numeroIntento: 1,
@@ -97,6 +133,19 @@ export function createFakeBackend() {
   const tokenOf = (email: string) => `token-de-prueba:${email}`;
   // «Lo practicamos hoy» queda guardado mientras dura la prueba.
   let practicadoHoy = false;
+  // Nivel del estudiante en cada juego de la escalera (empieza en 1).
+  const niveles = new Map<LadderGameId, number>();
+  const nivelDe = (gameId: LadderGameId) => niveles.get(gameId) ?? 1;
+  const nivelesDto = () =>
+    LADDER_GAMES.map((gameId) => ({
+      juego: CODIGOS[gameId],
+      nombre: gameId,
+      nivelActual: nivelDe(gameId),
+      nivelMaximo: 5,
+      completado: false,
+      pendientesValidacion: 0,
+      actualizadoEn: '2026-11-06T15:00:00.000Z',
+    }));
 
   return createFakeFetch(({ url, method, headers, body }) => {
     const path = url.replace(FAKE_API_URL, '');
@@ -155,6 +204,9 @@ export function createFakeBackend() {
       }
       if (method === 'GET' && path === `${propio}/actividades`) {
         return jsonResponse(200, []);
+      }
+      if (method === 'GET' && path === `${propio}/niveles-juego`) {
+        return jsonResponse(200, nivelesDto());
       }
       if (method === 'PUT' && path === `${propio}/practica-casa/hoy`) {
         practicadoHoy = true;
@@ -221,7 +273,39 @@ export function createFakeBackend() {
       });
     }
     if (method === 'POST' && /^\/intentos\/[\w-]+\/validacion$/.test(path)) {
-      return jsonResponse(201, intentoGuardado('validado', 'HABLA_CONMIGO'));
+      // Aprobar el nivel actual de la escalera lo sube (como el backend).
+      const intentoId = path.split('/')[2] ?? '';
+      const escalera = deEscalera(intentoId.replace(/^int-/, ''));
+      const aprobado =
+        (body as { resultado?: string }).resultado === 'APROBADO';
+      let subidaNivel = null;
+      if (escalera && aprobado && escalera.nivel === nivelDe(escalera.gameId)) {
+        const nuevo = Math.min(5, escalera.nivel + 1);
+        niveles.set(escalera.gameId, nuevo);
+        subidaNivel = {
+          intentoId,
+          juego: CODIGOS[escalera.gameId],
+          nivelAnterior: escalera.nivel,
+          nivelNuevo: nuevo,
+          completado: escalera.nivel === 5,
+        };
+      }
+      return jsonResponse(201, {
+        ...intentoGuardado('validado', 'HABLA_CONMIGO'),
+        subidaNivel,
+      });
+    }
+    if (
+      method === 'GET' &&
+      /^\/estudiantes\/[\w-]+\/niveles-juego$/.test(path) &&
+      !path.startsWith('/estudiantes/me/')
+    ) {
+      if (session.role !== 'teacher' && session.role !== 'director') {
+        return errorResponse(403, 'Sin permiso');
+      }
+      return path === `/estudiantes/${mockStudent.id}/niveles-juego`
+        ? jsonResponse(200, nivelesDto())
+        : errorResponse(404, 'El estudiante no existe');
     }
     if (
       method === 'POST' &&
@@ -232,6 +316,20 @@ export function createFakeBackend() {
 
     if (path.startsWith('/estudiantes/me/') && session.role !== 'student') {
       return errorResponse(403, 'Sin permiso');
+    }
+    if (method === 'GET' && path === '/estudiantes/me/niveles-juego') {
+      return jsonResponse(200, nivelesDto());
+    }
+    const nivelJuego =
+      /^\/estudiantes\/me\/niveles-juego\/(\w+)\/actividad$/.exec(path);
+    if (method === 'GET' && nivelJuego) {
+      const gameId = LADDER_GAMES.find((g) => CODIGOS[g] === nivelJuego[1]);
+      if (!gameId) return errorResponse(404, 'Ese juego no tiene escalera');
+      const nivel = nivelDe(gameId);
+      return jsonResponse(200, {
+        nivel: nivelesDto().find((n) => n.juego === CODIGOS[gameId]),
+        actividad: actividadDto(ladderContent(gameId, nivel), nivel),
+      });
     }
     if (method === 'GET' && path === '/estudiantes/me/practica-vocales') {
       return jsonResponse(
@@ -289,25 +387,33 @@ export function createFakeBackend() {
     }
     const actividad = /^\/actividades\/([\w-]+)$/.exec(path);
     if (method === 'GET' && actividad) {
+      const escalera = deEscalera(actividad[1] ?? '');
+      if (escalera) {
+        return jsonResponse(
+          200,
+          actividadDto(
+            ladderContent(escalera.gameId, escalera.nivel),
+            escalera.nivel,
+          ),
+        );
+      }
       const content = mockActivities[actividad[1] ?? ''];
       if (!content) return errorResponse(404, 'La actividad no existe');
-      return jsonResponse(200, {
-        id: content.activityId,
-        moduloId: '1',
-        tipoJuego: {
-          id: '1',
-          codigo: CODIGOS[content.gameId],
-          nombre: content.title,
-        },
-        titulo: content.title,
-        instruccionTexto: null,
-        configuracion: configuracionDe(content),
-        orden: 0,
-        activa: true,
-      });
+      return jsonResponse(200, actividadDto(content, null));
     }
     if (method === 'POST' && path === '/intentos') {
       const { actividadId } = body as { actividadId: string };
+      const escalera = deEscalera(actividadId);
+      if (escalera) {
+        // Como el backend: solo el nivel actual.
+        if (escalera.nivel !== nivelDe(escalera.gameId)) {
+          return errorResponse(422, 'Esa actividad no es de tu nivel actual');
+        }
+        return jsonResponse(
+          201,
+          intentoGuardado(actividadId, CODIGOS[escalera.gameId]),
+        );
+      }
       const content = mockActivities[actividadId];
       return jsonResponse(
         201,

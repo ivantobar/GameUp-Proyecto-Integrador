@@ -11,9 +11,10 @@ export const IntentoMapper = {
   aDto(i: Intento): IntentoDto {
     return {
       id: idATexto(i.id),
-      asignacionId: idATexto(i.asignacionId),
+      asignacionId: i.asignacionId === null ? null : idATexto(i.asignacionId),
       actividadId: idATexto(i.actividadId),
       tipoJuego: i.tipoJuego,
+      nivelJuego: i.nivelJuego,
       numeroIntento: i.numeroIntento,
       resultado: i.resultado,
       estrellas: i.estrellas,

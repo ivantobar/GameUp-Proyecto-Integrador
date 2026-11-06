@@ -42,6 +42,7 @@ export function GameDoneScreen({ message, replayPath }: GameDoneScreenProps) {
   const params = useLocalSearchParams<{
     envio?: string;
     actividadId?: string;
+    escalera?: string;
   }>();
   const delivery = parseDelivery(params.envio);
   const activityId = parseActivityId(params.actividadId);
@@ -69,15 +70,18 @@ export function GameDoneScreen({ message, replayPath }: GameDoneScreenProps) {
             label="Jugar otra vez"
             variant="accent"
             size="large"
-            // Otra vez la misma tarea (si venía de una) o el juego libre.
+            // Otra vez la misma tarea (si venía de una), su nivel actual de
+            // la escalera (puede haber subido) o el juego libre.
             onPress={() =>
               router.replace(
-                activityId
-                  ? {
-                      pathname: replayPath,
-                      params: { actividadId: activityId },
-                    }
-                  : replayPath,
+                params.escalera === '1'
+                  ? { pathname: replayPath, params: { escalera: '1' } }
+                  : activityId
+                    ? {
+                        pathname: replayPath,
+                        params: { actividadId: activityId },
+                      }
+                    : replayPath,
               )
             }
           />

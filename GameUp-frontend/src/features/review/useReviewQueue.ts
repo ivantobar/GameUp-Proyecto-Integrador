@@ -2,7 +2,13 @@ import { useCallback, useState } from 'react';
 import { useRepositories } from '@/data/RepositoryProvider';
 import { ListenFirstError } from '@/data/reviewErrors';
 import { useResource } from '@/data/useResource';
-import type { ReviewItem, StaffProfile } from '@/data/types';
+import {
+  LADDER_LEVELS,
+  type LevelUp,
+  type ReviewItem,
+  type StaffProfile,
+} from '@/data/types';
+import { findGame } from '@/features/games/catalog';
 import type { FeedbackOptions } from './components/FeedbackForm';
 
 interface ReviewQueue {
@@ -14,6 +20,21 @@ interface ReviewQueue {
 export interface ReviewMessage {
   tone: 'done' | 'error';
   text: string;
+}
+
+/** Aviso al validar: si subió de nivel en la escalera, se celebra. */
+export function validatedText(
+  item: ReviewItem,
+  levelUp: LevelUp | null,
+): string {
+  const name = item.student.displayName;
+  if (!levelUp) {
+    return `Validado: la actividad de ${name} ya cuenta en su progreso.`;
+  }
+  const game = findGame(levelUp.gameId).title;
+  return levelUp.completed
+    ? `¡${name} completó los ${LADDER_LEVELS} niveles de ${game}!`
+    : `¡${name} subió al nivel ${levelUp.level} de ${game}!`;
 }
 
 /** Mensaje para el docente cuando algo no se pudo guardar. */
@@ -42,11 +63,18 @@ export function useReviewQueue() {
 
   /** Ejecuta una acción, muestra el aviso y actualiza la lista. */
   const run = useCallback(
-    async (id: string, action: () => Promise<void>, doneText: string) => {
+    async (
+      id: string,
+      action: () => Promise<void>,
+      doneText: string | (() => string),
+    ) => {
       setBusyId(id);
       try {
         await action();
-        setMessage({ tone: 'done', text: doneText });
+        setMessage({
+          tone: 'done',
+          text: typeof doneText === 'string' ? doneText : doneText(),
+        });
         refresh();
         return true;
       } catch (error) {
@@ -64,12 +92,16 @@ export function useReviewQueue() {
   );
 
   const validate = useCallback(
-    (item: ReviewItem) =>
-      run(
+    (item: ReviewItem) => {
+      let levelUp: LevelUp | null = null;
+      return run(
         item.id,
-        () => reviews.validate(item.id),
-        `Validado: la actividad de ${item.student.displayName} ya cuenta en su progreso.`,
-      ),
+        async () => {
+          levelUp = await reviews.validate(item.id);
+        },
+        () => validatedText(item, levelUp),
+      );
+    },
     [run, reviews],
   );
 

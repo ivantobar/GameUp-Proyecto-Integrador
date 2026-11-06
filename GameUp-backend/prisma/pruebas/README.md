@@ -25,10 +25,22 @@ SQL
 DATABASE_URL="postgresql://postgres:TU_CLAVE@localhost:5432/gameup_test" npm run db:deploy
 psql -d gameup_test -f prisma/pruebas/ajustes_revision.sql
 psql -d gameup_test -f prisma/pruebas/practica_casa.sql
+psql -d gameup_test -f prisma/pruebas/niveles_por_juego.sql
 ```
 
-Si todo está bien, terminan con `TODAS LAS PRUEBAS PASARON` y
-`TODAS LAS PRUEBAS DE PRACTICA_CASA PASARON`.
+Si todo está bien, terminan con `TODAS LAS PRUEBAS PASARON`,
+`TODAS LAS PRUEBAS DE PRACTICA_CASA PASARON` y
+`TODAS LAS PRUEBAS DE NIVELES_POR_JUEGO PASARON`.
+
+En Windows, ejecuta antes `set PGCLIENTENCODING=UTF8` (o
+`export PGCLIENTENCODING=UTF8` en Git Bash): si no, psql envía las tildes en
+WIN1252 y la base las rechaza.
+
+`niveles_por_juego.sql` prueba la migración `20261106000000_niveles_por_juego`:
+el nivel 1 de los estudiantes nuevos, el módulo y las actividades de la escalera,
+los intentos sin asignación (solo del nivel actual), la validación por el vínculo
+del intento, que el progreso de los módulos no cambie, el historial y el aviso
+`NIVEL_JUEGO`, RLS y el borrado en cascada.
 
 `practica_casa.sql` prueba la migración `20261105120000_practica_casa`: que solo
 un acudiente vinculado marque la práctica, que el mismo día no se repita, que

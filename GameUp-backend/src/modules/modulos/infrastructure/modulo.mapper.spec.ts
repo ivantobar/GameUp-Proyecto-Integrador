@@ -14,6 +14,7 @@ describe('ModuloMapper', () => {
         orden: 0,
         creado_en: creadoEn,
         musica_id: null,
+    es_escalera: false,
         categoria: { id: 1n, nombre: 'VOCALES' },
         nivel: { id: 1n, nombre: 'BAJO' },
         usuario: { id: 2n, nombres: 'Ana María', apellidos: 'Gómez Ruiz' },
@@ -78,6 +79,7 @@ describe('ModuloMapper', () => {
         configuracion: {},
         orden: 0,
         activa: true,
+        nivel_juego: null,
         tipo_juego: { id: 1n, codigo: 'ROMPECABEZAS', nombre: 'x' },
       }),
     ).toThrow();
@@ -92,9 +94,11 @@ describe('ModuloMapper', () => {
       configuracion: { vocal: 'a' },
       orden: 0,
       activa: true,
+      nivel_juego: null,
       tipo_juego: { id: 5n, codigo: 'HABLA_CONMIGO', nombre: 'Habla conmigo' },
     });
     expect(ModuloMapper.aActividadDto(actividad)).toMatchObject({
+      nivelJuego: null,
       id: '8',
       tipoJuego: { id: '5', codigo: 'HABLA_CONMIGO' },
       configuracion: { vocal: 'a' },

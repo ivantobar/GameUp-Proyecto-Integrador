@@ -114,10 +114,12 @@ npm start                # las demás veces
      Debe aparecer «Backend conectado».
    - **Ver la app como → Estudiante**: Inicio, Juegos, Mi progreso, Habla
      conmigo, Busca la boca, Emparejar, Clasificar, Secuenciar y Memoria.
-     El contenido de ejemplo de estos cuatro está en
-     `src/data/mock/gameContent.ts` (dibujos provisionales con emojis); se
-     usa en el juego libre. Abiertos desde una tarea, juegan el contenido de
-     su actividad y envían el resultado al docente.
+     Desde su tarjeta, estos cuatro abren el nivel actual de su escalera
+     (en `mock`, contenido de `src/data/mock/ladderContent.ts`) y su
+     resultado llega al docente; «Lo logró» en «Por escuchar» sube el nivel.
+     Abiertos desde una tarea, juegan el contenido de su actividad. El
+     contenido de ejemplo de `src/data/mock/gameContent.ts` (dibujos
+     provisionales con emojis) queda para el juego libre.
    - **Ver la app como → Docente**: «Por escuchar». Lo que hizo el
      estudiante en esta sesión aparece aquí. «Lo logró» lo valida y sube
      el progreso; «Practicar más» pide una indicación que llega a la
@@ -242,6 +244,20 @@ Piezas de la versión HTTP, cada una con una sola tarea:
 
 Los datos ficticios (`src/data/mock/fixtures.ts`) no corresponden a ningún
 niño real.
+
+### Escalera de niveles (fase 9)
+
+- `levels` (`GameLevelRepository`) da el nivel de cada juego de «Pensar y
+  recordar», la actividad del nivel actual y los niveles de un estudiante
+  (para la profe y el acudiente). En `mock`, el contenido de cada nivel sale
+  de `src/data/mock/ladderContent.ts`, con el mismo tamaño que exige el
+  backend.
+- La tarjeta de cada juego muestra el nivel con estrellas (solo las ganadas,
+  sin números). Sin tarea, abre `/student/<juego>?escalera=1`: el juego
+  pide la actividad del nivel y su resultado llega a la profe.
+- Al subir de nivel, «Juegos» muestra una celebración breve y solo visual,
+  una vez por subida. El último nivel visto se guarda con
+  `expo-secure-store` (`src/features/games/levelCelebration.ts`).
 
 ## 8. Agregar un juego
 

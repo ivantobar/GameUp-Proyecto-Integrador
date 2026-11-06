@@ -2,6 +2,7 @@ import type {
   Pagina,
   Paginacion,
 } from '../../../common/paginacion/paginacion.js';
+import type { SubidaNivel } from '../../niveles-juego/domain/nivel-juego.js';
 import type {
   DecisionValidacion,
   GrabacionGuardada,
@@ -21,16 +22,30 @@ export interface RevisionLecturaRepository {
   ): Promise<Pagina<ItemRevision>>;
 }
 
-/** Validaciones (la base recalcula el progreso y avisa a los acudientes). */
+export interface ResultadoLote {
+  aprobados: number;
+  /** Subidas de nivel de la escalera que causó el lote (una por nivel). */
+  subidas: SubidaNivel[];
+}
+
+/**
+ * Validaciones (la base recalcula el progreso y avisa a los acudientes). Si
+ * se APRUEBA un intento de la escalera de su nivel actual, en la MISMA
+ * transacción sube un nivel (subirSiCorresponde).
+ */
 export interface ValidacionEscrituraRepository {
   /** Los triggers exigen rol y vínculo, y la unicidad impide validar dos veces. */
   validar(
     intentoId: bigint,
     validadorId: bigint,
     decision: DecisionValidacion,
-  ): Promise<void>;
-  /** Aprueba varios intentos en UNA transacción (todos o ninguno). */
-  aprobarLote(intentoIds: bigint[], validadorId: bigint): Promise<number>;
+  ): Promise<SubidaNivel | null>;
+  /**
+   * Aprueba varios intentos en UNA transacción (todos o ninguno). Las subidas
+   * se aplican en orden (fecha, id): como máximo un nivel por intento y sin
+   * saltar niveles.
+   */
+  aprobarLote(intentoIds: bigint[], validadorId: bigint): Promise<ResultadoLote>;
 }
 
 /** Grabaciones de voz: entrega y borrado. */

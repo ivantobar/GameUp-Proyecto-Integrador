@@ -3,6 +3,7 @@
  * presentation/dto/validacion.dto.ts`) y de las observaciones.
  */
 import type { CodigoJuego } from './juegos';
+import type { SubidaNivelDto } from './niveles';
 
 /** Un intento de `GET /revisiones/pendientes` («Por escuchar»). */
 export interface ItemRevisionDto {
@@ -10,7 +11,13 @@ export interface ItemRevisionDto {
   tipo: 'VOZ' | 'JUEGO';
   tipoJuego: CodigoJuego;
   estudiante: { id: string; displayName: string; initials: string };
-  actividad: { id: string; titulo: string; vocal: string | null };
+  actividad: {
+    id: string;
+    titulo: string;
+    vocal: string | null;
+    /** Nivel (1-5) si es de la escalera de niveles (fase 9). */
+    nivelJuego?: number | null;
+  };
   modulo: { id: string; nombre: string };
   fecha: string;
   numeroIntento: number;
@@ -39,6 +46,12 @@ export interface ValidarIntentoDto {
   resultado: 'APROBADO' | 'RECHAZADO';
   /** Obligatoria si es RECHAZADO. */
   retroalimentacion?: string;
+}
+
+/** Respuesta de `POST /intentos/:id/validacion` (lo que la app lee). */
+export interface IntentoValidadoDto {
+  /** Si aprobar subió de nivel en la escalera; `null` si no. */
+  subidaNivel?: SubidaNivelDto | null;
 }
 
 /** Respuesta de `GET /intentos/:id/grabacion` (URL firmada, 10 min como máximo). */

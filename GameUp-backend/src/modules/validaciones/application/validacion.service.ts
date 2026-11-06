@@ -11,6 +11,7 @@ import type {
 } from '../../../common/paginacion/paginacion.js';
 import { IntentoService } from '../../intentos/application/intento.service.js';
 import type { Intento } from '../../intentos/domain/intento.entity.js';
+import type { SubidaNivel } from '../../niveles-juego/domain/nivel-juego.js';
 import {
   MAXIMO_LOTE,
   normalizarDecision,
@@ -21,10 +22,17 @@ import {
   REVISION_LECTURA_REPOSITORY,
   VALIDACION_ESCRITURA_REPOSITORY,
   type AlcanceRevision,
+  type ResultadoLote,
   type RevisionLecturaRepository,
   type ValidacionEscrituraRepository,
 } from '../domain/validacion.repository.js';
 import { GrabacionService } from './grabacion.service.js';
+
+export interface ResultadoValidacionIntento {
+  intento: Intento;
+  /** Si aprobar subió de nivel en la escalera (o completó el juego). */
+  subida: SubidaNivel | null;
+}
 
 /**
  * Revisión de la tallerista (o la directora). Solo sus estudiantes: el
@@ -58,24 +66,25 @@ export class ValidacionService {
   /**
    * «Lo logró» o «Practicar más» (con retroalimentación obligatoria). Si hay
    * audio disponible, quien valida debe haberlo escuchado antes. La base
-   * recalcula el progreso (solo cuentan las APROBADAS). Después se
-   * borra el audio, sea cual sea el resultado.
+   * recalcula el progreso (solo cuentan las APROBADAS). En la escalera,
+   * aprobar el nivel actual sube un nivel en la misma transacción. Después
+   * se borra el audio, sea cual sea el resultado.
    */
   async validar(
     actual: UsuarioAutenticado,
     intentoId: bigint,
     resultado: ResultadoValidacion,
     retroalimentacion: string | null,
-  ): Promise<Intento> {
+  ): Promise<ResultadoValidacionIntento> {
     const intento = await this.intentos.obtener(actual, intentoId);
     if (intento.validacion)
       throw new ConflictoError('Este intento ya fue validado.');
     const decision = normalizarDecision(resultado, retroalimentacion);
     await this.grabaciones.exigirEscucha(actual, intentoId);
 
-    await this.escritura.validar(intentoId, actual.id, decision);
+    const subida = await this.escritura.validar(intentoId, actual.id, decision);
     await this.grabaciones.borrarDeIntento(intentoId);
-    return this.intentos.obtener(actual, intentoId);
+    return { intento: await this.intentos.obtener(actual, intentoId), subida };
   }
 
   /**
@@ -86,7 +95,7 @@ export class ValidacionService {
   async aprobarLote(
     actual: UsuarioAutenticado,
     intentoIds: bigint[],
-  ): Promise<number> {
+  ): Promise<ResultadoLote> {
     const ids = [...new Set(intentoIds)];
     if (ids.length === 0 || ids.length > MAXIMO_LOTE) {
       throw new ReglaNegocioError(

@@ -2,15 +2,20 @@ import { useCallback } from 'react';
 import { useLocalSearchParams } from 'expo-router';
 import type { MemoryBoard } from '@/data/types';
 import { GameContentGate } from '@/features/games/components/GameContentGate';
-import { parseActivityId } from '@/features/games/delivery';
-import { useActivityContent } from '@/features/games/useActivityContent';
+import {
+  useGameContent,
+  type GameRouteParams,
+} from '@/features/games/useGameContent';
 import { useGameFinish } from '@/features/games/useGameFinish';
 import { StyleSheet, View } from 'react-native';
 import {
   RoundGameScreen,
   supportMessages,
 } from '@/features/games/components/RoundGameScreen';
-import { MemoryCard } from '@/features/memory/components/MemoryCard';
+import {
+  MemoryCard,
+  memoryColumns,
+} from '@/features/memory/components/MemoryCard';
 import { memoryScore, type MemoryState } from '@/features/memory/memoryGame';
 import {
   MEMORY_INSTRUCTION,
@@ -25,13 +30,16 @@ const MISMATCH = 'Son distintas. Toca otra carta';
  * `actividadId`, juega los tableros de esa tarea y su resultado va al docente.
  */
 export default function MemoryScreen() {
-  const params = useLocalSearchParams<{ actividadId?: string }>();
-  const activityId = parseActivityId(params.actividadId);
-  const { resource, reload } = useActivityContent(activityId, 'memory');
+  const params = useLocalSearchParams<GameRouteParams>();
+  const { resource, reload } = useGameContent(params, 'memory');
   return (
     <GameContentGate resource={resource} reload={reload}>
-      {(activity) => (
-        <MemoryGame boards={activity?.boards} activityId={activityId} />
+      {(source) => (
+        <MemoryGame
+          boards={source.content?.boards}
+          activityId={source.activityId}
+          ladder={source.ladder}
+        />
       )}
     </GameContentGate>
   );
@@ -41,10 +49,12 @@ interface MemoryGameProps {
   /** Tableros de la tarea; sin ellos, el contenido de ejemplo. */
   boards: readonly MemoryBoard[] | undefined;
   activityId: string | null;
+  /** Abierto en su nivel de la escalera (para «Jugar otra vez»). */
+  ladder: boolean;
 }
 
-function MemoryGame({ boards, activityId }: MemoryGameProps) {
-  const { saving, finish } = useGameFinish('memory', activityId);
+function MemoryGame({ boards, activityId, ladder }: MemoryGameProps) {
+  const { saving, finish } = useGameFinish('memory', activityId, ladder);
   const onFinish = useCallback(
     (state: MemoryState) => {
       finish(memoryScore(state)).catch(() => {});
@@ -56,9 +66,12 @@ function MemoryGame({ boards, activityId }: MemoryGameProps) {
 
   const message = solved ? supportMessages.solved : mismatch ? MISMATCH : null;
 
-  // Cuadrícula de 2 columnas.
+  // 2 columnas; desde 8 cartas (nivel 3), 3 columnas y cartas más bajas:
+  // 12 cartas quedan en 4 filas y caben en el celular.
+  const columns = memoryColumns(cards.length);
   const rows: (typeof cards)[] = [];
-  for (let i = 0; i < cards.length; i += 2) rows.push(cards.slice(i, i + 2));
+  for (let i = 0; i < cards.length; i += columns)
+    rows.push(cards.slice(i, i + columns));
 
   return (
     <RoundGameScreen
@@ -77,17 +90,22 @@ function MemoryGame({ boards, activityId }: MemoryGameProps) {
         {rows.map((row, rowIndex) => (
           <View key={row.map((card) => card.key).join('-')} style={styles.row}>
             {row.map((card, column) => {
-              const position = rowIndex * 2 + column;
+              const position = rowIndex * columns + column;
               return (
                 <MemoryCard
                   key={card.key}
                   position={position + 1}
                   face={card.face}
                   view={card.view}
+                  compact={columns === 3}
                   onPress={() => flip(position)}
                 />
               );
             })}
+            {/* Si la fila queda incompleta, huecos mantienen el ancho. */}
+            {Array.from({ length: columns - row.length }, (_, i) => (
+              <View key={`hueco-${i}`} style={styles.spacer} />
+            ))}
           </View>
         ))}
       </View>
@@ -96,6 +114,9 @@ function MemoryGame({ boards, activityId }: MemoryGameProps) {
 }
 
 const styles = StyleSheet.create({
+  spacer: {
+    flex: 1,
+  },
   grid: {
     gap: spacing.md,
   },

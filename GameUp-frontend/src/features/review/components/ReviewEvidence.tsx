@@ -138,11 +138,19 @@ interface GameEvidenceProps {
  */
 function GameEvidence({ game }: GameEvidenceProps) {
   const { score } = game;
+  const pending = game.pendingSameActivity ?? 1;
   return (
     <View style={styles.result}>
       <AppText variant="support" tone="secundario">
         {game.title}
       </AppText>
+      {typeof game.level === 'number' ? (
+        <AppText variant="support" tone="secundario">
+          {pending > 1
+            ? `Escalera: nivel ${game.level}. Jugó ${pending} veces este nivel; aprobar una lo sube.`
+            : `Escalera: nivel ${game.level}. Si lo apruebas, sube de nivel.`}
+        </AppText>
+      ) : null}
       {score.kind === 'turns' ? (
         <>
           <AppText variant="bodyStrong">

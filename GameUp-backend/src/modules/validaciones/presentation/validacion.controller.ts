@@ -22,13 +22,14 @@ import { ParseBigIntPipe } from '../../../common/pipes/parse-bigint.pipe.js';
 import { ApiErrores } from '../../../docs/api-errores.js';
 import { BEARER_AUTH } from '../../../docs/swagger.js';
 import { IntentoMapper } from '../../intentos/infrastructure/intento.mapper.js';
-import { IntentoDto } from '../../intentos/presentation/dto/intento.dto.js';
+import { NivelJuegoMapper } from '../../niveles-juego/infrastructure/nivel-juego.mapper.js';
 import { UrlFirmadaDto } from '../../modulos/presentation/dto/modulo.dto.js';
 import { GrabacionService } from '../application/grabacion.service.js';
 import { ValidacionService } from '../application/validacion.service.js';
 import { RevisionMapper } from '../infrastructure/revision.mapper.js';
 import {
   AprobarLoteDto,
+  IntentoValidadoDto,
   LoteAprobadoDto,
   PaginaRevisionDto,
   PendientesQueryDto,
@@ -90,9 +91,10 @@ export class ValidacionController {
       'RECHAZADO exige retroalimentación. Si el intento de voz tiene audio disponible, ' +
       'quien valida debe haber pedido antes su URL firmada (GET /intentos/:id/grabacion). ' +
       'Solo cuentan para el progreso los APROBADOS. ' +
+      'Si es de la escalera y de su nivel actual, APROBADO sube un nivel (subidaNivel). ' +
       'Después se borra el audio del intento (en ambos casos).',
   })
-  @ApiOkResponse({ type: IntentoDto })
+  @ApiOkResponse({ type: IntentoValidadoDto })
   @ApiErrores(400, 401, 403, 404, {
     409: 'El intento ya fue validado',
     422: 'Falta la retroalimentación para RECHAZADO, o no se escuchó el audio disponible',
@@ -101,14 +103,17 @@ export class ValidacionController {
     @UsuarioActual() actual: UsuarioAutenticado,
     @Param('id', ParseBigIntPipe) id: bigint,
     @Body() dto: ValidarIntentoDto,
-  ): Promise<IntentoDto> {
-    const intento = await this.validaciones.validar(
+  ): Promise<IntentoValidadoDto> {
+    const { intento, subida } = await this.validaciones.validar(
       actual,
       id,
       dto.resultado,
       dto.retroalimentacion ?? null,
     );
-    return IntentoMapper.aDto(intento);
+    return {
+      ...IntentoMapper.aDto(intento),
+      subidaNivel: subida ? NivelJuegoMapper.aSubidaDto(subida) : null,
+    };
   }
 
   @Post('validaciones/lote')
@@ -116,7 +121,8 @@ export class ValidacionController {
   @ApiOperation({
     summary: 'Aprobar varios intentos de juegos sin voz a la vez',
     description:
-      'Todos o ninguno. Los de Habla conmigo se validan uno por uno, escuchando el audio.',
+      'Todos o ninguno. Los de Habla conmigo se validan uno por uno, escuchando el audio. ' +
+      'En la escalera, cada nivel sube una sola vez y nunca se salta (subidas).',
   })
   @ApiOkResponse({ type: LoteAprobadoDto })
   @ApiErrores(400, 401, 403, {
@@ -126,10 +132,10 @@ export class ValidacionController {
     @UsuarioActual() actual: UsuarioAutenticado,
     @Body() dto: AprobarLoteDto,
   ): Promise<LoteAprobadoDto> {
-    const aprobados = await this.validaciones.aprobarLote(
+    const { aprobados, subidas } = await this.validaciones.aprobarLote(
       actual,
       dto.intentoIds.map(aBigInt),
     );
-    return { aprobados };
+    return { aprobados, subidas: subidas.map(NivelJuegoMapper.aSubidaDto) };
   }
 }

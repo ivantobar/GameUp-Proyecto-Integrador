@@ -228,6 +228,40 @@ La regla de relación vive en un solo lugar
 Los mensajes de validación (400) salen en español
 (`src/common/validacion/mensajes-validacion.ts`).
 
+### Escalera de niveles por juego (fase 9)
+
+Emparejar, Clasificar, Secuenciar y Memoria tienen **5 niveles** cada uno, por
+estudiante y por juego (no son BAJO/MEDIO/ALTO). Se sube un nivel cuando la
+tallerista a cargo o la directora **aprueba** un intento del nivel actual.
+
+| Método y ruta | Quién | Notas |
+|---|---|---|
+| `GET /estudiantes/me/niveles-juego` | E | Nivel (1-5), `completado` y `pendientesValidacion` de cada juego |
+| `GET /estudiantes/me/niveles-juego/:juego/actividad` | E | `{ nivel, actividad }` del nivel actual (`:juego` = `EMPAREJAR`, `CLASIFICAR`, `SECUENCIAR` o `MEMORIA`) |
+| `GET /estudiantes/:id/niveles-juego` | D, T a cargo, A | Ajeno → 404 |
+| `PUT /estudiantes/:id/niveles-juego/:juego` | D, T a cargo | `{ nivel, motivo }` (motivo obligatorio). Queda en el historial; no avisa |
+
+| Nivel | Memoria | Emparejar | Clasificar | Secuenciar |
+|---|---|---|---|---|
+| 1 | 2 parejas | 2 opciones | 2 grupos, 4 elementos | 2 pasos |
+| 2 | 3 parejas | 3 opciones | 2 grupos, 6 elementos | 3 pasos |
+| 3 | 4 parejas | 4 opciones | 2 grupos, 8 elementos | 4 pasos |
+| 4 | 5 parejas | 3 opciones, arriba palabra o cantidad | 3 grupos, 6 elementos | 5 pasos |
+| 5 | 6 parejas | 4 opciones, arriba palabra o cantidad | 3 grupos, 9 elementos | 6 pasos |
+
+- Las actividades viven en el módulo de la escalera (`modulo.es_escalera`): no
+  se publica ni se asigna, pero estudiantes y acudientes lo pueden ver. Se
+  siembra con `prisma/scripts/sembrar_escalera.sql` (id de una directora).
+- `POST /intentos` acepta esas actividades **sin asignación** y solo del nivel
+  actual (si no, 422). No suman al progreso oficial de los módulos.
+- `POST /intentos/:id/validacion` devuelve `subidaNivel`, y `POST
+  /validaciones/lote` devuelve `subidas`. Todo va en la misma transacción que
+  la validación; en el 5 se marca `completado`, y nunca se salta ni se baja
+  un nivel solo.
+- La bandeja muestra, de cada nivel, el intento más reciente con
+  `pendientesMismaActividad`. Los de niveles superados no aparecen.
+- Al subir, los acudientes reciben un aviso `NIVEL_JUEGO`.
+
 ### Validación y progreso (fase 7)
 
 | Método y ruta | Quién | Notas |
@@ -275,8 +309,8 @@ Una **cara** es lo que se ve en una tarjeta:
 | HABLA_CONMIGO | `{ "vocal": "a" }` | `{}` (el backend agrega `estadoGrabacion`) |
 | BUSCA_LA_BOCA | `{ "vocales": ["a","e","i"] }` | `{ firstTryCorrect, total }`, total = vocales |
 | EMPAREJAR | `{ "rondas": [{ pregunta, estimulo: Cara, opciones: [Cara ×2–4], respuesta }] }` | `{ firstTryCorrect, total }`, total = rondas |
-| CLASIFICAR | `{ "conjuntos": [{ pregunta, grupos: [Cara, Cara], elementos: [{ cara, grupo }] ×2–8 }] }` | total = elementos |
-| SECUENCIAR | `{ "rutinas": [{ titulo, pasos: [Cara ×2–4] }] }` (en orden) | total = pasos |
+| CLASIFICAR | `{ "conjuntos": [{ pregunta, grupos: [Cara ×2–3], elementos: [{ cara, grupo }] ×2–9 }] }` | total = elementos |
+| SECUENCIAR | `{ "rutinas": [{ titulo, pasos: [Cara ×2–6] }] }` (en orden) | total = pasos |
 | MEMORIA | `{ "tableros": [{ parejas: [Cara ×2–6] }] }` | `{ pairs, mismatches }`, pairs = parejas |
 
 - **Regla 11:** ninguna configuración ni resultado admite tiempo límite,

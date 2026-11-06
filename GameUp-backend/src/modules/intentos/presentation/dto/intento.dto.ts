@@ -58,10 +58,23 @@ export class ValidacionIntentoDto {
 
 export class IntentoDto {
   @ApiProperty({ example: '40' }) id: string;
-  @ApiProperty({ example: '12' }) asignacionId: string;
+  @ApiProperty({
+    example: '12',
+    nullable: true,
+    type: String,
+    description: 'null en los intentos de la escalera de niveles',
+  })
+  asignacionId: string | null;
   @ApiProperty({ example: '8' }) actividadId: string;
   @ApiProperty({ enum: CODIGOS_JUEGO, example: 'HABLA_CONMIGO' })
   tipoJuego: CodigoJuego;
+  @ApiProperty({
+    example: null,
+    nullable: true,
+    type: Number,
+    description: 'Nivel (1-5) si es de la escalera de niveles; null si es de un módulo',
+  })
+  nivelJuego: number | null;
   @ApiProperty({ example: 2, description: 'Lo pone la base' })
   numeroIntento: number;
   @ApiProperty({

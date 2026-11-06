@@ -17,8 +17,11 @@ export interface RegistrarIntentoDto {
 /** Respuesta de `POST /intentos` y base de la de Habla conmigo. */
 export interface IntentoDto {
   id: string;
-  asignacionId: string;
+  /** `null` en los intentos de la escalera de niveles (no tienen asignación). */
+  asignacionId: string | null;
   actividadId: string;
+  /** Nivel (1-5) si es de la escalera; `null` si es de un módulo. */
+  nivelJuego?: number | null;
   tipoJuego: CodigoJuego;
   numeroIntento: number;
   resultado: Record<string, unknown>;

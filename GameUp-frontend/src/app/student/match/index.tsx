@@ -13,13 +13,15 @@ import {
   phaseMessage,
   RoundGameScreen,
 } from '@/features/games/components/RoundGameScreen';
-import { parseActivityId } from '@/features/games/delivery';
 import {
   turnScore,
   type TurnGameState,
   type TurnPhase,
 } from '@/features/games/turnGame';
-import { useActivityContent } from '@/features/games/useActivityContent';
+import {
+  useGameContent,
+  type GameRouteParams,
+} from '@/features/games/useGameContent';
 import { useGameFinish } from '@/features/games/useGameFinish';
 import { useMatchGame } from '@/features/match/useMatchGame';
 import { spacing } from '@/theme';
@@ -41,13 +43,16 @@ function optionState(
  * `actividadId`, juega las rondas de esa tarea y su resultado va al docente.
  */
 export default function MatchScreen() {
-  const params = useLocalSearchParams<{ actividadId?: string }>();
-  const activityId = parseActivityId(params.actividadId);
-  const { resource, reload } = useActivityContent(activityId, 'match');
+  const params = useLocalSearchParams<GameRouteParams>();
+  const { resource, reload } = useGameContent(params, 'match');
   return (
     <GameContentGate resource={resource} reload={reload}>
-      {(activity) => (
-        <MatchGame rounds={activity?.rounds} activityId={activityId} />
+      {(source) => (
+        <MatchGame
+          rounds={source.content?.rounds}
+          activityId={source.activityId}
+          ladder={source.ladder}
+        />
       )}
     </GameContentGate>
   );
@@ -57,10 +62,12 @@ interface MatchGameProps {
   /** Rondas de la tarea; sin ellas, el contenido de ejemplo. */
   rounds: readonly MatchRound[] | undefined;
   activityId: string | null;
+  /** Abierto en su nivel de la escalera (para «Jugar otra vez»). */
+  ladder: boolean;
 }
 
-function MatchGame({ rounds, activityId }: MatchGameProps) {
-  const { saving, finish } = useGameFinish('match', activityId);
+function MatchGame({ rounds, activityId, ladder }: MatchGameProps) {
+  const { saving, finish } = useGameFinish('match', activityId, ladder);
   const onFinish = useCallback(
     (state: TurnGameState) => {
       finish(turnScore(state)).catch(() => {});

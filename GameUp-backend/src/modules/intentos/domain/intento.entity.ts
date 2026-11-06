@@ -23,10 +23,13 @@ export type EstadoGrabacion = (typeof ESTADOS_GRABACION)[number];
 
 export interface Intento {
   id: bigint;
-  asignacionId: bigint;
+  /** null: intento de la escalera de niveles (no tiene asignación). */
+  asignacionId: bigint | null;
   actividadId: bigint;
   estudianteId: bigint;
   tipoJuego: CodigoJuego;
+  /** Nivel de la escalera de la actividad (1-5), o null si es de un módulo. */
+  nivelJuego: number | null;
   /** Lo pone la base (trigger): 1, 2, 3... por actividad y asignación. */
   numeroIntento: number;
   resultado: Configuracion;

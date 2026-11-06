@@ -23,6 +23,8 @@ export interface PropiedadesModulo {
   publicado: boolean;
   orden: number;
   creadoEn: Date;
+  /** Módulo de la escalera de niveles (fase 9): no se asigna y lo ven todos. */
+  esEscalera: boolean;
 }
 
 /** Módulo educativo: raíz del agregado (contenidos y actividades). */
@@ -38,6 +40,7 @@ export class Modulo {
   readonly publicado: boolean;
   readonly orden: number;
   readonly creadoEn: Date;
+  readonly esEscalera: boolean;
 
   constructor(p: PropiedadesModulo) {
     this.id = p.id;
@@ -51,6 +54,7 @@ export class Modulo {
     this.publicado = p.publicado;
     this.orden = p.orden;
     this.creadoEn = p.creadoEn;
+    this.esEscalera = p.esEscalera;
   }
 
   esAutor(usuarioId: bigint): boolean {
@@ -94,6 +98,8 @@ export interface Actividad {
   configuracion: Configuracion;
   orden: number;
   activa: boolean;
+  /** Nivel (1-5) de la escalera; null en las actividades de los módulos. */
+  nivelJuego: number | null;
 }
 
 /**

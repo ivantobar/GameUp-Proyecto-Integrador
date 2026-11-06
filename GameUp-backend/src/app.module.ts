@@ -13,6 +13,7 @@ import { ConsentimientoModule } from './modules/consentimiento/consentimiento.mo
 import { EstudiantesModule } from './modules/estudiantes/estudiantes.module.js';
 import { IntentosModule } from './modules/intentos/intentos.module.js';
 import { ModulosModule } from './modules/modulos/modulos.module.js';
+import { NivelesJuegoModule } from './modules/niveles-juego/niveles-juego.module.js';
 import { NotificacionesModule } from './modules/notificaciones/notificaciones.module.js';
 import { ObservacionesModule } from './modules/observaciones/observaciones.module.js';
 import { PracticaCasaModule } from './modules/practica-casa/practica-casa.module.js';
@@ -54,6 +55,8 @@ import { SupabaseModule } from './supabase/supabase.module.js';
     ObservacionesModule,
     NotificacionesModule,
     PracticaCasaModule,
+    // Fase 9: escalera de 5 niveles por juego.
+    NivelesJuegoModule,
   ],
   providers: [
     // Traduce errores de dominio y de la base a { statusCode, error, message }.

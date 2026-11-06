@@ -44,12 +44,15 @@ describe('datos del estudiante con los repositorios simulados', () => {
     await waitFor(() => expect(result.current.resource.status).toBe('ready'));
     if (result.current.resource.status !== 'ready') return;
 
-    const [sounds, thinking] = result.current.resource.data;
+    const [sounds, thinking] = result.current.resource.data.sections;
     expect(sounds?.items.map((i) => [i.game.id, i.badge])).toEqual([
       ['speak', 'Nuevo'],
       ['findMouth', 'Tarea'],
     ]);
     expect(thinking?.items).toHaveLength(4);
+    // Escalera: los juegos de pensar traen su nivel; los de habla, no.
+    expect(sounds?.items.map((i) => i.level)).toEqual([null, null]);
+    expect(thinking?.items.map((i) => i.level?.level)).toEqual([1, 1, 1, 1]);
   });
 
   it('Selección: vocales en orden y «3 de 5» practicadas', async () => {

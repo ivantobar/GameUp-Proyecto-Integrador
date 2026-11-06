@@ -17,10 +17,14 @@ import {
   type AsignacionesEnMemoria,
 } from './asignaciones-en-memoria.js';
 import { AHORA_PRUEBA, type ModulosEnMemoria } from './modulos-en-memoria.js';
+import { NivelesJuegoEnMemoria } from './niveles-juego-en-memoria.js';
 
 /** Un intento guardado. Es el mismo objeto que ve AsignacionesEnMemoria (avance). */
 export type FilaIntento = IntentoResumen & {
-  asignacionId: bigint;
+  /** null: intento de la escalera de niveles (fase 9). */
+  asignacionId: bigint | null;
+  /** Siempre en los de la escalera; en los demás sale de la asignación. */
+  estudianteId?: bigint;
   id?: bigint;
   resultado?: Configuracion;
   estrellas?: number;
@@ -47,15 +51,20 @@ export class IntentosEnMemoria
   constructor(
     private readonly asignaciones: AsignacionesEnMemoria,
     private readonly modulos: ModulosEnMemoria,
+    /** Para el chequeo de nivel actual de fn_intento_antes (escalera). */
+    private readonly niveles: NivelesJuegoEnMemoria | null = null,
   ) {}
 
   private get filas(): FilaIntento[] {
     return this.asignaciones.intentosFilas as FilaIntento[];
   }
 
-  private estudianteDe(asignacionId: bigint): bigint {
-    return this.asignaciones.filas.find((a) => a.id === asignacionId)!
-      .estudianteId;
+  private estudianteDe(f: FilaIntento): bigint {
+    return (
+      f.estudianteId ??
+      this.asignaciones.filas.find((a) => a.id === f.asignacionId)!
+        .estudianteId
+    );
   }
 
   private actividad(id: bigint) {
@@ -67,8 +76,9 @@ export class IntentosEnMemoria
       id: f.id!,
       asignacionId: f.asignacionId,
       actividadId: f.actividadId,
-      estudianteId: this.estudianteDe(f.asignacionId),
+      estudianteId: this.estudianteDe(f),
       tipoJuego: this.actividad(f.actividadId).tipoJuego.codigo,
+      nivelJuego: this.actividad(f.actividadId).nivelJuego,
       numeroIntento: f.numeroIntento,
       resultado: f.resultado ?? {},
       estrellas: f.estrellas ?? 0,
@@ -81,6 +91,7 @@ export class IntentosEnMemoria
   }
 
   async registrar(d: NuevoIntento): Promise<Intento> {
+    if (d.asignacionId === null) return this.registrarEnEscalera(d);
     const asignacion = this.asignaciones.filas.find(
       (a) => a.id === d.asignacionId,
     )!;
@@ -94,6 +105,7 @@ export class IntentosEnMemoria
     const fila: FilaIntento = {
       id: this.siguiente++,
       asignacionId: d.asignacionId,
+      estudianteId: asignacion.estudianteId,
       actividadId: d.actividadId,
       numeroIntento: numero,
       fecha: AHORA_PRUEBA,
@@ -105,6 +117,39 @@ export class IntentosEnMemoria
     this.filas.push(fila);
     this.modulos.actividadesConIntentos.add(d.actividadId);
     if (asignacion.estado === 'ASIGNADO') asignacion.estado = 'EN_CURSO';
+    return this.aIntento(fila);
+  }
+
+  /** Como fn_intento_antes sin asignación: solo el nivel ACTUAL. */
+  private registrarEnEscalera(d: NuevoIntento): Intento {
+    const nivel = this.niveles?.nivelDeActividad(d.actividadId) ?? null;
+    if (!nivel) throw new Error('trigger: la actividad no es de la escalera');
+    if (
+      this.niveles!.nivelDe(d.estudianteId, nivel.juego).nivelActual !==
+      nivel.nivel
+    ) {
+      throw new Error('trigger: no es el nivel actual del estudiante');
+    }
+    const fila: FilaIntento = {
+      id: this.siguiente++,
+      asignacionId: null,
+      estudianteId: d.estudianteId,
+      actividadId: d.actividadId,
+      numeroIntento:
+        this.filas.filter(
+          (f) =>
+            f.asignacionId === null &&
+            f.estudianteId === d.estudianteId &&
+            f.actividadId === d.actividadId,
+        ).length + 1,
+      fecha: AHORA_PRUEBA,
+      validacion: null,
+      resultado: d.resultado,
+      estrellas: d.estrellas,
+      grabacion: null,
+    };
+    this.filas.push(fila);
+    this.modulos.actividadesConIntentos.add(d.actividadId);
     return this.aIntento(fila);
   }
 
@@ -139,7 +184,7 @@ export class IntentosEnMemoria
 
   private deHabla(estudianteId: bigint): string[] {
     return this.filas
-      .filter((f) => this.estudianteDe(f.asignacionId) === estudianteId)
+      .filter((f) => this.estudianteDe(f) === estudianteId)
       .map((f) => this.actividad(f.actividadId))
       .filter((a) => a.tipoJuego.codigo === 'HABLA_CONMIGO')
       .map((a) => String(a.configuracion['vocal']));
@@ -224,11 +269,21 @@ export async function escenarioIntentos() {
   const busca = modulos.agregarActividad(m4, 'BUSCA_LA_BOCA');
   busca.configuracion = { vocales: ['a', 'e', 'i'] };
 
-  const intentos = new IntentosEnMemoria(base.asignaciones, modulos);
+  const nivelesJuego = new NivelesJuegoEnMemoria(
+    modulos,
+    base.usuarios,
+    () => base.asignaciones.intentosFilas,
+  );
+  const intentos = new IntentosEnMemoria(
+    base.asignaciones,
+    modulos,
+    nivelesJuego,
+  );
   const consentimiento = new ConsultaConsentimientoControlada();
   return {
     ...base,
     intentos,
+    nivelesJuego,
     consentimiento,
     ids: { ...base.ids, busca: busca.id },
   };

@@ -4,10 +4,12 @@ import type { ReviewRepository } from '../repositories';
 import { ListenFirstError } from '../reviewErrors';
 import type {
   CrearObservacionDto,
+  IntentoValidadoDto,
   PaginaRevisionDto,
   UrlFirmadaDto,
   ValidarIntentoDto,
 } from './dto/revisiones';
+import { toLevelUp } from './mappers/levelMapper';
 import { requireList, requireText } from './mappers/responseShape';
 import { toReviewItem } from './mappers/reviewMapper';
 
@@ -30,9 +32,15 @@ const path = (intentoId: string) =>
  * (solo los de SUS estudiantes): el `teacherId` no se envía.
  */
 export function createHttpReviewRepository(api: ApiClient): ReviewRepository {
-  const decide = async (intentoId: string, body: ValidarIntentoDto) => {
+  const decide = async (
+    intentoId: string,
+    body: ValidarIntentoDto,
+  ): Promise<IntentoValidadoDto> => {
     try {
-      await api.post(`${path(intentoId)}/validacion`, body);
+      return await api.post<IntentoValidadoDto>(
+        `${path(intentoId)}/validacion`,
+        body,
+      );
     } catch (error: unknown) {
       // 422: hay audio y quien valida aún no lo pidió (hay que escucharlo).
       if (
@@ -65,7 +73,11 @@ export function createHttpReviewRepository(api: ApiClient): ReviewRepository {
       return requireText(dto.url, 'url');
     },
 
-    validate: (reviewId) => decide(reviewId, { resultado: 'APROBADO' }),
+    async validate(reviewId) {
+      const res = await decide(reviewId, { resultado: 'APROBADO' });
+      // En la escalera, aprobar el nivel actual lo sube (o completa el juego).
+      return toLevelUp(res?.subidaNivel);
+    },
 
     async requestMorePractice(reviewId, feedback) {
       const text = feedback.trim();

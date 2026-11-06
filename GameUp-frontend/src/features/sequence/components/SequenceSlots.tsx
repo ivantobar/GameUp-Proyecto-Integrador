@@ -20,38 +20,55 @@ export function SequenceSlots({ total, placed }: SequenceSlotsProps) {
     return `${index + 1}: ${step ? step.label : 'falta'}`;
   }).join('. ');
 
+  // Hasta 4 pasos, una fila; con 5 o 6 (niveles 4 y 5), filas de 3 para
+  // que cada casilla siga grande en el celular.
+  const perRow = total > 4 ? 3 : Math.max(total, 1);
+  const rows = Array.from({ length: Math.ceil(total / perRow) }, (_, r) =>
+    Array.from(
+      { length: Math.min(perRow, total - r * perRow) },
+      (_, c) => r * perRow + c,
+    ),
+  );
+
   return (
     <View
-      style={styles.row}
+      style={styles.rows}
       accessible
       accessibilityLabel={`Pasos. ${summary}`}
     >
-      {Array.from({ length: total }, (_, index) => {
-        const step = placed[index];
-        const isNext = index === placed.length;
-        return (
-          <View
-            key={index}
-            style={[
-              styles.slot,
-              step ? styles.filled : styles.empty,
-              isNext && styles.next,
-            ]}
-          >
-            <AppText variant="label" tone={step ? 'marca' : 'secundario'}>
-              {String(index + 1)}
-            </AppText>
-            {step?.emoji ? (
-              <AppText variant="title">{step.emoji}</AppText>
-            ) : null}
-          </View>
-        );
-      })}
+      {rows.map((indexes) => (
+        <View key={indexes.join('-')} style={styles.row}>
+          {indexes.map((index) => {
+            const step = placed[index];
+            const isNext = index === placed.length;
+            return (
+              <View
+                key={index}
+                style={[
+                  styles.slot,
+                  step ? styles.filled : styles.empty,
+                  isNext && styles.next,
+                ]}
+              >
+                <AppText variant="label" tone={step ? 'marca' : 'secundario'}>
+                  {String(index + 1)}
+                </AppText>
+                {step?.emoji ? (
+                  <AppText variant="title">{step.emoji}</AppText>
+                ) : null}
+              </View>
+            );
+          })}
+        </View>
+      ))}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  rows: {
+    gap: spacing.xs,
+  },
   row: {
     flexDirection: 'row',
     justifyContent: 'center',

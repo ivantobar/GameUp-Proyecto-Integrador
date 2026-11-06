@@ -8,8 +8,10 @@ import {
   RoundGameScreen,
 } from '@/features/games/components/RoundGameScreen';
 import { GameContentGate } from '@/features/games/components/GameContentGate';
-import { parseActivityId } from '@/features/games/delivery';
-import { useActivityContent } from '@/features/games/useActivityContent';
+import {
+  useGameContent,
+  type GameRouteParams,
+} from '@/features/games/useGameContent';
 import { useGameFinish } from '@/features/games/useGameFinish';
 import { turnScore, type TurnGameState } from '@/features/games/turnGame';
 import { SequenceSlots } from '@/features/sequence/components/SequenceSlots';
@@ -21,9 +23,12 @@ import type { PictureFace, SequenceRoutine } from '@/data/types';
 import { spacing } from '@/theme';
 
 /** Agrupa las opciones de dos en dos (cuadrícula 2 × 2). */
-function pairs(items: readonly PictureFace[]): PictureFace[][] {
+/** Filas de la cuadrícula: de 2 en 2; con 5 o 6 pasos, de 3 en 3. */
+function rowsOf(items: readonly PictureFace[]): PictureFace[][] {
+  const columns = items.length > 4 ? 3 : 2;
   const rows: PictureFace[][] = [];
-  for (let i = 0; i < items.length; i += 2) rows.push(items.slice(i, i + 2));
+  for (let i = 0; i < items.length; i += columns)
+    rows.push(items.slice(i, i + columns));
   return rows;
 }
 
@@ -32,13 +37,16 @@ function pairs(items: readonly PictureFace[]): PictureFace[][] {
  * `actividadId`, juega las rutinas de esa tarea y su resultado va al docente.
  */
 export default function SequenceScreen() {
-  const params = useLocalSearchParams<{ actividadId?: string }>();
-  const activityId = parseActivityId(params.actividadId);
-  const { resource, reload } = useActivityContent(activityId, 'sequence');
+  const params = useLocalSearchParams<GameRouteParams>();
+  const { resource, reload } = useGameContent(params, 'sequence');
   return (
     <GameContentGate resource={resource} reload={reload}>
-      {(activity) => (
-        <SequenceGame routines={activity?.routines} activityId={activityId} />
+      {(source) => (
+        <SequenceGame
+          routines={source.content?.routines}
+          activityId={source.activityId}
+          ladder={source.ladder}
+        />
       )}
     </GameContentGate>
   );
@@ -48,10 +56,12 @@ interface SequenceGameProps {
   /** Rutinas de la tarea; sin ellas, el contenido de ejemplo. */
   routines: readonly SequenceRoutine[] | undefined;
   activityId: string | null;
+  /** Abierto en su nivel de la escalera (para «Jugar otra vez»). */
+  ladder: boolean;
 }
 
-function SequenceGame({ routines, activityId }: SequenceGameProps) {
-  const { saving, finish } = useGameFinish('sequence', activityId);
+function SequenceGame({ routines, activityId, ladder }: SequenceGameProps) {
+  const { saving, finish } = useGameFinish('sequence', activityId, ladder);
   const onFinish = useCallback(
     (state: TurnGameState) => {
       finish(turnScore(state)).catch(() => {});
@@ -101,7 +111,7 @@ function SequenceGame({ routines, activityId }: SequenceGameProps) {
       </View>
 
       <View style={styles.grid}>
-        {pairs(options).map((row) => (
+        {rowsOf(options).map((row, _i, all) => (
           <View key={row.map((step) => step.id).join('-')} style={styles.row}>
             {row.map((step) => (
               <PictureCard
@@ -113,8 +123,13 @@ function SequenceGame({ routines, activityId }: SequenceGameProps) {
                 onPress={() => choose(step.id)}
               />
             ))}
-            {/* Si la fila queda impar, un hueco mantiene el ancho. */}
-            {row.length === 1 ? <View style={styles.spacer} /> : null}
+            {/* Si la fila queda incompleta, huecos mantienen el ancho. */}
+            {Array.from(
+              { length: (all[0]?.length ?? row.length) - row.length },
+              (_, i) => (
+                <View key={`hueco-${i}`} style={styles.spacer} />
+              ),
+            )}
           </View>
         ))}
       </View>

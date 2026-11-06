@@ -18,12 +18,14 @@ const SELECCION_INTENTO = {
   id: true,
   asignacion_id: true,
   actividad_id: true,
+  estudiante_id: true,
   numero_intento: true,
   resultado: true,
   estrellas: true,
   fecha: true,
-  asignacion: { select: { estudiante_id: true } },
-  actividad: { select: { tipo_juego: { select: { codigo: true } } } },
+  actividad: {
+    select: { nivel_juego: true, tipo_juego: { select: { codigo: true } } },
+  },
   validacion: {
     select: { resultado: true, retroalimentacion: true, fecha: true },
   },
@@ -42,8 +44,9 @@ export function filaAIntento(f: FilaIntento): Intento {
     id: f.id,
     asignacionId: f.asignacion_id,
     actividadId: f.actividad_id,
-    estudianteId: f.asignacion.estudiante_id,
+    estudianteId: f.estudiante_id,
     tipoJuego: codigo,
+    nivelJuego: f.actividad.nivel_juego,
     numeroIntento: f.numero_intento,
     // intento.resultado siempre es un objeto JSON (lo escribe el backend).
     resultado: (f.resultado ?? {}) as Configuracion,
@@ -67,7 +70,7 @@ export function filaAIntento(f: FilaIntento): Intento {
 
 /** Filtro: intentos de Habla conmigo de un estudiante. */
 const deHablaConmigo = (estudianteId: bigint): Prisma.intentoWhereInput => ({
-  asignacion: { estudiante_id: estudianteId },
+  estudiante_id: estudianteId,
   actividad: { tipo_juego: { codigo: 'HABLA_CONMIGO' } },
 });
 
@@ -80,11 +83,12 @@ export class PrismaIntentoRepository
   async registrar(datos: NuevoIntento): Promise<Intento> {
     // INSERT sin numero_intento: el trigger fn_intento_antes lo calcula ANTES
     // del chequeo NOT NULL (Prisma lo exige como obligatorio, por eso SQL).
-    // El mismo trigger valida módulo y asignación no completada; fn_intento_despues
-    // pasa la asignación a EN_CURSO.
+    // El mismo trigger valida módulo y asignación no completada (o, sin
+    // asignación, que sea del nivel actual de la escalera) y que el estudiante
+    // coincida; fn_intento_despues pasa la asignación a EN_CURSO.
     const [fila] = await this.prisma.$queryRaw<Array<{ id: bigint }>>`
-      insert into public.intento (asignacion_id, actividad_id, resultado, estrellas)
-      values (${datos.asignacionId}::bigint, ${datos.actividadId}::bigint,
+      insert into public.intento (asignacion_id, estudiante_id, actividad_id, resultado, estrellas)
+      values (${datos.asignacionId}::bigint, ${datos.estudianteId}::bigint, ${datos.actividadId}::bigint,
               ${JSON.stringify(datos.resultado)}::jsonb, ${datos.estrellas}::int)
       returning id`;
     if (!fila) throw new Error('La base no devolvió el intento creado');

@@ -8,8 +8,11 @@ import {
   StateView,
 } from '@/components/ui';
 import { GameCard, NarrationButton } from '@/components/gameup';
-import { assignmentHref, gameHref } from '@/features/games/catalog';
+import { isLadderGame } from '@/data/types';
+import { LevelUpCelebration } from '@/features/games/components/LevelUpCelebration';
+import { assignmentHref, gameHref, ladderHref } from '@/features/games/catalog';
 import { useGameList, type GameListItem } from '@/features/games/useGameList';
+import { useLevelCelebration } from '@/features/games/useLevelCelebration';
 import { useRefreshOnFocus } from '@/data/useRefreshOnFocus';
 import { spacing } from '@/theme';
 
@@ -22,11 +25,26 @@ function pairs(items: GameListItem[]): GameListItem[][] {
   return rows;
 }
 
+/**
+ * A dónde lleva una tarjeta: su tarea (si tiene «Tarea»), si no el nivel
+ * actual de su escalera y, si no, el juego libre.
+ */
+function cardHref({ game, assignment, level }: GameListItem) {
+  if (assignment) return assignmentHref(assignment);
+  if (level && isLadderGame(game.id)) return ladderHref(game.id);
+  return gameHref(game);
+}
+
 /** Pantalla 2 · Juegos. Las secciones y tarjetas salen del catálogo. */
 export default function GamesScreen() {
   const { resource, reload, refresh } = useGameList();
-  // Al volver de un juego, la insignia «Tarea» se actualiza.
+  // Al volver de un juego, la insignia «Tarea» y las estrellas se actualizan.
   useRefreshOnFocus(refresh);
+  const list = resource.status === 'ready' ? resource.data : null;
+  const celebration = useLevelCelebration(
+    list?.studentId ?? null,
+    list?.levels ?? null,
+  );
 
   return (
     <Screen
@@ -56,8 +74,13 @@ export default function GamesScreen() {
         />
       ) : null}
 
+      <LevelUpCelebration
+        levelUp={celebration.levelUp}
+        onClose={celebration.close}
+      />
+
       {resource.status === 'ready'
-        ? resource.data.map((section) => (
+        ? resource.data.sections.map((section) => (
             <View key={section.id} style={styles.section}>
               <AppText
                 variant="label"
@@ -71,23 +94,18 @@ export default function GamesScreen() {
                   key={row.map((item) => item.game.id).join('-')}
                   style={styles.row}
                 >
-                  {row.map(({ game, badge, assignment }) => (
+                  {row.map((item) => (
                     <GameCard
-                      key={game.id}
-                      title={game.title}
-                      subtitle={game.subtitle}
-                      icon={game.icon}
-                      tone={game.tone}
-                      badge={badge}
-                      // Con «Tarea», abre esa actividad (su resultado llega
-                      // al docente); si no, el juego libre.
-                      onPress={() =>
-                        router.push(
-                          assignment
-                            ? assignmentHref(assignment)
-                            : gameHref(game),
-                        )
-                      }
+                      key={item.game.id}
+                      title={item.game.title}
+                      subtitle={item.game.subtitle}
+                      icon={item.game.icon}
+                      tone={item.game.tone}
+                      badge={item.badge}
+                      level={item.level?.level}
+                      // Con «Tarea», abre esa actividad; si no, su nivel
+                      // actual (ambos llegan al docente) o el juego libre.
+                      onPress={() => router.push(cardHref(item))}
                     />
                   ))}
                   {/* Si la fila queda impar, un hueco mantiene el ancho. */}

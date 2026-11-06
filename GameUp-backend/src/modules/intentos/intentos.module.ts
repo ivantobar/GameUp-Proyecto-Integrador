@@ -4,6 +4,7 @@ import { CatalogoModule } from '../catalogo/catalogo.module.js';
 import { ConsentimientoModule } from '../consentimiento/consentimiento.module.js';
 import { EstudiantesModule } from '../estudiantes/estudiantes.module.js';
 import { ModulosModule } from '../modulos/modulos.module.js';
+import { NivelesJuegoModule } from '../niveles-juego/niveles-juego.module.js';
 import { ContextoIntentoService } from './application/contexto-intento.service.js';
 import { HablaConmigoService } from './application/habla-conmigo.service.js';
 import { IntentoService } from './application/intento.service.js';
@@ -29,6 +30,7 @@ import {
     ConsentimientoModule,
     EstudiantesModule,
     ModulosModule,
+    NivelesJuegoModule,
   ],
   controllers: [IntentoController, PracticaController],
   providers: [

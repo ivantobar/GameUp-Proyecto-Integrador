@@ -9,6 +9,7 @@ import {
   type TextTone,
 } from '@/components/ui';
 import { colors, radii, sizes, spacing, type ThemeColor } from '@/theme';
+import { LevelStars, levelStarsLabel } from './LevelStars';
 
 export type GameCardTone = 'brand' | 'warm' | 'surface';
 
@@ -49,6 +50,11 @@ interface GameCardProps extends PressableBaseProps {
   tone: GameCardTone;
   /** «Nuevo», «Tarea»… Se muestra en mayúsculas. */
   badge?: string;
+  /**
+   * Nivel del juego en la escalera (1 a 5): se ve como estrellas, sin
+   * números. Sin él, la tarjeta no muestra estrellas.
+   */
+  level?: number;
 }
 
 /** Tarjeta de un juego (pantalla Juegos). Se toca entera. */
@@ -58,13 +64,21 @@ export function GameCard({
   icon,
   tone,
   badge,
+  level,
   onPress,
   disabled,
   accessibilityHint,
   testID,
 }: GameCardProps) {
   const config = gameCardTones[tone];
-  const label = [title, subtitle, badge].filter(Boolean).join('. ');
+  const label = [
+    title,
+    subtitle,
+    level === undefined ? undefined : levelStarsLabel(level),
+    badge,
+  ]
+    .filter(Boolean)
+    .join('. ');
 
   return (
     <PressableCard
@@ -88,6 +102,11 @@ export function GameCard({
       <AppText variant="support" tone={config.subtitle}>
         {subtitle}
       </AppText>
+      {level === undefined ? null : (
+        <View style={styles.stars}>
+          <LevelStars level={level} />
+        </View>
+      )}
     </PressableCard>
   );
 }
@@ -110,6 +129,9 @@ const styles = StyleSheet.create({
     width: sizes.iconBox,
     height: sizes.iconBox,
     justifyContent: 'center',
+  },
+  stars: {
+    marginTop: spacing.xs,
   },
   iconBox: {
     alignItems: 'center',

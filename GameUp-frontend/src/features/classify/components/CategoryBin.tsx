@@ -13,6 +13,8 @@ interface CategoryBinProps {
   /** Ronda resuelta o sin elemento por ubicar. */
   disabled: boolean;
   onPress: () => void;
+  /** 3 grupos en la fila (niveles 4 y 5): grupo más bajo y dibujos más chicos. */
+  compact?: boolean;
 }
 
 /**
@@ -26,6 +28,7 @@ export function CategoryBin({
   hint,
   disabled,
   onPress,
+  compact = false,
 }: CategoryBinProps) {
   const contents =
     items.length > 0
@@ -48,6 +51,7 @@ export function CategoryBin({
       accessibilityState={{ disabled }}
       style={({ pressed }) => [
         styles.bin,
+        compact && styles.compact,
         {
           backgroundColor:
             pressed && !disabled
@@ -71,7 +75,7 @@ export function CategoryBin({
         importantForAccessibility="no-hide-descendants"
       >
         {items.map((item) => (
-          <AppText key={item.id} variant="title">
+          <AppText key={item.id} variant={compact ? 'bodyStrong' : 'title'}>
             {item.emoji ?? item.label}
           </AppText>
         ))}
@@ -88,6 +92,10 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     borderRadius: radii.xl,
     borderWidth: sizes.borderStrong + 1,
+  },
+  compact: {
+    minHeight: sizes.pictureTile,
+    padding: spacing.xs,
   },
   title: {
     alignItems: 'center',

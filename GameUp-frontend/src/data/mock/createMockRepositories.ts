@@ -1,10 +1,15 @@
 import { InvalidCredentialsError } from '../authErrors';
 import type { Repositories } from '../repositories';
 import {
+  LADDER_GAMES,
+  LADDER_LEVELS,
   MAX_STARS,
   type Assignment,
   type GameId,
+  type GameLevel,
   type GameResult,
+  type LadderGameId,
+  type LevelUp,
   type ListeningResult,
   type OfficialProgress,
   type ReviewItem,
@@ -15,6 +20,7 @@ import {
   type VowelPractice,
 } from '../types';
 import { devSettings } from './devSettings';
+import { ladderContent } from './ladderContent';
 import {
   createSeedReviews,
   MOCK_PASSWORD,
@@ -54,6 +60,16 @@ function findGameTitle(gameId: GameId): string {
     memory: 'Memoria',
   };
   return titles[gameId];
+}
+
+/** `escalera-memory-2` → { gameId: 'memory', level: 2 } (actividad de la escalera). */
+function parseLadderId(
+  activityId: string | null | undefined,
+): { gameId: LadderGameId; level: number } | null {
+  const match = /^escalera-(\w+)-([1-5])$/.exec(activityId ?? '');
+  const gameId = match?.[1] as LadderGameId | undefined;
+  if (!match || !gameId || !LADDER_GAMES.includes(gameId)) return null;
+  return { gameId, level: Number(match[2]) };
 }
 
 /** Copia profunda simple: los datos simulados son JSON plano. */
@@ -118,6 +134,52 @@ export function createMockRepositories({
       [mockStudent.id]: clone<TeacherNote>(mockTeacherNote),
     } as Record<string, TeacherNote>,
     practicedDays: new Set<string>(),
+    /** Nivel de cada estudiante en cada juego (todos empiezan en el 1). */
+    levels: {} as Record<
+      string,
+      Partial<Record<LadderGameId, { level: number; completed: boolean }>>
+    >,
+  };
+
+  const levelOf = (studentId: string, gameId: LadderGameId) =>
+    state.levels[studentId]?.[gameId] ?? { level: 1, completed: false };
+
+  const levelsOf = (studentId: string): GameLevel[] =>
+    LADDER_GAMES.map((gameId) => {
+      const { level, completed } = levelOf(studentId, gameId);
+      return {
+        gameId,
+        level,
+        completed,
+        pendingReview: state.reviews.filter(
+          (r) =>
+            r.student.id === studentId &&
+            r.status === 'pending_validation' &&
+            r.game?.gameId === gameId &&
+            r.game.level === level,
+        ).length,
+      };
+    });
+
+  /** Como el backend: solo el nivel actual sube, uno por vez; en el 5 completa. */
+  const levelUp = (
+    studentId: string,
+    gameId: LadderGameId,
+    attemptLevel: number,
+  ): LevelUp | null => {
+    const actual = levelOf(studentId, gameId);
+    if (actual.completed || attemptLevel !== actual.level) return null;
+    const next =
+      actual.level >= LADDER_LEVELS
+        ? { level: LADDER_LEVELS, completed: true }
+        : { level: actual.level + 1, completed: false };
+    state.levels[studentId] = { ...state.levels[studentId], [gameId]: next };
+    return {
+      gameId,
+      previousLevel: actual.level,
+      level: next.level,
+      completed: next.completed,
+    };
   };
 
   const respond = <T>(value: T): Promise<T> =>
@@ -213,6 +275,8 @@ export function createMockRepositories({
     },
     activities: {
       getActivity: (activityId) => {
+        const ladder = parseLadderId(activityId);
+        if (ladder) return respond(ladderContent(ladder.gameId, ladder.level));
         const activity = mockActivities[activityId];
         return activity ? respond(activity) : fail('Actividad no encontrada');
       },
@@ -223,6 +287,15 @@ export function createMockRepositories({
           ...state.progress,
           pendingValidation: pendingFor(studentId),
         }),
+    },
+    levels: {
+      getMyLevels: () => respond(levelsOf(mockStudent.id)),
+      getCurrentLevelActivity: (gameId) => {
+        const level = levelsOf(mockStudent.id).find((l) => l.gameId === gameId);
+        if (!level) return fail('Ese juego no tiene escalera de niveles');
+        return respond({ level, content: ladderContent(gameId, level.level) });
+      },
+      getStudentLevels: (studentId) => respond(levelsOf(studentId)),
     },
     consent: {
       hasVoiceRecordingConsent: () => respond(voiceConsent()),
@@ -307,9 +380,14 @@ export function createMockRepositories({
           createdAt: new Date().toISOString(),
           sentForReview: Boolean(activityId),
         };
+        const ladder = parseLadderId(activityId);
+        if (ladder && ladder.level !== levelOf(studentId, gameId).level) {
+          // Como el backend: solo se acepta el nivel actual.
+          return fail('Esa actividad no es de tu nivel actual');
+        }
         if (activityId) {
           state.gameResults.push(result);
-          markSubmitted(gameId, activityId);
+          if (!ladder) markSubmitted(gameId, activityId);
           // Llega a «Por escuchar» del docente.
           state.reviews.unshift({
             id: result.id,
@@ -319,8 +397,11 @@ export function createMockRepositories({
             status: 'pending_validation',
             game: {
               gameId,
-              title: mockActivities[activityId]?.title ?? findGameTitle(gameId),
+              title: ladder
+                ? `${findGameTitle(gameId)} · nivel ${ladder.level}`
+                : (mockActivities[activityId]?.title ?? findGameTitle(gameId)),
               score,
+              level: ladder?.level ?? null,
             },
           });
         }
@@ -360,6 +441,10 @@ export function createMockRepositories({
       validate: (reviewId) => {
         const review = setReviewStatus(reviewId, 'validated');
         if (!review) return fail('Actividad no encontrada');
+        const level = review.game?.level;
+        if (review.game && typeof level === 'number') {
+          return respond(levelUp(review.student.id, review.game.gameId, level));
+        }
         // Privacidad: cumplida la validación, la grabación ya no se guarda.
         if (review.speech) review.speech.audioUri = null;
         // Solo lo validado suma al progreso oficial (regla de negocio 2).
@@ -371,7 +456,7 @@ export function createMockRepositories({
             module.validated = Math.min(module.validated + 1, module.total);
           }
         }
-        return respond(undefined);
+        return respond(null);
       },
       requestMorePractice: (reviewId, feedback) => {
         if (feedback.trim().length === 0) {

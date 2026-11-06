@@ -185,6 +185,7 @@ interface FilaModulo {
   portadaContenidoId: bigint | null;
   publicado: boolean;
   orden: number;
+  esEscalera?: boolean;
 }
 
 export interface ModuloInicial {
@@ -194,6 +195,8 @@ export interface ModuloInicial {
   nombre?: string;
   categoriaId?: number;
   nivelId?: number;
+  /** Módulo de la escalera de niveles (fase 9). */
+  esEscalera?: boolean;
 }
 
 /**
@@ -232,6 +235,7 @@ export class ModulosEnMemoria {
         portadaContenidoId: null,
         publicado: m.publicado ?? false,
         orden: 0,
+        esEscalera: m.esEscalera ?? false,
       });
     }
     this.moduloRepo = this.crearModuloRepo();
@@ -268,10 +272,29 @@ export class ModulosEnMemoria {
     return c;
   }
 
+  /** El módulo de la escalera (fase 9): de la directora y SIN publicar. */
+  agregarModuloEscalera(id: number, creadoPor = 1): void {
+    this.modulos.push({
+      id: BigInt(id),
+      categoriaId: 1n,
+      nivelId: 1n,
+      creadoPor: BigInt(creadoPor),
+      musicaId: null,
+      nombre: 'Escalera de juegos',
+      descripcion: null,
+      portadaContenidoId: null,
+      publicado: false,
+      orden: 0,
+      esEscalera: true,
+    });
+  }
+
   agregarActividad(
     moduloId: number,
     codigo: Actividad['tipoJuego']['codigo'] = 'MEMORIA',
     activa = true,
+    /** Nivel de la escalera (1-5); null en un módulo normal. */
+    nivelJuego: number | null = null,
   ): Actividad {
     const tipo = this.catalogo.tipos.find((t) => t.codigo === codigo)!;
     const a: Actividad = {
@@ -283,6 +306,7 @@ export class ModulosEnMemoria {
       configuracion: codigo === 'HABLA_CONMIGO' ? { vocal: 'a' } : {},
       orden: 0,
       activa,
+      nivelJuego,
     };
     this.actividades.push(a);
     return a;
@@ -306,6 +330,7 @@ export class ModulosEnMemoria {
       publicado: f.publicado,
       orden: f.orden,
       creadoEn: AHORA_PRUEBA,
+      esEscalera: f.esEscalera ?? false,
     });
   }
 
@@ -479,6 +504,7 @@ export class ModulosEnMemoria {
           configuracion: d.configuracion,
           orden: d.orden,
           activa: d.activa,
+          nivelJuego: null,
         };
         this.actividades.push(a);
         if (elementos !== null)

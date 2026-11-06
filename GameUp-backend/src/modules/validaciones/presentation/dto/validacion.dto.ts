@@ -16,6 +16,8 @@ import {
   type CodigoJuego,
 } from '../../../catalogo/domain/juegos/estrategia-juego.js';
 import { NivelDto } from '../../../estudiantes/presentation/dto/estudiante.dto.js';
+import { IntentoDto } from '../../../intentos/presentation/dto/intento.dto.js';
+import { SubidaNivelDto } from '../../../niveles-juego/presentation/dto/nivel-juego.dto.js';
 import {
   LARGO_MAXIMO_RETROALIMENTACION,
   MAXIMO_LOTE,
@@ -80,6 +82,13 @@ export class EstudianteRevisionDto {
 export class ActividadRevisionDto {
   @ApiProperty({ example: '8' }) id: string;
   @ApiProperty({ example: 'Di la a' }) titulo: string;
+  @ApiProperty({
+    example: null,
+    nullable: true,
+    type: Number,
+    description: 'Nivel (1-5) si es de la escalera de niveles',
+  })
+  nivelJuego: number | null;
   @ApiProperty({ example: 'a', nullable: true, type: String }) vocal:
     string | null;
 }
@@ -141,6 +150,20 @@ export class PaginaRevisionDto {
   @ApiProperty({ example: 20 }) limit: number;
 }
 
+export class IntentoValidadoDto extends IntentoDto {
+  @ApiProperty({
+    type: SubidaNivelDto,
+    nullable: true,
+    description: 'Si aprobar subió de nivel en la escalera (o completó el juego)',
+  })
+  subidaNivel: SubidaNivelDto | null;
+}
+
 export class LoteAprobadoDto {
   @ApiProperty({ example: 3 }) aprobados: number;
+  @ApiProperty({
+    type: [SubidaNivelDto],
+    description: 'Subidas de nivel de la escalera que causó el lote',
+  })
+  subidas: SubidaNivelDto[];
 }

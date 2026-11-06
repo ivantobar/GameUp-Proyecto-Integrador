@@ -15,18 +15,27 @@ import {
   ACTIVIDAD_REPOSITORY,
   type ActividadRepository,
 } from '../../modulos/domain/modulo.repository.js';
+import {
+  NIVEL_JUEGO_REPOSITORY,
+  type NivelJuegoRepository,
+} from '../../niveles-juego/domain/nivel-juego.repository.js';
 
 export const MENSAJE_ACTIVIDAD_NO_EXISTE = 'La actividad no existe.';
 
 export interface ContextoIntento {
   actividad: Actividad;
-  asignacion: Asignacion;
+  /** null: actividad de la escalera de niveles (no tiene asignación). */
+  asignacion: Asignacion | null;
 }
 
 /**
  * ¿Dónde cae el intento del estudiante? En la asignación SIN COMPLETAR del
  * módulo de la actividad. Si la actividad no existe, está inactiva o su
  * módulo no está asignado al estudiante → 404 (no se confirma que exista).
+ *
+ * Las actividades de la escalera (fase 9) no tienen asignación: solo se
+ * acepta la del nivel ACTUAL del estudiante en ese juego (si completó el 5,
+ * la del 5). Un nivel superado o uno al que aún no llega → 422.
  */
 @Injectable()
 export class ContextoIntentoService {
@@ -35,6 +44,8 @@ export class ContextoIntentoService {
     private readonly actividades: ActividadRepository,
     @Inject(ASIGNACION_LECTURA_REPOSITORY)
     private readonly asignaciones: AsignacionLecturaRepository,
+    @Inject(NIVEL_JUEGO_REPOSITORY)
+    private readonly niveles: NivelJuegoRepository,
   ) {}
 
   async resolver(
@@ -49,6 +60,10 @@ export class ContextoIntentoService {
     const actividad = await this.actividades.buscarPorId(actividadId);
     if (!actividad || !actividad.activa) {
       throw new RecursoNoEncontradoError(MENSAJE_ACTIVIDAD_NO_EXISTE);
+    }
+    if (actividad.nivelJuego !== null) {
+      await this.exigirNivelActual(actual.id, actividad);
+      return { actividad, asignacion: null };
     }
 
     const activas = await this.asignaciones.activasDelEstudiante(actual.id);
@@ -71,5 +86,21 @@ export class ContextoIntentoService {
       );
     }
     throw new RecursoNoEncontradoError(MENSAJE_ACTIVIDAD_NO_EXISTE);
+  }
+
+  /** La base también lo exige (fn_intento_antes); aquí, con un mensaje claro. */
+  private async exigirNivelActual(
+    estudianteId: bigint,
+    actividad: Actividad,
+  ): Promise<void> {
+    const nivel = (await this.niveles.delEstudiante(estudianteId)).find(
+      (n) => n.juego === actividad.tipoJuego.codigo,
+    );
+    if (!nivel) throw new RecursoNoEncontradoError(MENSAJE_ACTIVIDAD_NO_EXISTE);
+    if (actividad.nivelJuego !== nivel.nivelActual) {
+      throw new ReglaNegocioError(
+        `Esa actividad es del nivel ${actividad.nivelJuego}: en ${nivel.nombreJuego} vas en el nivel ${nivel.nivelActual}.`,
+      );
+    }
   }
 }

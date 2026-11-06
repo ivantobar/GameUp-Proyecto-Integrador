@@ -21,6 +21,7 @@ import { TeacherNoteCard } from '@/features/home-practice/components/TeacherNote
 import { TeacherVideoCard } from '@/features/home-practice/components/TeacherVideoCard';
 import { homeSteps } from '@/features/home-practice/homeSteps';
 import { useWeeklyPractice } from '@/features/home-practice/useWeeklyPractice';
+import { StudentLevels } from '@/features/levels/components/StudentLevels';
 import { colors, radii, spacing } from '@/theme';
 
 /** «Esta semana practicaron 2 días.» */
@@ -161,6 +162,14 @@ export default function GuardianPracticeScreen() {
           {week.feedback && week.feedback.length > 0 ? (
             <ActivityFeedbackCard feedback={week.feedback} />
           ) : null}
+
+          {/* Nivel de cada juego (sube cuando la profe aprueba). La clave
+              cambia con el estudiante para volver a cargar. */}
+          <StudentLevels
+            key={week.student.id}
+            studentId={week.student.id}
+            title={`Juegos de ${firstName(week.student.displayName)}`}
+          />
 
           {week.days ? (
             <AppText variant="support" tone="secundario">
