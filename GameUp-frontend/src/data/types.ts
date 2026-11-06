@@ -143,6 +143,55 @@ export interface NewListeningResult {
 /** Juegos de «Pensar y recordar»: envían su resultado con `POST /intentos`. */
 export type ThinkingGameId = 'match' | 'classify' | 'sequence' | 'memory';
 
+/*
+ * Escalera de niveles (fase 9). Emparejar, Clasificar, Secuenciar y Memoria
+ * tienen 5 niveles cada uno; el niño sube uno cuando la profe aprueba su
+ * intento del nivel actual. NO es el nivel BAJO/MEDIO/ALTO del estudiante.
+ */
+
+/** Juegos con escalera de niveles: los de «Pensar y recordar». */
+export type LadderGameId = ThinkingGameId;
+
+export const LADDER_GAMES: readonly LadderGameId[] = [
+  'match',
+  'classify',
+  'sequence',
+  'memory',
+];
+
+export function isLadderGame(gameId: GameId): gameId is LadderGameId {
+  return (LADDER_GAMES as readonly GameId[]).includes(gameId);
+}
+
+/** Niveles de cada escalera. */
+export const LADDER_LEVELS = 5;
+
+/** Nivel de un estudiante en un juego. */
+export interface GameLevel {
+  gameId: LadderGameId;
+  /** 1 a 5. */
+  level: number;
+  /** Aprobó el nivel 5: puede seguir jugándolo. */
+  completed: boolean;
+  /** Intentos de su nivel que esperan a la profe (no suben solos). */
+  pendingReview: number;
+}
+
+/** La actividad del nivel actual de un juego (la abre el estudiante). */
+export interface LevelActivity {
+  level: GameLevel;
+  content: ActivityContent;
+}
+
+/** Lo que pasó con el nivel al aprobar un intento de la escalera. */
+export interface LevelUp {
+  gameId: LadderGameId;
+  previousLevel: number;
+  level: number;
+  /** true: aprobó el nivel 5. */
+  completed: boolean;
+}
+
 /**
  * Lo que se informa al docente al terminar (no es una nota):
  * - `turns`: Emparejar, Clasificar y Secuenciar, cuántos turnos resolvió al
@@ -267,6 +316,10 @@ export interface ReviewItem {
     /** Título de la actividad («Las vocales en orden»). */
     title: string;
     score: GameScore;
+    /** Nivel de la escalera (1-5); `null` si es una tarea de un módulo. */
+    level?: number | null;
+    /** Intentos pendientes del mismo nivel o tarea (este incluido). */
+    pendingSameActivity?: number;
   };
   /** Retroalimentación si el docente pidió practicar más. */
   feedback?: string;
@@ -374,7 +427,7 @@ export interface ClassifyItem extends PictureFace {
   categoryId: string;
 }
 
-/** Clasificar: 2 grupos y unos pocos elementos para repartir. */
+/** Clasificar: 2 o 3 grupos y unos pocos elementos (hasta 9) para repartir. */
 export interface ClassifySet {
   id: string;
   question: string;
@@ -382,7 +435,7 @@ export interface ClassifySet {
   items: ClassifyItem[];
 }
 
-/** Secuenciar: una rutina con sus pasos EN ORDEN (de 2 a 4). */
+/** Secuenciar: una rutina con sus pasos EN ORDEN (de 2 a 6). */
 export interface SequenceRoutine {
   id: string;
   title: string;

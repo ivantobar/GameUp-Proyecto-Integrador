@@ -22,6 +22,8 @@ const DONE_PATH = {
 export function useGameFinish(
   gameId: ThinkingGameId,
   activityId: string | null,
+  /** Abierto en su nivel de la escalera: «Jugar otra vez» vuelve a su nivel. */
+  ladder = false,
 ) {
   const { students, results } = useRepositories();
   const [saving, setSaving] = useState(false);
@@ -54,12 +56,14 @@ export function useGameFinish(
 
       router.replace({
         pathname: DONE_PATH[gameId],
-        params: activityId
-          ? { envio: delivery, actividadId: activityId }
-          : { envio: delivery },
+        params: ladder
+          ? { envio: delivery, escalera: '1' }
+          : activityId
+            ? { envio: delivery, actividadId: activityId }
+            : { envio: delivery },
       });
     },
-    [students, results, gameId, activityId],
+    [students, results, gameId, activityId, ladder],
   );
 
   return { saving, finish };

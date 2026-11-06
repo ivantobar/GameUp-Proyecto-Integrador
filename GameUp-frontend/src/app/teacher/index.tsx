@@ -13,6 +13,7 @@ import {
 } from '@/components/ui';
 import { useRefreshOnFocus } from '@/data/useRefreshOnFocus';
 import { SignOutButton } from '@/features/auth/components/SignOutButton';
+import { StudentLevels } from '@/features/levels/components/StudentLevels';
 import { ReviewCard } from '@/features/review/components/ReviewCard';
 import {
   matchesFilter,
@@ -122,6 +123,13 @@ export default function TeacherReviewScreen() {
                   loadRecording={() => queue.loadRecording(item)}
                   voiceNoteEnabled={queue.features.familyVoiceNote}
                   shareOption={!queue.features.feedbackAlwaysReachesFamily}
+                  // Al abrirla: el nivel de cada juego de ese estudiante.
+                  details={
+                    <StudentLevels
+                      studentId={item.student.id}
+                      title={`Juegos de ${item.student.displayName}`}
+                    />
+                  }
                 />
               ))}
             </View>

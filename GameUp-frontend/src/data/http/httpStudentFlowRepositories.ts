@@ -84,7 +84,7 @@ export function createHttpActivityRepository(
  * módulo. Solo si la actividad usa imágenes. Si no se pueden traer, el
  * juego sigue: las tarjetas muestran su texto o su etiqueta.
  */
-async function imageUrlsFor(
+export async function imageUrlsFor(
   api: ApiClient,
   dto: ActividadDetalleDto,
 ): Promise<ImageUrls> {

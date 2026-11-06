@@ -55,10 +55,26 @@ interface MemoryCardProps {
   face: PictureFace | undefined;
   view: MemoryCardView;
   onPress: () => void;
+  /**
+   * Tablero de 8 cartas o más (3 columnas): carta más baja y dibujo
+   * mediano, para que el tablero quepa en el celular.
+   */
+  compact?: boolean;
+}
+
+/** Columnas del tablero: 3 desde 8 cartas (4 parejas), si no 2. */
+export function memoryColumns(cardCount: number): 2 | 3 {
+  return cardCount >= 8 ? 3 : 2;
 }
 
 /** Carta de «Memoria». Se toca para voltearla. */
-export function MemoryCard({ position, face, view, onPress }: MemoryCardProps) {
+export function MemoryCard({
+  position,
+  face,
+  view,
+  onPress,
+  compact = false,
+}: MemoryCardProps) {
   const config = memoryCardStyles[view];
   const isUp = view !== 'down';
   const locked = view === 'matched' || view === 'up';
@@ -80,6 +96,7 @@ export function MemoryCard({ position, face, view, onPress }: MemoryCardProps) {
       accessibilityState={{ disabled: locked, selected: view === 'matched' }}
       style={({ pressed }) => [
         styles.card,
+        compact && styles.compact,
         {
           backgroundColor:
             pressed && view === 'down'
@@ -91,7 +108,7 @@ export function MemoryCard({ position, face, view, onPress }: MemoryCardProps) {
       ]}
     >
       {isUp && face ? (
-        <Pictogram face={face} size="lg" />
+        <Pictogram face={face} size={compact ? 'md' : 'lg'} />
       ) : (
         <Character mouth="smile" size="xs" />
       )}
@@ -110,5 +127,9 @@ const styles = StyleSheet.create({
     padding: spacing.sm,
     borderRadius: radii.xl,
     borderWidth: sizes.borderStrong + 1,
+  },
+  compact: {
+    minHeight: sizes.pictureTile,
+    padding: spacing.xs,
   },
 });

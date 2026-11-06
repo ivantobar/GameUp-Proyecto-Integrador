@@ -264,6 +264,87 @@ describe.each(implementations)('contrato de la versión %s', (_name, create) => 
     });
   });
 
+  describe('escalera de niveles por juego', () => {
+    beforeEach(async () => {
+      await signInAs('estudiante@gameup.test');
+    });
+
+    it('el estudiante empieza en el nivel 1 de los 4 juegos', async () => {
+      const levels = await settle(repos.levels.getMyLevels());
+
+      expect(levels.map((l) => [l.gameId, l.level, l.completed])).toEqual([
+        ['match', 1, false],
+        ['classify', 1, false],
+        ['sequence', 1, false],
+        ['memory', 1, false],
+      ]);
+    });
+
+    it('abre su nivel actual: Memoria nivel 1 tiene 2 parejas', async () => {
+      const { level, content } = await settle(
+        repos.levels.getCurrentLevelActivity('memory'),
+      );
+
+      expect(level).toMatchObject({ gameId: 'memory', level: 1 });
+      if (content.gameId !== 'memory') throw new Error('no es Memoria');
+      expect(content.boards[0]?.pairs).toHaveLength(2);
+      expect(content.activityId).toBeTruthy();
+    });
+
+    it('aprobar el nivel actual lo sube 1 → 2 solo en ese juego', async () => {
+      const student = await settle(repos.students.getCurrentStudent());
+      const { content } = await settle(
+        repos.levels.getCurrentLevelActivity('memory'),
+      );
+      const result = await settle(
+        repos.results.submitGameResult({
+          studentId: student.id,
+          gameId: 'memory',
+          score: { kind: 'memory', pairs: 2, mismatches: 1 },
+          activityId: content.activityId,
+        }),
+      );
+      expect(result.sentForReview).toBe(true);
+
+      await signInAs('docente@gameup.test');
+      await expect(settle(repos.reviews.validate(result.id))).resolves.toEqual({
+        gameId: 'memory',
+        previousLevel: 1,
+        level: 2,
+        completed: false,
+      });
+
+      await signInAs('estudiante@gameup.test');
+      const levels = await settle(repos.levels.getMyLevels());
+      expect(levels.find((l) => l.gameId === 'memory')?.level).toBe(2);
+      expect(levels.find((l) => l.gameId === 'match')?.level).toBe(1);
+      const next = await settle(repos.levels.getCurrentLevelActivity('memory'));
+      if (next.content.gameId !== 'memory') throw new Error('no es Memoria');
+      expect(next.content.boards[0]?.pairs).toHaveLength(3);
+
+      // El nivel 1 ya no se acepta.
+      await expect(
+        settle(
+          repos.results.submitGameResult({
+            studentId: student.id,
+            gameId: 'memory',
+            score: { kind: 'memory', pairs: 2, mismatches: 0 },
+            activityId: content.activityId,
+          }),
+        ),
+      ).rejects.toThrow();
+    });
+
+    it('la profe ve el nivel de cada juego de su estudiante', async () => {
+      const student = await settle(repos.students.getCurrentStudent());
+      await signInAs('docente@gameup.test');
+      const levels = await settle(repos.levels.getStudentLevels(student.id));
+
+      expect(levels).toHaveLength(4);
+      expect(levels.every((l) => l.level === 1)).toBe(true);
+    });
+  });
+
   describe('revisión de la tallerista', () => {
     let teacherId: string;
     beforeEach(async () => {
@@ -287,9 +368,10 @@ describe.each(implementations)('contrato de la versión %s', (_name, create) => 
       );
       if (!first || !second) throw new Error('faltan pendientes');
 
-      await expect(settle(repos.reviews.validate(first.id))).resolves.toBe(
-        undefined,
-      );
+      // Una tarea de un módulo: no hay subida de nivel.
+      await expect(
+        settle(repos.reviews.validate(first.id)),
+      ).resolves.toBeNull();
       await expect(
         settle(repos.reviews.requestMorePractice(second.id, '   ')),
       ).rejects.toThrow('obligatoria');

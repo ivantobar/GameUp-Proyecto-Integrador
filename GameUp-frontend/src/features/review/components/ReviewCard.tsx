@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useState, type ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 import {
   AppText,
@@ -37,6 +37,8 @@ interface ReviewCardProps {
   shareOption?: boolean;
   /** Fecha de referencia para «hoy»/«ayer» (en las pruebas). */
   now?: Date;
+  /** Algo más que ver al abrirla (los niveles del estudiante). */
+  details?: ReactNode;
 }
 
 /**
@@ -56,6 +58,7 @@ export function ReviewCard({
   voiceNoteEnabled = true,
   shareOption = false,
   now,
+  details,
 }: ReviewCardProps) {
   const name = item.student.displayName;
   return (
@@ -87,6 +90,7 @@ export function ReviewCard({
           loadRecording={loadRecording}
           voiceNoteEnabled={voiceNoteEnabled}
           shareOption={shareOption}
+          details={details}
         />
       ) : null}
     </Card>
@@ -101,6 +105,7 @@ type BodyProps = Pick<
   | 'onRequestMore'
   | 'onSaveVoiceNote'
   | 'loadRecording'
+  | 'details'
 > & { voiceNoteEnabled: boolean; shareOption: boolean };
 
 /** Parte abierta. Al cerrarse la tarjeta se desmonta y vuelve a «decidir». */
@@ -113,6 +118,7 @@ function ReviewCardBody({
   loadRecording,
   voiceNoteEnabled,
   shareOption,
+  details,
 }: BodyProps) {
   const [panel, setPanel] = useState<Panel>('decide');
   const [listened, setListened] = useState(false);
@@ -135,6 +141,7 @@ function ReviewCardBody({
         loadRecording={loadRecording}
         onListened={markListened}
       />
+      {details}
       {mustListen ? (
         <AppText variant="support" tone="secundario">
           {listenHint}

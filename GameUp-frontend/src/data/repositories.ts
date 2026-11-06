@@ -3,7 +3,11 @@ import type {
   Assignment,
   AuthSession,
   Credentials,
+  GameLevel,
   GameResult,
+  LadderGameId,
+  LevelActivity,
+  LevelUp,
   ListeningResult,
   NewGameResult,
   NewListeningResult,
@@ -113,6 +117,25 @@ export interface ResultRepository {
   submitGameResult(result: NewGameResult): Promise<GameResult>;
 }
 
+/**
+ * Escalera de 5 niveles por juego (fase 9). El nivel sube solo cuando la
+ * profe aprueba un intento del nivel actual; la app nunca lo cambia.
+ */
+export interface GameLevelRepository {
+  /** Nivel del estudiante con sesión en cada juego con escalera. */
+  getMyLevels(): Promise<GameLevel[]>;
+  /**
+   * La actividad de su nivel actual en ese juego (si completó el 5, la del
+   * 5). Su resultado sí llega a la profe (`activityId` del contenido).
+   */
+  getCurrentLevelActivity(gameId: LadderGameId): Promise<LevelActivity>;
+  /**
+   * Nivel de un estudiante en cada juego, para la profe a cargo o su
+   * acudiente (el backend responde 404 con cualquier otro).
+   */
+  getStudentLevels(studentId: string): Promise<GameLevel[]>;
+}
+
 export interface ProgressRepository {
   /** Progreso oficial por módulo: solo actividades validadas. */
   getOfficialProgress(studentId: string): Promise<OfficialProgress>;
@@ -142,8 +165,9 @@ export interface ReviewRepository {
   /**
    * «Lo logró»: valida la actividad; cuenta para el progreso oficial. Si el
    * intento tiene audio y no se escuchó, rechaza con `ListenFirstError`.
+   * Si era el nivel actual de la escalera, devuelve la subida de nivel.
    */
-  validate(reviewId: string): Promise<void>;
+  validate(reviewId: string): Promise<LevelUp | null>;
   /** «Practicar más»: no aprueba y deja retroalimentación (obligatoria). */
   requestMorePractice(reviewId: string, feedback: string): Promise<void>;
   /**
@@ -192,6 +216,7 @@ export interface Repositories {
   assignments: AssignmentRepository;
   activities: ActivityRepository;
   progress: ProgressRepository;
+  levels: GameLevelRepository;
   consent: ConsentRepository;
   recordings: RecordingRepository;
   results: ResultRepository;

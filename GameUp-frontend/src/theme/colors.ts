@@ -51,6 +51,11 @@ export const colors = {
   superficie: {
     /** [derivado GameUP] Tarjetas. La guía nombra «superficie» sin dar el valor. */
     blanca: '#FFFFFF',
+    /**
+     * [derivado GameUP] Velo detrás de un aviso que tapa la pantalla (la
+     * celebración de nivel): el texto principal al 60 %.
+     */
+    velo: 'rgba(28, 43, 42, 0.6)',
   },
   cafe: {
     /** [derivado GameUP] Íconos y textos sobre naranja suave. 6,9:1. */

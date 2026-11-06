@@ -9,6 +9,7 @@ export { MouthOption, type MouthOptionState } from './MouthOption';
 export { mouthDescriptions, type MouthShape } from './mouthShapes';
 export { NarrationButton } from './NarrationButton';
 export { SoundTile } from './SoundTile';
+export { LevelStars, levelStarsLabel } from './LevelStars';
 export { StarRow } from './StarRow';
 export { StepIndicator } from './StepIndicator';
 export { VideoPlaceholder } from './VideoPlaceholder';

@@ -2,6 +2,7 @@ import type { ApiClient } from '@/services/api';
 import type { Repositories } from '../repositories';
 import { createHttpAuthRepository } from './httpAuthRepository';
 import { createHttpGuardianRepository } from './httpGuardianRepository';
+import { createHttpLevelRepository } from './httpLevelRepository';
 import { createHttpReviewRepository } from './httpReviewRepository';
 import { createHttpStaffRepository } from './httpStaffRepository';
 import {
@@ -31,6 +32,7 @@ export function createHttpRepositories(
     assignments: createHttpAssignmentRepository(api),
     activities: createHttpActivityRepository(api),
     progress: createHttpProgressRepository(api),
+    levels: createHttpLevelRepository(api),
     consent: createHttpConsentRepository(api),
     recordings: createHttpRecordingRepository(api),
     results: createHttpResultRepository(api),

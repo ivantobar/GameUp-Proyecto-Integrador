@@ -103,6 +103,11 @@ export function toReviewItem(dto: ItemRevisionDto): ReviewItem {
           gameId,
           title: dto.actividad?.titulo ?? '',
           score: scoreOf(gameId, resultado),
+          level:
+            typeof dto.actividad?.nivelJuego === 'number'
+              ? dto.actividad.nivelJuego
+              : null,
+          pendingSameActivity: count(dto.pendientesMismaActividad) || 1,
         },
       };
   }
