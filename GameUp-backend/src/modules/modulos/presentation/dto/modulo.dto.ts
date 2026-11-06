@@ -95,6 +95,16 @@ export class ActividadDto {
   configuracion: Record<string, unknown>;
   @ApiProperty({ example: 0 }) orden: number;
   @ApiProperty({ example: true }) activa: boolean;
+  @ApiProperty({
+    example: null,
+    nullable: true,
+    type: Number,
+    minimum: 1,
+    maximum: 5,
+    description:
+      'Nivel (1-5) de la escalera de su juego; null en las actividades de los módulos',
+  })
+  nivelJuego: number | null;
 }
 
 export class ElementoActividadDto {

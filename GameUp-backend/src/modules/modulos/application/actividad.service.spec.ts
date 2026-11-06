@@ -142,6 +142,78 @@ describe('ActividadService', () => {
     ).toBeNull();
   });
 
+  describe('actividades de la escalera de niveles', () => {
+    const parejas = (n: number) => ({
+      tableros: [
+        {
+          parejas: Array.from({ length: n }, (_, i) => ({
+            etiqueta: `carta ${i + 1}`,
+            texto: '🍎',
+          })),
+        },
+      ],
+    });
+    let nivel3: bigint;
+
+    beforeEach(() => {
+      // Memoria nivel 3 en un módulo de la directora (en la base, el de la escalera).
+      nivel3 = e.modulos.agregarActividad(3, 'MEMORIA', true, 3).id;
+    });
+
+    it('la configuración debe tener el tamaño de su nivel (Memoria 3 = 4 parejas)', async () => {
+      await expect(
+        servicio.actualizar(DIRECTORA, nivel3, {
+          ...SIN_CAMBIOS,
+          configuracion: parejas(4),
+        }),
+      ).resolves.toMatchObject({ nivelJuego: 3, configuracion: parejas(4) });
+      await expect(
+        servicio.actualizar(DIRECTORA, nivel3, {
+          ...SIN_CAMBIOS,
+          configuracion: parejas(3),
+        }),
+      ).rejects.toThrow(
+        /Memoria nivel 3: configuracion.tableros\[0\] necesita 4 parejas \(tiene 3\)/,
+      );
+    });
+
+    it('cambiar solo el título no revisa el nivel', async () => {
+      await expect(
+        servicio.actualizar(DIRECTORA, nivel3, {
+          ...SIN_CAMBIOS,
+          titulo: 'Memoria · nivel 3',
+        }),
+      ).resolves.toMatchObject({ titulo: 'Memoria · nivel 3', nivelJuego: 3 });
+    });
+
+    it('no se desactiva ni se elimina: cada nivel necesita su actividad', async () => {
+      await expect(
+        servicio.actualizar(DIRECTORA, nivel3, {
+          ...SIN_CAMBIOS,
+          activa: false,
+        }),
+      ).rejects.toThrow(/Cada nivel de la escalera necesita su actividad/);
+      await expect(servicio.eliminar(DIRECTORA, nivel3)).rejects.toThrow(
+        ReglaNegocioError,
+      );
+      expect(await e.modulos.actividadRepo.buscarPorId(nivel3)).toMatchObject({
+        activa: true,
+      });
+    });
+
+    it('las actividades de los módulos no tienen nivel ni esas reglas', async () => {
+      expect(
+        (await e.modulos.actividadRepo.buscarPorId(e.ids.habla))!.nivelJuego,
+      ).toBeNull();
+      await expect(
+        servicio.actualizar(TALLERISTA_2, e.ids.habla, {
+          ...SIN_CAMBIOS,
+          activa: false,
+        }),
+      ).resolves.toMatchObject({ activa: false, nivelJuego: null });
+    });
+  });
+
   describe('reemplazarElementos', () => {
     it('si el contenido es una IMAGEN, se usa como imagen', async () => {
       const r = await servicio.reemplazarElementos(TALLERISTA_2, e.ids.habla, [

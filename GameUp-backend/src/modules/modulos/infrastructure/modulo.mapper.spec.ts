@@ -78,6 +78,7 @@ describe('ModuloMapper', () => {
         configuracion: {},
         orden: 0,
         activa: true,
+        nivel_juego: null,
         tipo_juego: { id: 1n, codigo: 'ROMPECABEZAS', nombre: 'x' },
       }),
     ).toThrow();
@@ -92,9 +93,11 @@ describe('ModuloMapper', () => {
       configuracion: { vocal: 'a' },
       orden: 0,
       activa: true,
+      nivel_juego: null,
       tipo_juego: { id: 5n, codigo: 'HABLA_CONMIGO', nombre: 'Habla conmigo' },
     });
     expect(ModuloMapper.aActividadDto(actividad)).toMatchObject({
+      nivelJuego: null,
       id: '8',
       tipoJuego: { id: '5', codigo: 'HABLA_CONMIGO' },
       configuracion: { vocal: 'a' },

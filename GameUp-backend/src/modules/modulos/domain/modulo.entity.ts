@@ -94,6 +94,8 @@ export interface Actividad {
   configuracion: Configuracion;
   orden: number;
   activa: boolean;
+  /** Nivel (1-5) de la escalera; null en las actividades de los módulos. */
+  nivelJuego: number | null;
 }
 
 /**

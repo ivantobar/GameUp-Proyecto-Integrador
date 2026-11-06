@@ -66,6 +66,7 @@ export const SELECCION_ACTIVIDAD = {
   configuracion: true,
   orden: true,
   activa: true,
+  nivel_juego: true,
   tipo_juego: { select: { id: true, codigo: true, nombre: true } },
 } satisfies Prisma.actividadSelect;
 
@@ -128,6 +129,7 @@ export const ModuloMapper = {
       configuracion,
       orden: f.orden,
       activa: f.activa,
+      nivelJuego: f.nivel_juego,
     };
   },
 
@@ -183,6 +185,7 @@ export const ModuloMapper = {
       configuracion: a.configuracion,
       orden: a.orden,
       activa: a.activa,
+      nivelJuego: a.nivelJuego,
     };
   },
 

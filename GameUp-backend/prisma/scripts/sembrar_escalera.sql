@@ -19,8 +19,8 @@
 -- Cada carta es { "etiqueta", "texto" }: la app dibuja un `texto` de uno o dos
 -- caracteres (un emoji) como dibujo grande. La directora puede cambiar luego
 -- las cartas por pictogramas de la fundación (PATCH /actividades/:id).
--- Las configuraciones siguen la tabla de niveles de la fase 9 (una prueba
--- unitaria las valida con las reglas de cada juego y nivel).
+-- Las configuraciones cumplen las reglas de cada juego y nivel: lo vigila la
+-- prueba src/modules/catalogo/domain/juegos/escalera-inicial.spec.ts.
 -- ============================================================
 
 do $$

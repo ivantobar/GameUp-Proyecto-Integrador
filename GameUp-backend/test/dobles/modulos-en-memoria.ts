@@ -272,6 +272,8 @@ export class ModulosEnMemoria {
     moduloId: number,
     codigo: Actividad['tipoJuego']['codigo'] = 'MEMORIA',
     activa = true,
+    /** Nivel de la escalera (1-5); null en un módulo normal. */
+    nivelJuego: number | null = null,
   ): Actividad {
     const tipo = this.catalogo.tipos.find((t) => t.codigo === codigo)!;
     const a: Actividad = {
@@ -283,6 +285,7 @@ export class ModulosEnMemoria {
       configuracion: codigo === 'HABLA_CONMIGO' ? { vocal: 'a' } : {},
       orden: 0,
       activa,
+      nivelJuego,
     };
     this.actividades.push(a);
     return a;
@@ -479,6 +482,7 @@ export class ModulosEnMemoria {
           configuracion: d.configuracion,
           orden: d.orden,
           activa: d.activa,
+          nivelJuego: null,
         };
         this.actividades.push(a);
         if (elementos !== null)

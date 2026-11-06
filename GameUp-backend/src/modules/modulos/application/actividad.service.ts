@@ -33,6 +33,8 @@ import {
 import { AccesoModuloService } from './acceso-modulo.service.js';
 
 const NO_EXISTE = 'La actividad no existe.';
+const NIVEL_SIN_ACTIVIDAD =
+  'Cada nivel de la escalera necesita su actividad: cambia su configuración en lugar de desactivarla o eliminarla.';
 
 export interface NuevaActividad {
   tipoJuego: string;
@@ -122,7 +124,11 @@ export class ActividadService {
     );
   }
 
-  /** El tipo de juego no cambia (los intentos dependen de él): se crea otra actividad. */
+  /**
+   * El tipo de juego no cambia (los intentos dependen de él): se crea otra
+   * actividad. En la escalera, la configuración debe tener el tamaño de su
+   * nivel, y la actividad no se desactiva: cada nivel necesita la suya.
+   */
   async actualizar(
     actual: UsuarioAutenticado,
     id: bigint,
@@ -130,12 +136,17 @@ export class ActividadService {
   ): Promise<Actividad> {
     const actividad = await this.existente(id);
     await this.editarModulo(actual, actividad.moduloId);
+    if (actividad.nivelJuego !== null && cambios.activa === false) {
+      throw new ReglaNegocioError(NIVEL_SIN_ACTIVIDAD);
+    }
+    const estrategia = this.juegos.estrategia(actividad.tipoJuego.codigo);
     const validada =
       cambios.configuracion === null
         ? null
-        : this.juegos
-            .estrategia(actividad.tipoJuego.codigo)
-            .validarConfiguracion(cambios.configuracion);
+        : estrategia.validarConfiguracion(cambios.configuracion);
+    if (validada && actividad.nivelJuego !== null) {
+      estrategia.validarNivel(validada.configuracion, actividad.nivelJuego);
+    }
     const elementos = validada
       ? await this.elementosDerivados(actividad.moduloId, validada)
       : null;
@@ -154,6 +165,9 @@ export class ActividadService {
   async eliminar(actual: UsuarioAutenticado, id: bigint): Promise<void> {
     const actividad = await this.existente(id);
     await this.editarModulo(actual, actividad.moduloId);
+    if (actividad.nivelJuego !== null) {
+      throw new ReglaNegocioError(NIVEL_SIN_ACTIVIDAD);
+    }
     if (await this.actividades.tieneIntentos(id)) {
       throw new ConflictoError(
         'La actividad ya tiene intentos: desactívala (activa = false) en lugar de eliminarla.',

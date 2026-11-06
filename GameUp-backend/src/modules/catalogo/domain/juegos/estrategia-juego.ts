@@ -71,6 +71,14 @@ export interface EstrategiaJuego {
     resultado: Configuracion,
     configuracion: Configuracion,
   ): Configuracion;
+  /** true: el juego tiene escalera de 5 niveles (fase 9). */
+  readonly tieneEscalera: boolean;
+  /**
+   * Comprueba que una configuración YA validada (`validarConfiguracion`)
+   * tenga el tamaño de su nivel de la escalera (422 si no, o si el juego no
+   * tiene escalera).
+   */
+  validarNivel(configuracion: Configuracion, nivel: number): void;
 }
 
 export const ESTRATEGIAS_JUEGO = Symbol('ESTRATEGIAS_JUEGO');

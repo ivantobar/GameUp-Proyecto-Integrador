@@ -258,12 +258,128 @@ describe('estrategias por tipo de juego', () => {
       );
     });
 
-    it('SECUENCIAR: de 2 a 4 pasos', () => {
+    it('SECUENCIAR: de 2 a 6 pasos (fase 9: antes, hasta 4)', () => {
+      const pasos = (n: number) =>
+        Array.from({ length: n }, (_, i) => cara(`paso ${i}`, String(i + 1)));
+      const config = (n: number) => ({
+        rutinas: [{ titulo: 't', pasos: pasos(n) }],
+      });
+      expect(() => juego('SECUENCIAR').validarConfiguracion(config(1))).toThrow(
+        /entre 2 y 6/,
+      );
       expect(() =>
-        juego('SECUENCIAR').validarConfiguracion({
-          rutinas: [{ titulo: 't', pasos: [cara('a', '1')] }],
-        }),
-      ).toThrow(/entre 2 y 4/);
+        juego('SECUENCIAR').validarConfiguracion(config(6)),
+      ).not.toThrow();
+      expect(() => juego('SECUENCIAR').validarConfiguracion(config(7))).toThrow(
+        /entre 2 y 6/,
+      );
+    });
+
+    describe('CLASIFICAR: 2 o 3 grupos y hasta 9 elementos (fase 9)', () => {
+      const grupos = (n: number) =>
+        Array.from({ length: n }, (_, i) =>
+          cara(`grupo ${i}`, undefined, { texto: `G${i}` }),
+        );
+      const elementos = (n: number, numGrupos: number) =>
+        Array.from({ length: n }, (_, i) => ({
+          cara: cara(`elemento ${i}`, String(i + 1)),
+          grupo: i % numGrupos,
+        }));
+      const config = (g: number, e: number) => ({
+        conjuntos: [
+          {
+            pregunta: '¿Dónde va?',
+            grupos: grupos(g),
+            elementos: elementos(e, g),
+          },
+        ],
+      });
+
+      it('acepta 3 grupos y 9 elementos', () => {
+        expect(() =>
+          juego('CLASIFICAR').validarConfiguracion(config(3, 9)),
+        ).not.toThrow();
+      });
+
+      it('rechaza 4 grupos, 1 grupo y 10 elementos', () => {
+        expect(() =>
+          juego('CLASIFICAR').validarConfiguracion(config(4, 8)),
+        ).toThrow(/grupos: debe tener entre 2 y 3/);
+        expect(() =>
+          juego('CLASIFICAR').validarConfiguracion(config(1, 4)),
+        ).toThrow(/grupos: debe tener entre 2 y 3/);
+        expect(() =>
+          juego('CLASIFICAR').validarConfiguracion(config(2, 10)),
+        ).toThrow(/elementos: debe tener entre 2 y 9/);
+      });
+
+      it('el grupo de cada elemento debe existir', () => {
+        const dos = config(2, 4);
+        dos.conjuntos[0]!.elementos[0]!.grupo = 2;
+        expect(() => juego('CLASIFICAR').validarConfiguracion(dos)).toThrow(
+          /grupo: debe estar entre 0 y 1/,
+        );
+        const tres = config(3, 6);
+        tres.conjuntos[0]!.elementos[0]!.grupo = 3;
+        expect(() => juego('CLASIFICAR').validarConfiguracion(tres)).toThrow(
+          /grupo: debe estar entre 0 y 2/,
+        );
+      });
+
+      it('con 3 grupos, el tercero también recibe al menos un elemento', () => {
+        const c = config(3, 6);
+        for (const e of c.conjuntos[0]!.elementos)
+          if (e.grupo === 2) e.grupo = 0;
+        expect(() => juego('CLASIFICAR').validarConfiguracion(c)).toThrow(
+          /el grupo 2 no tiene elementos/,
+        );
+      });
+    });
+
+    it('las configuraciones con los límites anteriores siguen siendo válidas', () => {
+      const pasos = Array.from({ length: 4 }, (_, i) =>
+        cara(`p${i}`, String(i + 1)),
+      );
+      const elementos = Array.from({ length: 8 }, (_, i) => ({
+        cara: cara(`e${i}`, String(i + 1)),
+        grupo: i % 2,
+      }));
+      const anteriores: Array<[string, Configuracion]> = [
+        ['SECUENCIAR', { rutinas: [{ titulo: 't', pasos }] }],
+        [
+          'CLASIFICAR',
+          {
+            conjuntos: [
+              {
+                pregunta: 'p',
+                grupos: [
+                  cara('a', undefined, { texto: 'A' }),
+                  cara('b', undefined, { texto: 'B' }),
+                ],
+                elementos,
+              },
+            ],
+          },
+        ],
+        [
+          'MEMORIA',
+          {
+            tableros: [
+              {
+                parejas: Array.from({ length: 6 }, (_, i) =>
+                  cara(`m${i}`, String(i + 1)),
+                ),
+              },
+            ],
+          },
+        ],
+        ...Object.entries(CONFIGURACIONES_VALIDAS),
+      ];
+      for (const [codigo, configuracion] of anteriores) {
+        expect(() =>
+          juego(codigo).validarConfiguracion(configuracion),
+        ).not.toThrow();
+      }
     });
 
     it('MEMORIA: etiquetas distintas en un tablero', () => {
