@@ -12,6 +12,7 @@ import {
 import { NarrationButton } from '@/components/gameup';
 import { ModuleProgressCard } from '@/features/progress/components/ModuleProgressCard';
 import { useProgressOverview } from '@/features/progress/useProgressOverview';
+import { useRefreshOnFocus } from '@/data/useRefreshOnFocus';
 import { colors, spacing } from '@/theme';
 
 /**
@@ -19,7 +20,9 @@ import { colors, spacing } from '@/theme';
  * Cada tema muestra el porcentaje de actividades validadas por el docente.
  */
 export default function ProgressScreen() {
-  const { resource, reload } = useProgressOverview();
+  const { resource, reload, refresh } = useProgressOverview();
+  // Al volver, se ve lo que la profe validó mientras tanto.
+  useRefreshOnFocus(refresh);
 
   const narration =
     resource.status === 'ready'

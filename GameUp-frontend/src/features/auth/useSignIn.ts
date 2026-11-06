@@ -1,5 +1,9 @@
 import { useState } from 'react';
-import { InvalidCredentialsError } from '@/data/authErrors';
+import {
+  AccountNotAllowedError,
+  InvalidCredentialsError,
+  SignInUnavailableError,
+} from '@/data/authErrors';
 import { useRepositories } from '@/data/RepositoryProvider';
 import type { AuthSession } from '@/data/types';
 import {
@@ -10,11 +14,19 @@ import {
 } from './credentials';
 
 /** Por qué no se pudo entrar, cuando el formulario estaba bien escrito. */
-export type SignInProblem = 'invalid' | 'connection';
+export type SignInProblem =
+  'invalid' | 'notAllowed' | 'unavailable' | 'connection';
+
+function problemOf(error: unknown): SignInProblem {
+  if (error instanceof InvalidCredentialsError) return 'invalid';
+  if (error instanceof AccountNotAllowedError) return 'notAllowed';
+  if (error instanceof SignInUnavailableError) return 'unavailable';
+  return 'connection';
+}
 
 /**
  * Estado del formulario «Iniciar sesión». Valida en la app y luego llama a
- * `auth.signIn` del repositorio: hoy simulado, mañana la API NestJS.
+ * `auth.signIn` del repositorio (simulado o la API NestJS).
  */
 export function useSignIn() {
   const { auth } = useRepositories();
@@ -56,9 +68,7 @@ export function useSignIn() {
     try {
       return await auth.signIn({ email: normalizeEmail(email), password });
     } catch (error: unknown) {
-      setProblem(
-        error instanceof InvalidCredentialsError ? 'invalid' : 'connection',
-      );
+      setProblem(problemOf(error));
       return null;
     } finally {
       setSubmitting(false);

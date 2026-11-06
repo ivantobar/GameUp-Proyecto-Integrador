@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import {
   AppText,
@@ -10,7 +10,7 @@ import {
 import type { ReviewItem } from '@/data/types';
 import { spacing } from '@/theme';
 import { reviewSummary } from '../reviewText';
-import { FeedbackForm } from './FeedbackForm';
+import { FeedbackForm, type FeedbackOptions } from './FeedbackForm';
 import { ReviewEvidence } from './ReviewEvidence';
 import { VoiceNoteRecorder } from './VoiceNoteRecorder';
 
@@ -24,8 +24,17 @@ interface ReviewCardProps {
   /** Hay una acción guardándose para esta tarjeta. */
   busy: boolean;
   onValidate: () => void;
-  onRequestMore: (feedback: string) => Promise<boolean>;
+  onRequestMore: (
+    feedback: string,
+    options?: FeedbackOptions,
+  ) => Promise<boolean>;
   onSaveVoiceNote: (audioUri: string) => Promise<boolean>;
+  /** Pide el audio de un intento que está en el servidor. */
+  loadRecording?: () => Promise<string>;
+  /** Mostrar «Dejar una nota de voz para la familia». */
+  voiceNoteEnabled?: boolean;
+  /** Ofrecer enviar la indicación también como nota a la familia. */
+  shareOption?: boolean;
   /** Fecha de referencia para «hoy»/«ayer» (en las pruebas). */
   now?: Date;
 }
@@ -43,6 +52,9 @@ export function ReviewCard({
   onValidate,
   onRequestMore,
   onSaveVoiceNote,
+  loadRecording,
+  voiceNoteEnabled = true,
+  shareOption = false,
   now,
 }: ReviewCardProps) {
   const name = item.student.displayName;
@@ -72,6 +84,9 @@ export function ReviewCard({
           onValidate={onValidate}
           onRequestMore={onRequestMore}
           onSaveVoiceNote={onSaveVoiceNote}
+          loadRecording={loadRecording}
+          voiceNoteEnabled={voiceNoteEnabled}
+          shareOption={shareOption}
         />
       ) : null}
     </Card>
@@ -80,8 +95,13 @@ export function ReviewCard({
 
 type BodyProps = Pick<
   ReviewCardProps,
-  'item' | 'busy' | 'onValidate' | 'onRequestMore' | 'onSaveVoiceNote'
->;
+  | 'item'
+  | 'busy'
+  | 'onValidate'
+  | 'onRequestMore'
+  | 'onSaveVoiceNote'
+  | 'loadRecording'
+> & { voiceNoteEnabled: boolean; shareOption: boolean };
 
 /** Parte abierta. Al cerrarse la tarjeta se desmonta y vuelve a «decidir». */
 function ReviewCardBody({
@@ -90,9 +110,18 @@ function ReviewCardBody({
   onValidate,
   onRequestMore,
   onSaveVoiceNote,
+  loadRecording,
+  voiceNoteEnabled,
+  shareOption,
 }: BodyProps) {
   const [panel, setPanel] = useState<Panel>('decide');
+  const [listened, setListened] = useState(false);
+  const markListened = useCallback(() => setListened(true), []);
   const name = item.student.displayName;
+  // El backend exige oír el audio (si lo hay) antes de decidir. Sin audio,
+  // el docente decide de inmediato.
+  const mustListen = item.speech?.remoteAudio === true && !listened;
+  const listenHint = 'Primero escucha la grabación del intento.';
 
   const closeOnSuccess = async (action: Promise<boolean>) => {
     if (await action) setPanel('decide');
@@ -101,7 +130,16 @@ function ReviewCardBody({
 
   return (
     <View style={styles.body}>
-      <ReviewEvidence item={item} />
+      <ReviewEvidence
+        item={item}
+        loadRecording={loadRecording}
+        onListened={markListened}
+      />
+      {mustListen ? (
+        <AppText variant="support" tone="secundario">
+          {listenHint}
+        </AppText>
+      ) : null}
 
       {panel === 'decide' ? (
         <>
@@ -111,7 +149,12 @@ function ReviewCardBody({
                 label="Lo logró"
                 icon="check"
                 loading={busy}
-                accessibilityHint="Valida la actividad. Cuenta para su progreso."
+                disabled={mustListen}
+                accessibilityHint={
+                  mustListen
+                    ? listenHint
+                    : 'Valida la actividad. Cuenta para su progreso.'
+                }
                 onPress={onValidate}
               />
             </View>
@@ -120,19 +163,25 @@ function ReviewCardBody({
                 label="Practicar más"
                 icon="replay"
                 variant="secondary"
-                disabled={busy}
-                accessibilityHint="Pide repetirla y deja una indicación."
+                disabled={busy || mustListen}
+                accessibilityHint={
+                  mustListen
+                    ? listenHint
+                    : 'Pide repetirla y deja una indicación.'
+                }
                 onPress={() => setPanel('feedback')}
               />
             </View>
           </View>
-          <Button
-            label="Dejar una nota de voz para la familia"
-            icon="mic"
-            variant="link"
-            disabled={busy}
-            onPress={() => setPanel('voiceNote')}
-          />
+          {voiceNoteEnabled ? (
+            <Button
+              label="Dejar una nota de voz para la familia"
+              icon="mic"
+              variant="link"
+              disabled={busy}
+              onPress={() => setPanel('voiceNote')}
+            />
+          ) : null}
         </>
       ) : null}
 
@@ -140,7 +189,14 @@ function ReviewCardBody({
         <FeedbackForm
           studentName={name}
           busy={busy}
-          onSubmit={(feedback) => closeOnSuccess(onRequestMore(feedback))}
+          shareOption={shareOption}
+          onSubmit={(feedback, options) =>
+            closeOnSuccess(
+              options
+                ? onRequestMore(feedback, options)
+                : onRequestMore(feedback),
+            )
+          }
           onCancel={() => setPanel('decide')}
         />
       ) : null}

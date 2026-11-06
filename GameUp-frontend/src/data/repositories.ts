@@ -1,8 +1,11 @@
 import type {
+  ActivityContent,
   Assignment,
   AuthSession,
   Credentials,
+  GameResult,
   ListeningResult,
+  NewGameResult,
   NewListeningResult,
   NewSpeechAttempt,
   OfficialProgress,
@@ -12,6 +15,7 @@ import type {
   SpeechAttempt,
   StarCount,
   StudentProfile,
+  StudentSummary,
   Vowel,
   VowelPractice,
   WeeklyPractice,
@@ -38,6 +42,11 @@ export interface AuthRepository {
    * como un problema de conexión.
    */
   signIn(credentials: Credentials): Promise<AuthSession>;
+  /**
+   * Cerrar sesión: la app olvida el token (y avisa al backend, si puede).
+   * Nunca falla: aunque no haya red, la sesión queda cerrada en el teléfono.
+   */
+  signOut(): Promise<void>;
 }
 
 export interface StudentRepository {
@@ -51,8 +60,10 @@ export interface PracticeRepository {
   /** Dónde se quedó el estudiante, o `null` si no hay nada a medias. */
   getResumePoint(studentId: string): Promise<ResumePoint | null>;
   /**
-   * Registra un ciclo completo Mira → Dilo → Listo: suma 1 estrella de
-   * práctica (máximo 3) y devuelve cuántas tiene ahora esa vocal.
+   * Registra un ciclo completo Mira → Dilo → Listo y devuelve cuántas
+   * estrellas de práctica (máximo 3) tiene ahora esa vocal. Las estrellas
+   * son práctica, no progreso oficial. Con la API las suma el backend al
+   * recibir el intento de una actividad (un juego libre no suma).
    */
   recordPracticeCycle(studentId: string, vowel: Vowel): Promise<StarCount>;
 }
@@ -66,21 +77,40 @@ export interface ConsentRepository {
 }
 
 export interface RecordingRepository {
-  /** Envía un intento de habla; queda pendiente de validación del docente. */
+  /**
+   * Envía un intento de habla; queda pendiente de validación del docente.
+   * Con la API solo se envía si trae `activityId` (juego abierto desde una
+   * actividad); si no, devuelve el intento con `sentForReview: false`.
+   */
   submitSpeechAttempt(attempt: NewSpeechAttempt): Promise<SpeechAttempt>;
 }
 
 export interface AssignmentRepository {
-  /** Tareas que el docente asignó y el estudiante todavía no ha hecho. */
+  /**
+   * Tareas que el docente asignó y el estudiante todavía no ha hecho (o que
+   * el docente pidió practicar más).
+   */
   listPendingForStudent(studentId: string): Promise<Assignment[]>;
+}
+
+export interface ActivityRepository {
+  /** Contenido de una actividad asignada (por ejemplo, qué vocales juega). */
+  getActivity(activityId: string): Promise<ActivityContent>;
 }
 
 export interface ResultRepository {
   /**
    * Envía el resultado de «Busca la boca». Queda pendiente de validación y,
-   * si había una tarea de ese juego, la marca como realizada.
+   * si había una tarea de ese juego, la marca como realizada. Con la API,
+   * igual que los intentos de habla: solo se envía si trae `activityId`.
    */
   submitFindMouthResult(result: NewListeningResult): Promise<ListeningResult>;
+  /**
+   * Envía el resultado de Emparejar, Clasificar, Secuenciar o Memoria.
+   * Solo se envía si trae `activityId`; el juego libre se practica sin
+   * enviar (`sentForReview: false`).
+   */
+  submitGameResult(result: NewGameResult): Promise<GameResult>;
 }
 
 export interface ProgressRepository {
@@ -100,13 +130,39 @@ export interface StaffRepository {
  * filtro por `teacherId` debe hacerlo el backend; ocultarlo en la app no basta.
  */
 export interface ReviewRepository {
+  /** Qué ofrece esta versión (cambia entre los datos simulados y la API). */
+  readonly features: ReviewFeatures;
   listPendingReviews(teacherId: string): Promise<ReviewItem[]>;
-  /** «Lo logró»: valida la actividad; cuenta para el progreso oficial. */
+  /**
+   * Audio de un intento de voz para escucharlo (`speech.remoteAudio`). Con
+   * la API es una URL firmada de pocos minutos; pedirlo es requisito para
+   * validar ese intento.
+   */
+  getRecordingUrl(reviewId: string): Promise<string>;
+  /**
+   * «Lo logró»: valida la actividad; cuenta para el progreso oficial. Si el
+   * intento tiene audio y no se escuchó, rechaza con `ListenFirstError`.
+   */
   validate(reviewId: string): Promise<void>;
   /** «Practicar más»: no aprueba y deja retroalimentación (obligatoria). */
   requestMorePractice(reviewId: string, feedback: string): Promise<void>;
-  /** Nota de voz del docente para la familia de un estudiante. */
+  /**
+   * Nota de texto para la familia: la ve el acudiente en «Practicar en
+   * casa» y le llega un aviso.
+   */
+  shareNoteWithFamily(studentId: string, text: string): Promise<void>;
+  /** Nota de voz del docente para la familia (si `features.familyVoiceNote`). */
   saveFamilyVoiceNote(studentId: string, audioUri: string): Promise<void>;
+}
+
+export interface ReviewFeatures {
+  /** Se puede grabar una nota de voz para la familia. */
+  familyVoiceNote: boolean;
+  /**
+   * La indicación de «Practicar más» llega sola a la familia como nota. Si
+   * no, el docente puede elegir enviarla también (`shareNoteWithFamily`).
+   */
+  feedbackAlwaysReachesFamily: boolean;
 }
 
 /**
@@ -114,7 +170,16 @@ export interface ReviewRepository {
  * tiene asociados; el backend debe verificarlo.
  */
 export interface GuardianRepository {
-  getWeeklyPractice(guardianId: string): Promise<WeeklyPractice>;
+  /** Estudiantes asociados al acudiente (puede tener varios). */
+  listStudents(guardianId: string): Promise<StudentSummary[]>;
+  /**
+   * Práctica de la semana de un estudiante del acudiente. Sin `studentId`,
+   * la del primero.
+   */
+  getWeeklyPractice(
+    guardianId: string,
+    studentId?: string,
+  ): Promise<WeeklyPractice>;
   /** «Lo practicamos hoy»: queda en el seguimiento. */
   markPracticedToday(guardianId: string, studentId: string): Promise<void>;
 }
@@ -125,6 +190,7 @@ export interface Repositories {
   students: StudentRepository;
   practice: PracticeRepository;
   assignments: AssignmentRepository;
+  activities: ActivityRepository;
   progress: ProgressRepository;
   consent: ConsentRepository;
   recordings: RecordingRepository;

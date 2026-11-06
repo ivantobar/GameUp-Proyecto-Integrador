@@ -1,3 +1,5 @@
+import type { GameScore } from '@/data/types';
+
 /**
  * Lógica pura compartida por Emparejar, Clasificar y Secuenciar (sin React),
  * para poder probarla sola.
@@ -85,4 +87,18 @@ export function turnGameReducer(
         : { ...state, round: state.round + 1, turn: 0, phase: 'asking' };
     }
   }
+}
+
+/**
+ * Lo que se envía al docente al terminar (no es una nota): turnos resueltos
+ * al primer intento y turnos del juego. `total` coincide con lo que espera
+ * el backend (rondas en Emparejar, elementos en Clasificar, pasos en
+ * Secuenciar).
+ */
+export function turnScore(state: TurnGameState): GameScore {
+  return {
+    kind: 'turns',
+    firstTryCorrect: state.firstTryCorrect,
+    total: totalTurns(state),
+  };
 }

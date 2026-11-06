@@ -39,10 +39,12 @@ export function sequenceQuestion(turn: number, steps: number): string {
  * Estado y acciones de «Secuenciar»: el niño toca el paso que sigue y este
  * pasa a su casilla. Contenido de ejemplo: `sequenceRoutines`.
  */
-export function useSequenceGame(onFinish: (state: TurnGameState) => void) {
-  const [routines] = useState(() =>
-    prepareRoutines(sequenceRoutines, Math.random),
-  );
+export function useSequenceGame(
+  onFinish: (state: TurnGameState) => void,
+  /** Rutinas de la actividad, o el contenido de ejemplo si es libre. */
+  content: readonly SequenceRoutine[] = sequenceRoutines,
+) {
+  const [routines] = useState(() => prepareRoutines(content, Math.random));
   const { narrate } = useNarration();
   const { state, isLast, answer, next } = useTurnGame(
     routines.map((routine) => routine.steps.length),

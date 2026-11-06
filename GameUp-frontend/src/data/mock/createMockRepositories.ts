@@ -3,6 +3,8 @@ import type { Repositories } from '../repositories';
 import {
   MAX_STARS,
   type Assignment,
+  type GameId,
+  type GameResult,
   type ListeningResult,
   type OfficialProgress,
   type ReviewItem,
@@ -17,6 +19,7 @@ import {
   createSeedReviews,
   MOCK_PASSWORD,
   mockAccounts,
+  mockActivities,
   mockAssignments,
   mockGuardian,
   mockGuardianStudents,
@@ -40,6 +43,19 @@ interface MockOptions {
   voiceConsent?: () => boolean;
 }
 
+/** Nombre de un juego sin actividad conocida (solo para la demo). */
+function findGameTitle(gameId: GameId): string {
+  const titles: Record<GameId, string> = {
+    speak: 'Habla conmigo',
+    findMouth: 'Busca la boca',
+    match: 'Emparejar',
+    classify: 'Clasificar',
+    sequence: 'Secuenciar',
+    memory: 'Memoria',
+  };
+  return titles[gameId];
+}
+
 /** Copia profunda simple: los datos simulados son JSON plano. */
 function clone<T>(value: T): T {
   // `undefined` (respuestas sin datos) no es JSON válido: se devuelve tal cual.
@@ -49,6 +65,25 @@ function clone<T>(value: T): T {
 
 function todayKey(): string {
   return new Date().toISOString().slice(0, 10);
+}
+
+/** Lunes a domingo de la semana de hoy, como AAAA-MM-DD. */
+function weekKeys(): string[] {
+  const today = new Date(`${todayKey()}T12:00:00Z`);
+  const monday = new Date(today);
+  monday.setUTCDate(today.getUTCDate() - ((today.getUTCDay() + 6) % 7));
+  return Array.from({ length: 7 }, (_, i) => {
+    const day = new Date(monday);
+    day.setUTCDate(monday.getUTCDate() + i);
+    return day.toISOString().slice(0, 10);
+  });
+}
+
+/** Juego de una revisión (para la retroalimentación que ve la familia). */
+function gameOfReview(review: ReviewItem): GameId {
+  if (review.kind === 'speech') return 'speak';
+  if (review.kind === 'listening') return 'findMouth';
+  return review.game?.gameId ?? 'match';
 }
 
 /**
@@ -76,6 +111,7 @@ export function createMockRepositories({
     attempts: [] as SpeechAttempt[],
     assignments: clone<Assignment[]>(mockAssignments),
     listeningResults: [] as ListeningResult[],
+    gameResults: [] as GameResult[],
     progress: clone<OfficialProgress>(mockOfficialProgress),
     reviews: createSeedReviews(),
     teacherNotes: {
@@ -109,6 +145,27 @@ export function createMockRepositories({
       (r) => r.student.id === studentId && r.status === 'pending_validation',
     ).length;
 
+  /**
+   * Una tarea hecha pasa a «realizada»: ya no sale como pendiente, pero
+   * espera la validación del docente. Con `activityId`, solo esa tarea; sin
+   * él (juego libre), todas las de ese juego, como antes.
+   */
+  const markSubmitted = (
+    gameId: Assignment['gameId'],
+    activityId: string | null | undefined,
+  ) => {
+    state.assignments
+      .filter((a) =>
+        activityId
+          ? a.activityId === activityId
+          : a.gameId === gameId && a.status === 'assigned',
+      )
+      .forEach((a) => {
+        a.status = 'submitted';
+        a.isNew = false;
+      });
+  };
+
   /** Cambia el estado de la revisión y del intento original. */
   const setReviewStatus = (
     reviewId: string,
@@ -126,6 +183,7 @@ export function createMockRepositories({
 
   return {
     auth: {
+      signOut: () => respond(undefined),
       signIn: ({ email, password }) => {
         const session = mockAccounts[email.trim().toLowerCase()];
         if (!session || password !== MOCK_PASSWORD) {
@@ -153,6 +211,12 @@ export function createMockRepositories({
       listPendingForStudent: () =>
         respond(state.assignments.filter((a) => a.status === 'assigned')),
     },
+    activities: {
+      getActivity: (activityId) => {
+        const activity = mockActivities[activityId];
+        return activity ? respond(activity) : fail('Actividad no encontrada');
+      },
+    },
     progress: {
       getOfficialProgress: (studentId) =>
         respond({
@@ -164,7 +228,7 @@ export function createMockRepositories({
       hasVoiceRecordingConsent: () => respond(voiceConsent()),
     },
     recordings: {
-      submitSpeechAttempt: (input) => {
+      submitSpeechAttempt: ({ activityId, ...input }) => {
         const consent = voiceConsent();
         const attempt: SpeechAttempt = {
           id: `int-demo-${state.attempts.length + 1}`,
@@ -173,8 +237,11 @@ export function createMockRepositories({
           audioUri: consent ? input.audioUri : null,
           status: 'pending_validation',
           createdAt: new Date().toISOString(),
+          // En la demo todo llega a «Por escuchar», también el juego libre.
+          sentForReview: true,
         };
         state.attempts.push(attempt);
+        if (activityId) markSubmitted('speak', activityId);
 
         // Aparece en «Por escuchar» del docente: «intento n de n».
         const sameSound = state.reviews.filter(
@@ -205,13 +272,14 @@ export function createMockRepositories({
       },
     },
     results: {
-      submitFindMouthResult: (input) => {
+      submitFindMouthResult: ({ activityId, ...input }) => {
         const result: ListeningResult = {
           id: `res-demo-${state.listeningResults.length + 1}`,
           ...input,
           gameId: 'findMouth',
           status: 'pending_validation',
           createdAt: new Date().toISOString(),
+          sentForReview: true,
         };
         state.listeningResults.push(result);
         state.reviews.unshift({
@@ -225,14 +293,37 @@ export function createMockRepositories({
             total: input.total,
           },
         });
-        // La tarea de Busca la boca pasa a «realizada»: ya no sale como
-        // pendiente en Inicio, pero espera la validación del docente.
-        state.assignments
-          .filter((a) => a.gameId === 'findMouth' && a.status === 'assigned')
-          .forEach((a) => {
-            a.status = 'submitted';
-            a.isNew = false;
+        markSubmitted('findMouth', activityId);
+        return respond(result);
+      },
+      submitGameResult: ({ activityId, studentId, gameId, score }) => {
+        // Como antes de conectar estos juegos: el juego libre no se envía.
+        // Desde una tarea, queda guardado y la tarea pasa a «realizada».
+        const result: GameResult = {
+          id: `jue-demo-${state.gameResults.length + 1}`,
+          studentId,
+          gameId,
+          status: activityId ? 'pending_validation' : 'submitted',
+          createdAt: new Date().toISOString(),
+          sentForReview: Boolean(activityId),
+        };
+        if (activityId) {
+          state.gameResults.push(result);
+          markSubmitted(gameId, activityId);
+          // Llega a «Por escuchar» del docente.
+          state.reviews.unshift({
+            id: result.id,
+            kind: 'game',
+            student: summaryOf(studentId),
+            submittedAt: result.createdAt,
+            status: 'pending_validation',
+            game: {
+              gameId,
+              title: mockActivities[activityId]?.title ?? findGameTitle(gameId),
+              score,
+            },
           });
+        }
         return respond(result);
       },
     },
@@ -241,6 +332,22 @@ export function createMockRepositories({
       getCurrentGuardian: () => respond(mockGuardian),
     },
     reviews: {
+      // En la demo la indicación siempre llega a la familia, y se puede
+      // grabar una nota de voz.
+      features: { familyVoiceNote: true, feedbackAlwaysReachesFamily: true },
+      getRecordingUrl: (reviewId) => {
+        const audio = state.reviews.find((r) => r.id === reviewId)?.speech
+          ?.audioUri;
+        return audio ? respond(audio) : fail('Este intento no tiene audio');
+      },
+      shareNoteWithFamily: (studentId, text) => {
+        const note = state.teacherNotes[studentId];
+        state.teacherNotes[studentId] = {
+          text: text.trim(),
+          audioUri: note?.audioUri ?? null,
+        };
+        return respond(undefined);
+      },
       listPendingReviews: (teacherId) => {
         const mine = mockTeacherStudents[teacherId] ?? [];
         return respond(
@@ -291,10 +398,17 @@ export function createMockRepositories({
       },
     },
     guardians: {
-      getWeeklyPractice: (guardianId) => {
+      listStudents: (guardianId) => {
+        const studentId = mockGuardianStudents[guardianId];
+        return respond(studentId ? [summaryOf(studentId)] : []);
+      },
+      getWeeklyPractice: (guardianId, requested) => {
         const studentId = mockGuardianStudents[guardianId];
         if (!studentId)
           return fail('Este acudiente no tiene estudiantes asociados');
+        if (requested && requested !== studentId) {
+          return fail('Solo puedes ver a tu estudiante asociado');
+        }
         const speakTask = state.assignments.find(
           (a) => a.gameId === 'speak' && a.vowel,
         );
@@ -303,6 +417,24 @@ export function createMockRepositories({
           vowel: speakTask?.vowel ?? state.resumePoint.vowel,
           teacherNote: state.teacherNotes[studentId] ?? null,
           practicedToday: state.practicedDays.has(`${studentId}:${todayKey()}`),
+          days: weekKeys().map((date) => ({
+            date,
+            practiced: state.practicedDays.has(`${studentId}:${date}`),
+          })),
+          feedback: state.reviews
+            .filter(
+              (r) =>
+                r.student.id === studentId &&
+                r.status === 'rejected' &&
+                r.feedback,
+            )
+            .map((r) => ({
+              activityId: r.id,
+              title: findGameTitle(gameOfReview(r)),
+              gameId: gameOfReview(r),
+              status: 'rejected' as const,
+              text: r.feedback ?? '',
+            })),
         });
       },
       markPracticedToday: (guardianId, studentId) => {

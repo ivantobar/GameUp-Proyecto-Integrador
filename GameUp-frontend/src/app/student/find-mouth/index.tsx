@@ -1,12 +1,11 @@
 import { useCallback } from 'react';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 import {
   AppText,
   Button,
   HeaderBackButton,
   IconButton,
-  Notice,
   ProgressDots,
   Screen,
   ScreenHeader,
@@ -17,9 +16,11 @@ import {
   NarrationButton,
   type MouthOptionState,
 } from '@/components/gameup';
-import type { ListeningResult, Vowel } from '@/data/types';
+import type { Vowel } from '@/data/types';
 import type { RoundPhase } from '@/features/find-mouth/mouthQuiz';
+import { useFindMouthVowels } from '@/features/find-mouth/useFindMouthVowels';
 import { useMouthQuiz } from '@/features/find-mouth/useMouthQuiz';
+import { parseActivityId, type Delivery } from '@/features/games/delivery';
 import { colors, radii, spacing } from '@/theme';
 
 const QUESTION = '¿Qué boca hace este sonido?';
@@ -38,24 +39,62 @@ function optionState(
 
 /** Pantalla 7 · Busca la boca. */
 export default function FindMouthScreen() {
-  // El resultado ya quedó guardado para el docente; al niño no se le
-  // muestra un puntaje, solo la celebración.
-  const onFinish = useCallback((_result: ListeningResult) => {
-    router.replace('/student/find-mouth/done');
-  }, []);
+  // Con `actividadId`, el juego viene de una tarea: juega sus vocales y el
+  // resultado va al docente. Sin él, es libre (las cinco vocales).
+  const params = useLocalSearchParams<{ actividadId?: string }>();
+  const activityId = parseActivityId(params.actividadId);
+  const { resource, reload } = useFindMouthVowels(activityId);
 
-  const {
-    round,
-    index,
-    total,
-    phase,
-    finished,
-    submitPhase,
-    playSound,
-    choose,
-    next,
-    retrySubmit,
-  } = useMouthQuiz(onFinish);
+  if (resource.status !== 'ready') {
+    return (
+      <Screen
+        tone="softOrange"
+        header={
+          <ScreenHeader
+            left={<HeaderBackButton onPress={() => router.back()} />}
+          />
+        }
+      >
+        {resource.status === 'loading' ? (
+          <StateView kind="loading" title="Preparando el juego…" />
+        ) : (
+          <StateView
+            kind="error"
+            title="Vamos a intentarlo otra vez"
+            action={{ label: 'Intentar de nuevo', onPress: reload }}
+          />
+        )}
+      </Screen>
+    );
+  }
+
+  return <FindMouthGame vowels={resource.data} activityId={activityId} />;
+}
+
+interface FindMouthGameProps {
+  vowels: readonly Vowel[];
+  activityId: string | null;
+}
+
+function FindMouthGame({ vowels, activityId }: FindMouthGameProps) {
+  // Al niño no se le muestra un puntaje, solo la celebración. La pantalla
+  // final sabe si el resultado llegó al docente (`envio`).
+  const onFinish = useCallback(
+    (delivery: Delivery) => {
+      router.replace({
+        pathname: '/student/find-mouth/done',
+        params: {
+          envio: delivery,
+          vocales: String(vowels.length),
+          ...(activityId ? { actividadId: activityId } : {}),
+        },
+      });
+    },
+    [activityId, vowels.length],
+  );
+
+  const { round, index, total, phase, finished, playSound, choose, next } =
+    useMouthQuiz({ vowels, activityId, onFinish });
 
   const isLast = index === total - 1;
 
@@ -107,24 +146,7 @@ export default function FindMouthScreen() {
       </View>
 
       {finished ? (
-        submitPhase === 'error' ? (
-          <Notice
-            icon="replay"
-            tone="warm"
-            message="Vamos a intentarlo otra vez."
-            action={
-              <Button
-                label="Intentar de nuevo"
-                variant="secondary"
-                onPress={() => {
-                  retrySubmit().catch(() => {});
-                }}
-              />
-            }
-          />
-        ) : (
-          <StateView kind="loading" title="¡Muy bien! Guardando…" />
-        )
+        <StateView kind="loading" title="¡Muy bien! Guardando…" />
       ) : round ? (
         <View style={styles.options} accessibilityLiveRegion="polite">
           {round.options.map((vowel) => (

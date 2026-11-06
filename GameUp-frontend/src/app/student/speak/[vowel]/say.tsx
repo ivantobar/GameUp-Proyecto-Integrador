@@ -3,6 +3,7 @@ import { router, useIsFocused, useLocalSearchParams } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 import { AppText, Button, Notice, Screen } from '@/components/ui';
 import { MicButton, MirrorView, Waveform } from '@/components/gameup';
+import { parseActivityId } from '@/features/games/delivery';
 import { PracticeHeader } from '@/features/speak/components/PracticeHeader';
 import type { PracticeOutcome } from '@/features/speak/completePractice';
 import { usePracticeSession } from '@/features/speak/PracticeSession';
@@ -12,8 +13,12 @@ import { spacing } from '@/theme';
 
 /** Pantalla 5 · Paso 2 «Dilo»: espejo, micrófono y onda de voz. */
 export default function SayStep() {
-  const params = useLocalSearchParams<{ vowel: string }>();
+  const params = useLocalSearchParams<{
+    vowel: string;
+    actividadId?: string;
+  }>();
   const vowel = parseVowel(params.vowel);
+  const activityId = parseActivityId(params.actividadId);
   const letter = vowel.toUpperCase();
   const focused = useIsFocused();
   const { setOutcome } = usePracticeSession();
@@ -24,14 +29,14 @@ export default function SayStep() {
       // «Listo» reemplaza a «Dilo»: al volver atrás se llega a «Mira».
       router.replace({
         pathname: '/student/speak/[vowel]/done',
-        params: { vowel },
+        params: activityId ? { vowel, actividadId: activityId } : { vowel },
       });
     },
-    [setOutcome, vowel],
+    [setOutcome, vowel, activityId],
   );
 
   const { consentLoading, canRecord, phase, level, toggleRecording, finish } =
-    useSayStep(vowel, onDone);
+    useSayStep(vowel, onDone, activityId);
   const recording = phase === 'recording';
   const saving = phase === 'saving';
 

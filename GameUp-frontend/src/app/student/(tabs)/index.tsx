@@ -2,7 +2,7 @@ import { router } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 import { Screen, StateView } from '@/components/ui';
 import { GameCard } from '@/components/gameup';
-import { findGame, gameHref } from '@/features/games/catalog';
+import { assignmentHref, findGame } from '@/features/games/catalog';
 import { AssignmentNotice } from '@/features/home/components/AssignmentNotice';
 import {
   GreetingHeader,
@@ -99,7 +99,8 @@ export default function StudentHome() {
         <AssignmentNotice
           gameTitle={newAssignment.game.title}
           icon={newAssignment.game.icon}
-          onPress={() => router.push(gameHref(newAssignment.game))}
+          again={newAssignment.assignment.status === 'rejected'}
+          onPress={() => router.push(assignmentHref(newAssignment.assignment))}
         />
       ) : null}
     </Screen>

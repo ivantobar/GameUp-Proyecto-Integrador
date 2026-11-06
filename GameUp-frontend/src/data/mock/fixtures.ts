@@ -1,15 +1,23 @@
-import type {
-  Assignment,
-  AuthSession,
-  OfficialProgress,
-  ResumePoint,
-  ReviewItem,
-  StaffProfile,
-  StudentProfile,
-  StudentSummary,
-  TeacherNote,
-  VowelPractice,
+import {
+  VOWELS,
+  type ActivityContent,
+  type Assignment,
+  type AuthSession,
+  type OfficialProgress,
+  type ResumePoint,
+  type ReviewItem,
+  type StaffProfile,
+  type StudentProfile,
+  type StudentSummary,
+  type TeacherNote,
+  type VowelPractice,
 } from '../types';
+import {
+  classifySets,
+  matchRounds,
+  memoryBoards,
+  sequenceRoutines,
+} from './gameContent';
 
 /**
  * Datos ficticios para desarrollo. Ningún dato corresponde a un niño real.
@@ -33,9 +41,16 @@ export const mockResumePoint: ResumePoint = { gameId: 'speak', vowel: 'o' };
 
 /** «Hoy tienes 2 juegos»: una tarea nueva y una en curso. */
 export const mockAssignments: Assignment[] = [
-  { id: 'asg-demo-001', gameId: 'findMouth', status: 'assigned', isNew: true },
+  {
+    id: 'asg-demo-001',
+    activityId: 'act-demo-001',
+    gameId: 'findMouth',
+    status: 'assigned',
+    isNew: true,
+  },
   {
     id: 'asg-demo-002',
+    activityId: 'act-demo-002',
     gameId: 'speak',
     vowel: 'o',
     status: 'assigned',
@@ -43,13 +58,54 @@ export const mockAssignments: Assignment[] = [
   },
 ];
 
+/** Contenido de las actividades de esas tareas. */
+export const mockActivities: Record<string, ActivityContent> = {
+  'act-demo-001': {
+    activityId: 'act-demo-001',
+    gameId: 'findMouth',
+    title: 'Busca la boca',
+    vowels: [...VOWELS],
+  },
+  'act-demo-002': {
+    activityId: 'act-demo-002',
+    gameId: 'speak',
+    title: 'Di la o',
+    vowel: 'o',
+  },
+  // Sin tarea asignada: sirven para abrir estos juegos con `actividadId`.
+  'act-demo-003': {
+    activityId: 'act-demo-003',
+    gameId: 'match',
+    title: 'Emparejar',
+    rounds: matchRounds,
+  },
+  'act-demo-004': {
+    activityId: 'act-demo-004',
+    gameId: 'classify',
+    title: 'Clasificar',
+    sets: classifySets,
+  },
+  'act-demo-005': {
+    activityId: 'act-demo-005',
+    gameId: 'sequence',
+    title: 'Secuenciar',
+    routines: sequenceRoutines,
+  },
+  'act-demo-006': {
+    activityId: 'act-demo-006',
+    gameId: 'memory',
+    title: 'Memoria',
+    boards: memoryBoards,
+  },
+};
+
 /** Colores 80 %, Números 55 %, Letras 10 %, Cuentos 0 % (imagen de referencia). */
 export const mockOfficialProgress: OfficialProgress = {
   modules: [
-    { moduleId: 'colors', validated: 8, total: 10 },
-    { moduleId: 'numbers', validated: 11, total: 20 },
-    { moduleId: 'letters', validated: 1, total: 10 },
-    { moduleId: 'stories', validated: 0, total: 6 },
+    { moduleId: 'colors', title: 'Colores', validated: 8, total: 10 },
+    { moduleId: 'numbers', title: 'Números', validated: 11, total: 20 },
+    { moduleId: 'letters', title: 'Letras', validated: 1, total: 10 },
+    { moduleId: 'stories', title: 'Cuentos', validated: 0, total: 6 },
   ],
   pendingValidation: 1,
 };

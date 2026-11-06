@@ -2,23 +2,48 @@
 
 App móvil de **GameUP**, el aula virtual inclusiva de la Fundación ASISCO-UP.
 
-- **React Native + Expo** (SDK 57, TypeScript estricto).
-  Se usa el SDK 57 porque el Expo Go de Play Store aún no soporta el 58.
-  Antes de subir de SDK, confirma que Expo Go ya lo soporta.
+- **React Native + Expo** (SDK 58, TypeScript estricto).
+  Antes de subir de SDK, confirma que el Expo Go de las tiendas ya lo soporta.
 - Navegación con **Expo Router** (rutas en `src/app/`).
 - Se prueba en el celular con **Expo Go**.
 - Se comunica con el backend **NestJS** (`GameUp-backend`) por su API REST.
 
-> **Estado actual (Fase 5):** sistema de diseño, componentes base,
-> personaje y bocas en SVG, pantallas del estudiante **Inicio**, **Juegos**,
-> **Mi progreso**, el flujo completo de **Habla conmigo** (selección de
-> vocal, **Mira**, **Dilo** y **Listo**), **Busca la boca** y los juegos
-> de «Pensar y recordar» (**Emparejar**, **Clasificar**, **Secuenciar** y
-> **Memoria**, con contenido de ejemplo); la pantalla
-> del docente **Por escuchar** y la del acudiente **Practicar en casa**.
-> Todo funciona con datos simulados en memoria. La app abre en
-> **Iniciar sesión** (simulado: aún no hay API). Los permisos de cada rol
-> deberá verificarlos el backend.
+> **Estado actual (conexión con la API, fase 4: toda la app conectada):** sistema de diseño,
+> componentes base, personaje y bocas en SVG, pantallas del estudiante
+> **Inicio**, **Juegos**, **Mi progreso**, el flujo completo de **Habla
+> conmigo** (selección de vocal, **Mira**, **Dilo** y **Listo**), **Busca la
+> boca** y los juegos de «Pensar y recordar» (**Emparejar**, **Clasificar**,
+> **Secuenciar** y **Memoria**, con contenido de ejemplo); la pantalla del
+> docente **Por escuchar** y la del acudiente **Practicar en casa**.
+> Por defecto todo funciona con datos simulados en memoria
+> (`EXPO_PUBLIC_DATA_SOURCE=mock`). Con `EXPO_PUBLIC_DATA_SOURCE=api` ya
+> funcionan contra el backend **Iniciar sesión**, el perfil, y del estudiante:
+> tareas pendientes, «Mi progreso» (temas dinámicos), estrellas de práctica,
+> «Sigue donde ibas», consentimiento de voz y los seis juegos: **Busca la
+> boca**, **Habla conmigo**, **Emparejar**, **Clasificar**, **Secuenciar** y
+> **Memoria** (estos cuatro juegan el contenido de su actividad; las
+> tarjetas muestran la imagen de la fundación y, si no hay, el dibujo
+> provisional o la palabra). También la revisión de la tallerista («Por
+> escuchar»): sus pendientes de los seis juegos, «Lo logró» y «Practicar
+> más» (con la opción de enviar la indicación como nota a la familia). Un
+> intento de voz con audio se escucha antes de decidir (lo exige el
+> backend); sin audio, se explica por qué y se decide de inmediato. Y el
+> espacio del acudiente («Practicar en casa»): el sonido de la semana (la
+> tarea de Habla conmigo pendiente; si no hay, lo dice), la nota de la
+> profe, lo que dijo la profe en las actividades revisadas, los días
+> practicados y «Lo practicamos hoy». Si acompaña a varios estudiantes,
+> elige a quién ver. La tallerista y el acudiente tienen «Cerrar sesión».
+> La nota de voz para la familia no existe todavía en el backend: con la
+> API no se muestra.
+> Los permisos de cada rol los verifica el backend.
+>
+> **Tareas y juego libre:** el aviso «Tu profe te dejó…» de Inicio y las
+> tarjetas con la insignia «Tarea» abren la actividad con su `actividadId`
+> en la ruta: su resultado llega al docente. Abierto de otra forma, el juego
+> es libre: con la API no se envía ni suma estrellas, y la pantalla final
+> dice «Sigue practicando cuando quieras». Si un envío falla, se reintenta en
+> silencio; si aun así no se puede, el niño celebra igual y aparece un aviso
+> para el adulto (Regla 11).
 
 ---
 
@@ -28,7 +53,7 @@ App móvil de **GameUP**, el aula virtual inclusiva de la Fundación ASISCO-UP.
 | ----------- | ------------------------------------------------------------------- | ------------- |
 | Node.js     | **22.18+** o **24.11+** (la misma del backend)                      | `node -v`     |
 | npm         | 10 o superior                                                       | `npm -v`      |
-| Expo Go     | La última versión de Play Store / App Store (compatible con SDK 57) | En el celular |
+| Expo Go     | La última versión de Play Store / App Store (compatible con SDK 58) | En el celular |
 
 Todos los comandos se ejecutan en una terminal **bash** (en Windows: Git Bash),
 desde la carpeta `GameUp-frontend`.
@@ -49,6 +74,16 @@ EXPO_PUBLIC_API_URL=http://192.168.1.20:3000/api/v1
 - Busca la IP con `ipconfig` → «Dirección IPv4».
 - El celular y el PC deben estar en la **misma red Wi-Fi**.
 - `localhost` **no** sirve: en el celular, `localhost` es el propio celular.
+- Para usar el backend desplegado:
+  `EXPO_PUBLIC_API_URL=https://gameup-backend.onrender.com/api/v1`
+  (la primera petición puede tardar mientras Render despierta).
+
+Para elegir de dónde salen los datos:
+
+```bash
+EXPO_PUBLIC_DATA_SOURCE=mock   # datos ficticios, sin backend (por defecto)
+EXPO_PUBLIC_DATA_SOURCE=api    # la API NestJS de EXPO_PUBLIC_API_URL
+```
 
 > Las variables `EXPO_PUBLIC_*` quedan dentro de la app y cualquiera puede
 > leerlas. **Nunca** pongas aquí claves secretas (`DATABASE_URL`,
@@ -62,9 +97,10 @@ npm start                # las demás veces
 ```
 
 1. Escanea el código QR con **Expo Go** (Android) o con la cámara (iPhone).
-2. Aparece **Iniciar sesión**. El inicio de sesión es simulado: en
-   desarrollo, la tarjeta **Cuentas de prueba** llena el formulario
-   (contraseña `gameup123`, solo datos ficticios):
+2. Aparece **Iniciar sesión**. Con `mock`, el inicio de sesión es
+   simulado: en desarrollo, la tarjeta **Cuentas de prueba** llena el
+   formulario (contraseña `gameup123`, solo datos ficticios). Con `api`
+   se entra con una cuenta real del backend y esas cuentas no aparecen.
    - `estudiante@gameup.test` → Inicio del estudiante.
    - `docente@gameup.test` → «Por escuchar».
    - `acudiente@gameup.test` → «Practicar en casa».
@@ -78,8 +114,10 @@ npm start                # las demás veces
      Debe aparecer «Backend conectado».
    - **Ver la app como → Estudiante**: Inicio, Juegos, Mi progreso, Habla
      conmigo, Busca la boca, Emparejar, Clasificar, Secuenciar y Memoria.
-     El contenido de estos cuatro está en `src/data/mock/gameContent.ts`
-     (dibujos provisionales con emojis) y todavía no se envía al docente.
+     El contenido de ejemplo de estos cuatro está en
+     `src/data/mock/gameContent.ts` (dibujos provisionales con emojis); se
+     usa en el juego libre. Abiertos desde una tarea, juegan el contenido de
+     su actividad y envían el resultado al docente.
    - **Ver la app como → Docente**: «Por escuchar». Lo que hizo el
      estudiante en esta sesión aparece aquí. «Lo logró» lo valida y sube
      el progreso; «Practicar más» pide una indicación que llega a la
@@ -136,7 +174,7 @@ GameUp-frontend/
     ├── app/                # RUTAS (Expo Router). Cada archivo es una pantalla
     │   ├── _layout.tsx     #   carga Nunito y define el stack y sus transiciones
     │   ├── index.tsx       #   ruta inicial (lleva a /login)
-    │   ├── login.tsx       #   Iniciar sesión (simulado)
+    │   ├── login.tsx       #   Iniciar sesión
     │   ├── dev/            #   selector de rol, catálogo y prueba de conexión
     │   ├── student/        #   (tabs)/ Inicio, Juegos, Progreso · speak/ · find-mouth/
     │   ├── teacher/        #   «Por escuchar» (docente)
@@ -145,7 +183,7 @@ GameUp-frontend/
     ├── components/ui/      # Componentes base reutilizables
     ├── components/gameup/  # Personaje, bocas, fichas de sonido, tarjetas de juego
     ├── features/           # Lógica por funcionalidad (hooks), fuera de las rutas
-    ├── data/               # Tipos, interfaces de repositorio y datos simulados
+    ├── data/               # Tipos, interfaces de repositorio, mock/ y http/ (API)
     ├── config/env.ts       # Lectura de variables de entorno
     └── services/           # Llamadas a la API (api.ts, health.service.ts)
 ```
@@ -179,22 +217,31 @@ AA de los colores y los tamaños mínimos.
 Las pantallas no llaman a `fetch` ni conocen los datos simulados: usan
 hooks (`useStudentHome`, `useGameList`…) que dependen de las interfaces de
 `src/data/repositories.ts`. La implementación se elige en un solo lugar,
-`src/app/_layout.tsx`:
+`src/data/createRepositories.ts`, según `EXPO_PUBLIC_DATA_SOURCE`:
 
-```ts
-const repositories = createMockRepositories(); // hoy: datos ficticios
-```
+- `mock` → `src/data/mock/` (datos ficticios en memoria);
+- `api` → `src/data/http/` (la API NestJS).
 
-Cuando el backend NestJS tenga los endpoints, se crea una implementación
-que use `src/services/api.ts` y se cambia esa línea.
+Piezas de la versión HTTP, cada una con una sola tarea:
 
-El inicio de sesión sigue el mismo camino: la pantalla `src/app/login.tsx`
-llama a `repositories.auth.signIn` (contrato `AuthRepository`). Para
-conectarlo, la implementación real envía el correo y la contraseña al
-endpoint de autenticación que defina el backend, rechaza con
-`InvalidCredentialsError` cuando no coinciden y guarda el token de forma
-segura. La pantalla no cambia. Los datos ficticios
-(`src/data/mock/fixtures.ts`) no corresponden a ningún niño real.
+| Pieza                         | Qué hace                                                                                 |
+| ----------------------------- | ---------------------------------------------------------------------------------------- |
+| `src/services/api.ts`         | Único cliente HTTP: URL base, token `Bearer`, tiempo de espera y errores tipados         |
+| `src/services/apiErrors.ts`   | `ConnectionError`, `UnauthorizedError` (401), `ForbiddenError` (403), `NotFoundError`…   |
+| `src/data/http/dto/`          | Forma exacta del JSON del backend                                                        |
+| `src/data/http/mappers/`      | Traducen los DTO a los tipos de la app (con pruebas)                                     |
+| `src/data/http/http*.ts`      | Repositorios: cumplen las mismas interfaces que los simulados                            |
+| `src/data/http/secureTokenStore.ts` | Guarda el token con `expo-secure-store`. Nunca se guarda la contraseña             |
+
+- Si la sesión vence (401), se borra el token y la app vuelve a
+  **Iniciar sesión**.
+- `src/data/__tests__/repositoryContract.test.ts` corre las mismas pruebas
+  contra la versión simulada y la HTTP (con un backend falso): las dos deben
+  comportarse igual.
+- Las pruebas nunca llaman a Render ni a otra API real.
+
+Los datos ficticios (`src/data/mock/fixtures.ts`) no corresponden a ningún
+niño real.
 
 ## 8. Agregar un juego
 

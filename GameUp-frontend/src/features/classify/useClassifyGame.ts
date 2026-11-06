@@ -18,8 +18,12 @@ export function prepareClassifySets(
  * Estado y acciones de «Clasificar»: un elemento a la vez; el niño toca el
  * grupo al que pertenece. Contenido de ejemplo: `classifySets`.
  */
-export function useClassifyGame(onFinish: (state: TurnGameState) => void) {
-  const [sets] = useState(() => prepareClassifySets(classifySets, Math.random));
+export function useClassifyGame(
+  onFinish: (state: TurnGameState) => void,
+  /** Conjuntos de la actividad, o el contenido de ejemplo si es libre. */
+  content: readonly ClassifySet[] = classifySets,
+) {
+  const [sets] = useState(() => prepareClassifySets(content, Math.random));
   const { narrate } = useNarration();
   const { state, isLast, answer, next } = useTurnGame(
     sets.map((set) => set.items.length),

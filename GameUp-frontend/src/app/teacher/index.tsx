@@ -12,6 +12,7 @@ import {
   StateView,
 } from '@/components/ui';
 import { useRefreshOnFocus } from '@/data/useRefreshOnFocus';
+import { SignOutButton } from '@/features/auth/components/SignOutButton';
 import { ReviewCard } from '@/features/review/components/ReviewCard';
 import {
   matchesFilter,
@@ -51,6 +52,7 @@ export default function TeacherReviewScreen() {
             ) : undefined
           }
           title="Por escuchar"
+          right={<SignOutButton />}
         />
       }
     >
@@ -111,12 +113,15 @@ export default function TeacherReviewScreen() {
                   onValidate={() => {
                     queue.validate(item).catch(() => {});
                   }}
-                  onRequestMore={(feedback) =>
-                    queue.requestMorePractice(item, feedback)
+                  onRequestMore={(feedback, options) =>
+                    queue.requestMorePractice(item, feedback, options)
                   }
                   onSaveVoiceNote={(audioUri) =>
                     queue.saveFamilyVoiceNote(item, audioUri)
                   }
+                  loadRecording={() => queue.loadRecording(item)}
+                  voiceNoteEnabled={queue.features.familyVoiceNote}
+                  shareOption={!queue.features.feedbackAlwaysReachesFamily}
                 />
               ))}
             </View>

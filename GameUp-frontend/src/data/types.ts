@@ -47,6 +47,11 @@ export interface ResumePoint {
 
 export interface Assignment {
   id: string;
+  /**
+   * Actividad que se abre (va en la ruta como `actividadId`). Solo los
+   * juegos abiertos desde una actividad envían su resultado al docente.
+   */
+  activityId?: string;
   gameId: GameId;
   /** Vocal concreta, si la tarea es de un juego de habla. */
   vowel?: Vowel;
@@ -57,13 +62,16 @@ export interface Assignment {
 
 /**
  * Módulos educativos (universo del discurso: colores, números, letras…).
- * La lista del MVP sale de la imagen de referencia de «Mi progreso».
+ * Son dinámicos: los crea la fundación en el backend. Los datos simulados
+ * usan ids de texto ('colors', 'letters'…) y la API, ids numéricos.
  */
-export type ModuleId = 'colors' | 'numbers' | 'letters' | 'stories';
+export type ModuleId = string;
 
 /** Avance de un módulo: actividades validadas sobre el total asignado. */
 export interface ModuleProgress {
   moduleId: ModuleId;
+  /** Nombre del módulo («Vocales»). */
+  title: string;
   validated: number;
   total: number;
 }
@@ -92,12 +100,19 @@ export interface SpeechAttempt {
   audioUri: string | null;
   status: ActivityStatus;
   createdAt: string;
+  /**
+   * ¿Llegó al docente? `false` en un juego libre con la API: se practica,
+   * pero no se envía (solo cuentan los juegos abiertos desde una actividad).
+   */
+  sentForReview: boolean;
 }
 
 export interface NewSpeechAttempt {
   studentId: string;
   vowel: Vowel;
   audioUri: string | null;
+  /** Actividad asignada de la que viene, o nada si el juego se abrió libre. */
+  activityId?: string | null;
 }
 
 /**
@@ -113,13 +128,70 @@ export interface ListeningResult {
   total: number;
   status: ActivityStatus;
   createdAt: string;
+  /** ¿Llegó al docente? (ver `SpeechAttempt.sentForReview`). */
+  sentForReview: boolean;
 }
 
 export interface NewListeningResult {
   studentId: string;
   firstTryCorrect: number;
   total: number;
+  /** Actividad asignada de la que viene, o nada si el juego se abrió libre. */
+  activityId?: string | null;
 }
+
+/** Juegos de «Pensar y recordar»: envían su resultado con `POST /intentos`. */
+export type ThinkingGameId = 'match' | 'classify' | 'sequence' | 'memory';
+
+/**
+ * Lo que se informa al docente al terminar (no es una nota):
+ * - `turns`: Emparejar, Clasificar y Secuenciar, cuántos turnos resolvió al
+ *   primer intento de cuántos tenía el juego;
+ * - `memory`: parejas del juego y veces que abrió dos cartas distintas.
+ * Sin tiempos, vidas ni penalizaciones (Regla 11).
+ */
+export type GameScore =
+  | { kind: 'turns'; firstTryCorrect: number; total: number }
+  | { kind: 'memory'; pairs: number; mismatches: number };
+
+export interface NewGameResult {
+  studentId: string;
+  gameId: ThinkingGameId;
+  score: GameScore;
+  /** Actividad asignada de la que viene, o nada si el juego se abrió libre. */
+  activityId?: string | null;
+}
+
+export interface GameResult {
+  id: string;
+  studentId: string;
+  gameId: ThinkingGameId;
+  status: ActivityStatus;
+  createdAt: string;
+  /** ¿Llegó al docente? (ver `SpeechAttempt.sentForReview`). */
+  sentForReview: boolean;
+}
+
+interface ActivityBase {
+  activityId: string;
+  title: string;
+}
+
+/**
+ * Contenido de una actividad asignada, según su juego: qué vocales juega
+ * «Busca la boca», qué vocal «Habla conmigo», y las rondas, conjuntos,
+ * rutinas o tableros de los juegos de «Pensar y recordar».
+ */
+export type ActivityContent =
+  | (ActivityBase & { gameId: 'findMouth'; vowels: Vowel[] })
+  | (ActivityBase & { gameId: 'speak'; vowel: Vowel })
+  | (ActivityBase & { gameId: 'match'; rounds: readonly MatchRound[] })
+  | (ActivityBase & { gameId: 'classify'; sets: readonly ClassifySet[] })
+  | (ActivityBase & {
+      gameId: 'sequence';
+      routines: readonly SequenceRoutine[];
+    })
+  | (ActivityBase & { gameId: 'memory'; boards: readonly MemoryBoard[] });
 
 /** Persona adulta con sesión (docente o acudiente). */
 export interface StaffProfile {
@@ -136,7 +208,23 @@ export interface StudentSummary {
   initials: string;
 }
 
-export type ReviewKind = 'speech' | 'listening';
+/**
+ * - speech: «Habla conmigo»;
+ * - listening: «Busca la boca»;
+ * - game: Emparejar, Clasificar, Secuenciar o Memoria.
+ */
+export type ReviewKind = 'speech' | 'listening' | 'game';
+
+/**
+ * Por qué un intento de voz no tiene audio (sale de `estadoGrabacion` del
+ * backend). En todos estos casos el docente valida sin escuchar.
+ * - noConsent: el acudiente no autorizó grabar;
+ * - notVerified: no se pudo verificar la autorización (la app no grabó);
+ * - notSent: había autorización, pero el niño no envió grabación;
+ * - notSaved: no se pudo guardar el audio en el servidor.
+ */
+export type NoAudioReason =
+  'noConsent' | 'notVerified' | 'notSent' | 'notSaved';
 
 /**
  * Actividad realizada que espera la revisión del docente («Por escuchar»).
@@ -152,8 +240,17 @@ export interface ReviewItem {
   /** Solo «Habla conmigo». */
   speech?: {
     vowel: Vowel;
-    /** Archivo de voz; `null` si no hay grabación. */
+    /** Archivo de voz que ya se puede oír; `null` si no hay (o hay que pedirlo). */
     audioUri: string | null;
+    /**
+     * El audio está en el servidor: se pide con `getRecordingUrl` y hay que
+     * oírlo antes de decidir (lo exige el backend).
+     */
+    remoteAudio?: boolean;
+    /** Había audio, pero se borró a los 30 días sin revisar. */
+    audioExpired?: boolean;
+    /** Por qué no hay audio, si se sabe. */
+    noAudioReason?: NoAudioReason;
     /** ¿El acudiente autorizó grabar? Explica por qué no hay audio. */
     voiceConsent: boolean;
     attemptNumber: number;
@@ -163,6 +260,13 @@ export interface ReviewItem {
   listening?: {
     firstTryCorrect: number;
     total: number;
+  };
+  /** Solo Emparejar, Clasificar, Secuenciar y Memoria. */
+  game?: {
+    gameId: ThinkingGameId;
+    /** Título de la actividad («Las vocales en orden»). */
+    title: string;
+    score: GameScore;
   };
   /** Retroalimentación si el docente pidió practicar más. */
   feedback?: string;
@@ -174,12 +278,38 @@ export interface TeacherNote {
   audioUri: string | null;
 }
 
+/** Un día de la semana en el seguimiento de la práctica en casa. */
+export interface PracticeDay {
+  /** AAAA-MM-DD (hora de Bogotá). */
+  date: string;
+  practiced: boolean;
+}
+
+/**
+ * Lo que dijo la profe al revisar una actividad: la familia lo ve en
+ * «Practicar en casa» (decisión D5).
+ */
+export interface ActivityFeedback {
+  activityId: string;
+  /** Título de la actividad («Di la a»). */
+  title: string;
+  gameId: GameId;
+  /** `validated`: «Lo logró»; `rejected`: «Practicar más». */
+  status: 'validated' | 'rejected';
+  text: string;
+}
+
 /** Lo que ve el acudiente en «Practicar en casa». */
 export interface WeeklyPractice {
   student: StudentSummary;
-  vowel: Vowel;
+  /** Sonido de la semana; `null` si no hay una tarea de habla pendiente. */
+  vowel: Vowel | null;
   teacherNote: TeacherNote | null;
   practicedToday: boolean;
+  /** Lunes a domingo de esta semana, si se conocen. */
+  days?: PracticeDay[];
+  /** Retroalimentación de las actividades revisadas, si hay. */
+  feedback?: ActivityFeedback[];
 }
 
 /** Roles de GameUP. El rol de cada cuenta lo decide el backend, no la app. */
@@ -218,6 +348,11 @@ export interface AuthSession {
 export interface PictureFace {
   id: string;
   label: string;
+  /**
+   * Imagen de la fundación (URL firmada del backend). Si no hay, se usa el
+   * dibujo provisional (`emoji`) o la palabra.
+   */
+  imageUri?: string;
   emoji?: string;
   count?: number;
   text?: string;

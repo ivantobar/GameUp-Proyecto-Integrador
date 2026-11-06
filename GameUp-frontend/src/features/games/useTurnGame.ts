@@ -29,8 +29,7 @@ export function useTurnGame(
   const next = useCallback(() => {
     if (state.phase !== 'solved') return;
     dispatch({ type: 'next' });
-    // PENDIENTE (backend): aquí se enviará el resultado para que el docente
-    // lo valide, como hace «Busca la boca» con `results.submitFindMouthResult`.
+    // La pantalla envía el resultado (ver `useGameFinish`).
     if (isLastRound(state)) onFinish(state);
   }, [state, onFinish]);
 

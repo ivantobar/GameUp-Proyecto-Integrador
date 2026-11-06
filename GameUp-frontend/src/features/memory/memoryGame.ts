@@ -1,4 +1,4 @@
-import type { MemoryBoard } from '@/data/types';
+import type { GameScore, MemoryBoard } from '@/data/types';
 import { shuffle, type Random } from '@/features/games/shuffle';
 
 /**
@@ -116,4 +116,17 @@ export function memoryReducer(
         : { ...state, board: state.board + 1, open: [], matched: [] };
     }
   }
+}
+
+/**
+ * Lo que se envía al docente al terminar: parejas de todo el juego (suma de
+ * los tableros, como lo cuenta el backend) y veces que abrió dos cartas
+ * distintas. No es una nota.
+ */
+export function memoryScore(state: MemoryState): GameScore {
+  return {
+    kind: 'memory',
+    pairs: state.boards.reduce((sum, cards) => sum + cards.length / 2, 0),
+    mismatches: state.mismatches,
+  };
 }

@@ -5,7 +5,7 @@ export default function SequenceDone() {
   return (
     <GameDoneScreen
       message="Ordenaste los pasos de cada rutina"
-      replayHref="/student/sequence"
+      replayPath="/student/sequence"
     />
   );
 }

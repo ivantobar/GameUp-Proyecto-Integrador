@@ -5,7 +5,7 @@ export default function MatchDone() {
   return (
     <GameDoneScreen
       message="Encontraste todas las parejas"
-      replayHref="/student/match"
+      replayPath="/student/match"
     />
   );
 }

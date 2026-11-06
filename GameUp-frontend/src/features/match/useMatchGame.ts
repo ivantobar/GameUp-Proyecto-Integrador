@@ -19,10 +19,14 @@ export function prepareMatchRounds(
 
 /**
  * Estado y acciones de «Emparejar». La pantalla solo pinta.
- * Contenido de ejemplo: `matchRounds` (ver `data/mock/gameContent.ts`).
+ * `content`: las rondas de la actividad; si el juego es libre, el contenido
+ * de ejemplo (`matchRounds`, ver `data/mock/gameContent.ts`).
  */
-export function useMatchGame(onFinish: (state: TurnGameState) => void) {
-  const [rounds] = useState(() => prepareMatchRounds(matchRounds, Math.random));
+export function useMatchGame(
+  onFinish: (state: TurnGameState) => void,
+  content: readonly MatchRound[] = matchRounds,
+) {
+  const [rounds] = useState(() => prepareMatchRounds(content, Math.random));
   const { narrate } = useNarration();
   const { state, isLast, answer, next } = useTurnGame(
     rounds.map(() => 1),

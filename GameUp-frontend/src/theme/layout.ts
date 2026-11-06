@@ -75,6 +75,11 @@ export const sizes = {
   pictureTile: 140,
   categoryBin: 180,
   sequenceSlot: 72,
+  /**
+   * Imagen de una tarjeta (contenido de la fundación), del alto de los
+   * glifos: `md` en las opciones, `lg` en la tarjeta grande de arriba.
+   */
+  pictogramImage: { md: 64, lg: 112 },
   /** Logo completo de la fundación (guía: con lema, desde 200 px de ancho). */
   logo: 220,
 } as const;

@@ -75,3 +75,51 @@ describe('consentimiento simulado de «Modo desarrollo»', () => {
     expect(withConsent.attempt.audioUri).toBe('file:///x.m4a');
   });
 });
+
+describe('completePractice con actividad (fase 2a)', () => {
+  it('desde una tarea: el intento llega al docente', async () => {
+    const repositories = createMockRepositories({ delayMs: 0 });
+    const outcome = await run(
+      completePractice(repositories, 'o', null, 'act-demo-002'),
+    );
+
+    expect(outcome.delivery).toBe('review');
+    expect(outcome.attempt.sentForReview).toBe(true);
+  });
+
+  it('práctica libre con la API: no se envía y «Listo» no habla de la profe', async () => {
+    const repositories = createMockRepositories({ delayMs: 0 });
+    repositories.recordings.submitSpeechAttempt = (input) =>
+      Promise.resolve({
+        id: 'local',
+        ...input,
+        status: 'submitted',
+        createdAt: '2026-11-05T15:00:00.000Z',
+        sentForReview: false,
+      });
+
+    const outcome = await run(completePractice(repositories, 'e', null));
+
+    expect(outcome.delivery).toBe('practice');
+  });
+
+  it('Regla 11: si el envío falla, se celebra igual y se avisa al adulto', async () => {
+    const repositories = createMockRepositories({ delayMs: 0 });
+    repositories.recordings.submitSpeechAttempt = () =>
+      Promise.reject(new Error('sin red'));
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const outcome = await run(
+      completePractice(repositories, 'a', 'file:///voz.m4a', 'act-demo-002'),
+    );
+
+    expect(outcome.delivery).toBe('notSent');
+    // El niño puede oír lo que dijo en «Listo», aunque no se haya enviado.
+    expect(outcome.attempt.audioUri).toBe('file:///voz.m4a');
+    expect(warn).toHaveBeenCalledWith(
+      '[GameUP] No se pudo enviar el intento de voz',
+      'Error',
+    );
+    warn.mockRestore();
+  });
+});

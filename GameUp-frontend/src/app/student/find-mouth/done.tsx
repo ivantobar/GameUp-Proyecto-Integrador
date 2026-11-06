@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 import {
   AppText,
@@ -11,10 +11,24 @@ import {
 } from '@/components/ui';
 import { Celebration, Character, NarrationButton } from '@/components/gameup';
 import { VOWELS } from '@/data/types';
+import {
+  NOT_SENT_ADULT_TEXT,
+  parseActivityId,
+  parseDelivery,
+  PRACTICE_TEXT,
+} from '@/features/games/delivery';
 import { colors, sizes, spacing } from '@/theme';
 
 const CHEER = '¡Lo lograste!';
 const REVIEW = 'Tu profe va a revisar tu juego antes de sumarlo a tu progreso';
+
+/** Cuántas vocales jugó (las de la actividad, o las cinco). */
+function parseCount(value: unknown): number {
+  const n = Number(value);
+  return Number.isInteger(n) && n >= 1 && n <= VOWELS.length
+    ? n
+    : VOWELS.length;
+}
 
 /**
  * Cierre de «Busca la boca» (sin mockup: sigue el estilo de «Listo»).
@@ -22,6 +36,17 @@ const REVIEW = 'Tu profe va a revisar tu juego antes de sumarlo a tu progreso';
  * (cuántos acertó al primer intento) es información para el docente.
  */
 export default function FindMouthDone() {
+  const params = useLocalSearchParams<{
+    envio?: string;
+    actividadId?: string;
+    vocales?: string;
+  }>();
+  const delivery = parseDelivery(params.envio);
+  const activityId = parseActivityId(params.actividadId);
+  const count = parseCount(params.vocales);
+  // Solo si llegó al docente se habla de la profe (en juego libre no recibe nada).
+  const message = delivery === 'review' ? REVIEW : PRACTICE_TEXT;
+
   return (
     <Screen
       tone="brand"
@@ -33,7 +58,7 @@ export default function FindMouthDone() {
               onPress={() => router.back()}
             />
           }
-          right={<NarrationButton text={`${CHEER} ${REVIEW}.`} />}
+          right={<NarrationButton text={`${CHEER} ${message}.`} />}
         />
       }
       footer={
@@ -42,7 +67,17 @@ export default function FindMouthDone() {
             label="Jugar otra vez"
             variant="accent"
             size="large"
-            onPress={() => router.replace('/student/find-mouth')}
+            // Otra vez la misma tarea (si venía de una) o el juego libre.
+            onPress={() =>
+              router.replace(
+                activityId
+                  ? {
+                      pathname: '/student/find-mouth',
+                      params: { actividadId: activityId },
+                    }
+                  : '/student/find-mouth',
+              )
+            }
           />
           <Button
             label="Terminar"
@@ -78,7 +113,9 @@ export default function FindMouthDone() {
           {CHEER}
         </AppText>
         <AppText tone="sobreOscuro" style={styles.text}>
-          Escuchaste las {VOWELS.length} vocales
+          {count === 1
+            ? 'Escuchaste la vocal'
+            : `Escuchaste las ${count} vocales`}
         </AppText>
       </View>
 
@@ -86,9 +123,14 @@ export default function FindMouthDone() {
         <View style={styles.review}>
           <Icon name="time" color={colors.texto.secundario} />
           <AppText variant="support" tone="secundario" style={styles.flex}>
-            {REVIEW}
+            {message}
           </AppText>
         </View>
+        {delivery === 'notSent' ? (
+          <AppText variant="support" tone="secundario">
+            {NOT_SENT_ADULT_TEXT}
+          </AppText>
+        ) : null}
       </Card>
     </Screen>
   );

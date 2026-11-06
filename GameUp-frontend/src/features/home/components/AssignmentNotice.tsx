@@ -11,6 +11,8 @@ import { colors, radii, sizes, spacing } from '@/theme';
 interface AssignmentNoticeProps {
   gameTitle: string;
   icon: IconName;
+  /** La profe pidió practicarla otra vez (no es nueva). */
+  again?: boolean;
   onPress: () => void;
 }
 
@@ -18,12 +20,18 @@ interface AssignmentNoticeProps {
 export function AssignmentNotice({
   gameTitle,
   icon,
+  again = false,
   onPress,
 }: AssignmentNoticeProps) {
+  const badge = again ? 'Otra vez' : 'Nueva';
   return (
     <PressableCard
       onPress={onPress}
-      accessibilityLabel={`Tarea nueva. Tu profe te dejó ${gameTitle}`}
+      accessibilityLabel={
+        again
+          ? `Tarea para practicar otra vez. Tu profe te dejó ${gameTitle}`
+          : `Tarea nueva. Tu profe te dejó ${gameTitle}`
+      }
     >
       <View style={styles.row}>
         <View style={styles.iconBox}>
@@ -35,7 +43,7 @@ export function AssignmentNotice({
           </AppText>
           <AppText variant="subtitle">{gameTitle}</AppText>
         </View>
-        <Badge label="Nueva" />
+        <Badge label={badge} />
       </View>
     </PressableCard>
   );

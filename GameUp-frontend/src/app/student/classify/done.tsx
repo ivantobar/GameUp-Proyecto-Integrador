@@ -5,7 +5,7 @@ export default function ClassifyDone() {
   return (
     <GameDoneScreen
       message="Pusiste cada uno en su grupo"
-      replayHref="/student/classify"
+      replayPath="/student/classify"
     />
   );
 }
