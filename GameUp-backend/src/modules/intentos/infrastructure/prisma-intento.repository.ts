@@ -23,7 +23,9 @@ const SELECCION_INTENTO = {
   resultado: true,
   estrellas: true,
   fecha: true,
-  actividad: { select: { tipo_juego: { select: { codigo: true } } } },
+  actividad: {
+    select: { nivel_juego: true, tipo_juego: { select: { codigo: true } } },
+  },
   validacion: {
     select: { resultado: true, retroalimentacion: true, fecha: true },
   },
@@ -44,6 +46,7 @@ export function filaAIntento(f: FilaIntento): Intento {
     actividadId: f.actividad_id,
     estudianteId: f.estudiante_id,
     tipoJuego: codigo,
+    nivelJuego: f.actividad.nivel_juego,
     numeroIntento: f.numero_intento,
     // intento.resultado siempre es un objeto JSON (lo escribe el backend).
     resultado: (f.resultado ?? {}) as Configuracion,

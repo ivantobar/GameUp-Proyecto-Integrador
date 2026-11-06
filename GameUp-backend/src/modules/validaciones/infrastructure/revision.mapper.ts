@@ -32,6 +32,7 @@ export const RevisionMapper = {
         id: idATexto(i.actividad.id),
         titulo: i.actividad.titulo,
         vocal: i.actividad.vocal,
+        nivelJuego: i.actividad.nivelJuego,
       },
       modulo: { id: idATexto(i.modulo.id), nombre: i.modulo.nombre },
       fecha: i.fecha.toISOString(),

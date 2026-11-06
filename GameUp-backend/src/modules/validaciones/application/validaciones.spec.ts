@@ -57,6 +57,7 @@ describe('Validación, audio y progreso', () => {
     const contexto = new ContextoIntentoService(
       e.modulos.actividadRepo,
       e.asignaciones,
+      e.nivelesJuego,
     );
     const consentimiento = new ConsentimientoService(
       e.consentimiento,
@@ -183,7 +184,13 @@ describe('Validación, audio y progreso', () => {
   describe('validar uno', () => {
     it('APROBADO: queda validado, cuenta para el progreso y borra el audio', async () => {
       await grabaciones.urlAudio(TALLERISTA_2, voz);
-      const i = await servicio.validar(TALLERISTA_2, voz, 'APROBADO', null);
+      const { intento: i, subida } = await servicio.validar(
+        TALLERISTA_2,
+        voz,
+        'APROBADO',
+        null,
+      );
+      expect(subida).toBeNull(); // Habla conmigo no tiene escalera
       expect(i.validacion).toMatchObject({
         resultado: 'APROBADO',
         retroalimentacion: null,
@@ -206,7 +213,7 @@ describe('Validación, audio y progreso', () => {
       );
       expect(audioEnStorage()).toHaveLength(1);
       await grabaciones.urlAudio(TALLERISTA_2, voz);
-      const i = await servicio.validar(
+      const { intento: i } = await servicio.validar(
         TALLERISTA_2,
         voz,
         'RECHAZADO',
@@ -261,7 +268,9 @@ describe('Validación, audio y progreso', () => {
       ).rejects.toThrow(ESCUCHA_OBLIGATORIA);
       await expect(
         servicio.validar(DIRECTORA, voz, 'APROBADO', null),
-      ).resolves.toMatchObject({ validacion: { resultado: 'APROBADO' } });
+      ).resolves.toMatchObject({
+        intento: { validacion: { resultado: 'APROBADO' } },
+      });
     });
 
     it('la escucha vence a las 12 horas', async () => {
@@ -279,13 +288,17 @@ describe('Validación, audio y progreso', () => {
       );
       await expect(
         servicio.validar(TALLERISTA_2, voz, 'APROBADO', null),
-      ).resolves.toMatchObject({ validacion: { resultado: 'APROBADO' } });
+      ).resolves.toMatchObject({
+        intento: { validacion: { resultado: 'APROBADO' } },
+      });
     });
 
     it('los juegos sin voz no lo exigen', async () => {
       await expect(
         servicio.validar(TALLERISTA_2, juego, 'APROBADO', null),
-      ).resolves.toMatchObject({ validacion: { resultado: 'APROBADO' } });
+      ).resolves.toMatchObject({
+        intento: { validacion: { resultado: 'APROBADO' } },
+      });
     });
   });
 
@@ -293,7 +306,7 @@ describe('Validación, audio y progreso', () => {
     it('aprueba todos de una vez', async () => {
       await expect(
         servicio.aprobarLote(TALLERISTA_2, [juego, memoria, juego]),
-      ).resolves.toBe(2);
+      ).resolves.toEqual({ aprobados: 2, subidas: [] });
       expect(
         (await intentos.obtener(TALLERISTA_2, memoria)).validacion?.resultado,
       ).toBe('APROBADO');

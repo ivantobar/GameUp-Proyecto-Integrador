@@ -41,6 +41,7 @@ describe('Intentos y grabaciones', () => {
     const contexto = new ContextoIntentoService(
       e.modulos.actividadRepo,
       e.asignaciones,
+      e.nivelesJuego,
     );
     const consentimiento = new ConsentimientoService(
       e.consentimiento,

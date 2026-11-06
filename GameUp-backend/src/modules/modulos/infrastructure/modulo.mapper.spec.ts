@@ -14,6 +14,7 @@ describe('ModuloMapper', () => {
         orden: 0,
         creado_en: creadoEn,
         musica_id: null,
+    es_escalera: false,
         categoria: { id: 1n, nombre: 'VOCALES' },
         nivel: { id: 1n, nombre: 'BAJO' },
         usuario: { id: 2n, nombres: 'Ana María', apellidos: 'Gómez Ruiz' },

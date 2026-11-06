@@ -5,9 +5,11 @@ import type {
   GrabacionGuardada,
   ItemRevision,
 } from '../../src/modules/validaciones/domain/validacion.js';
+import type { SubidaNivel } from '../../src/modules/niveles-juego/domain/nivel-juego.js';
 import type {
   AlcanceRevision,
   GrabacionRepository,
+  ResultadoLote,
   RevisionLecturaRepository,
   ValidacionEscrituraRepository,
 } from '../../src/modules/validaciones/domain/validacion.repository.js';
@@ -15,6 +17,7 @@ import type { AsignacionesEnMemoria } from './asignaciones-en-memoria.js';
 import type { EstudiantesEnMemoria } from './estudiantes-en-memoria.js';
 import { escenarioIntentos, type FilaIntento } from './intentos-en-memoria.js';
 import type { ModulosEnMemoria } from './modulos-en-memoria.js';
+import type { NivelesJuegoEnMemoria } from './niveles-juego-en-memoria.js';
 import type { UsuariosEnMemoria } from './usuarios-en-memoria.js';
 
 /**
@@ -36,6 +39,8 @@ export class ValidacionesEnMemoria
     private readonly estudiantes: EstudiantesEnMemoria,
     private readonly modulos: ModulosEnMemoria,
     private readonly asignaciones: AsignacionesEnMemoria,
+    /** Escalera de niveles (fase 9): la validación sube de nivel. */
+    private readonly niveles: NivelesJuegoEnMemoria | null = null,
   ) {}
 
   private get filas(): FilaIntento[] {
@@ -44,6 +49,32 @@ export class ValidacionesEnMemoria
 
   private asignacion(id: bigint) {
     return this.asignaciones.filas.find((a) => a.id === id)!;
+  }
+
+  private estudianteDe(f: FilaIntento): bigint {
+    return f.estudianteId ?? this.asignacion(f.asignacionId!).estudianteId;
+  }
+
+  /** Mismo estudiante, actividad y asignación (vacía en la escalera). */
+  private mismoGrupo(a: FilaIntento, b: FilaIntento): boolean {
+    return (
+      a.asignacionId === b.asignacionId &&
+      this.estudianteDe(a) === this.estudianteDe(b) &&
+      a.actividadId === b.actividadId
+    );
+  }
+
+  /**
+   * Como escaleraVisible(): de la escalera, solo el nivel actual y, de cada
+   * estudiante y actividad, el pendiente más reciente.
+   */
+  private visibleEnBandeja(f: FilaIntento, pendientes: FilaIntento[]): boolean {
+    if (f.asignacionId !== null) return true;
+    const n = this.niveles?.nivelDeActividad(f.actividadId);
+    if (!n) return false;
+    if (this.niveles!.nivelDe(this.estudianteDe(f), n.juego).nivelActual !== n.nivel)
+      return false;
+    return !pendientes.some((o) => this.mismoGrupo(o, f) && o.id! > f.id!);
   }
 
   private actividad(id: bigint) {
@@ -58,10 +89,12 @@ export class ValidacionesEnMemoria
     p: { page: number; limit: number },
   ) {
     const visibles: FilaIntento[] = [];
-    for (const f of this.filas.filter(
+    const pendientes = this.filas.filter(
       (x) => x.id !== undefined && x.validacion === null,
-    )) {
-      const est = this.asignacion(f.asignacionId).estudianteId;
+    );
+    for (const f of pendientes) {
+      if (!this.visibleEnBandeja(f, pendientes)) continue;
+      const est = this.estudianteDe(f);
       if (estudianteId !== null && est !== estudianteId) continue;
       const enAlcance =
         alcance.tipo === 'todos' ||
@@ -75,7 +108,7 @@ export class ValidacionesEnMemoria
       )!;
       const u = this.usuarios
         .todos()
-        .find((x) => x.id === this.asignacion(f.asignacionId).estudianteId)!;
+        .find((x) => x.id === this.estudianteDe(f))!;
       const vocal = actividad.configuracion['vocal'];
       return {
         intentoId: f.id!,
@@ -88,13 +121,11 @@ export class ValidacionesEnMemoria
           id: actividad.id,
           titulo: actividad.titulo,
           vocal: typeof vocal === 'string' ? vocal : null,
+          nivelJuego: actividad.nivelJuego,
         },
         modulo: { id: modulo.id, nombre: modulo.nombre },
-        pendientesMismaActividad: visibles.filter(
-          (o) =>
-            o.asignacionId === f.asignacionId &&
-            o.actividadId === f.actividadId,
-        ).length,
+        pendientesMismaActividad: pendientes.filter((o) => this.mismoGrupo(o, f))
+          .length,
         grabacion: f.grabacion
           ? {
               disponible: f.grabacion.eliminadaEn === null,
@@ -117,7 +148,7 @@ export class ValidacionesEnMemoria
     intentoId: bigint,
     validadorId: bigint,
     d: DecisionValidacion,
-  ): Promise<void> {
+  ): Promise<SubidaNivel | null> {
     const f = this.filas.find((x) => x.id === intentoId)!;
     if (f.validacion) throw new Error('validacion_intento_id_key'); // único en la base
     f.validacion = {
@@ -125,19 +156,26 @@ export class ValidacionesEnMemoria
       retroalimentacion: d.retroalimentacion,
     };
     this.validadores.set(intentoId, validadorId);
-    this.recalcular(f.asignacionId);
+    if (f.asignacionId !== null) this.recalcular(f.asignacionId);
+    return d.resultado === 'APROBADO' && this.niveles
+      ? this.niveles.subirSiCorresponde(f, this.estudianteDe(f), validadorId)
+      : null;
   }
 
-  async aprobarLote(ids: bigint[], validadorId: bigint): Promise<number> {
+  async aprobarLote(ids: bigint[], validadorId: bigint): Promise<ResultadoLote> {
     if (ids.some((id) => this.filas.find((x) => x.id === id)?.validacion)) {
       throw new Error('validacion_intento_id_key'); // la transacción no deja ninguna
     }
-    for (const id of ids)
-      await this.validar(id, validadorId, {
+    // Como la base: en orden (fecha, id), cada uno contra el nivel ya actualizado.
+    const subidas: SubidaNivel[] = [];
+    for (const id of [...ids].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))) {
+      const subida = await this.validar(id, validadorId, {
         resultado: 'APROBADO',
         retroalimentacion: null,
       });
-    return ids.length;
+      if (subida) subidas.push(subida);
+    }
+    return { aprobados: ids.length, subidas };
   }
 
   /** Como fn_recalcular_progreso: actividades activas con algún APROBADO. */
@@ -239,6 +277,7 @@ export async function escenarioValidaciones() {
     base.estudiantes,
     base.modulos,
     base.asignaciones,
+    base.nivelesJuego,
   );
   return { ...base, validaciones };
 }

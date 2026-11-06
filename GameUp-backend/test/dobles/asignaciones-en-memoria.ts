@@ -33,7 +33,10 @@ export class AsignacionesEnMemoria
   implements AsignacionLecturaRepository, AsignacionEscrituraRepository
 {
   readonly filas: FilaAsignacion[] = [];
-  readonly intentosFilas: Array<IntentoResumen & { asignacionId: bigint }> = [];
+  /** asignacionId null: intento de la escalera de niveles (fase 9). */
+  readonly intentosFilas: Array<
+    IntentoResumen & { asignacionId: bigint | null; estudianteId?: bigint }
+  > = [];
   private siguiente = 500n;
 
   constructor(

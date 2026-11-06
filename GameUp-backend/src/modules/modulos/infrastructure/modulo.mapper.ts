@@ -36,6 +36,7 @@ export const SELECCION_MODULO = {
   orden: true,
   creado_en: true,
   musica_id: true,
+  es_escalera: true,
   categoria: { select: { id: true, nombre: true } },
   nivel: { select: { id: true, nombre: true } },
   usuario: { select: SELECCION_PERSONA },
@@ -96,6 +97,7 @@ export const ModuloMapper = {
       publicado: f.publicado,
       orden: f.orden,
       creadoEn: f.creado_en,
+      esEscalera: f.es_escalera,
     });
   },
 

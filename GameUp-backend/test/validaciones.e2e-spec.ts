@@ -215,7 +215,7 @@ describe('Validación y progreso (e2e)', () => {
     it('aprueba varios juegos sin voz de una vez', async () => {
       await como('tallerista2')
         .post('/validaciones/lote', { intentoIds: [juego, memoria] })
-        .expect(200, { aprobados: 2 });
+        .expect(200, { aprobados: 2, subidas: [] });
     });
 
     it('con uno de voz → 422 y no aprueba ninguno; ids inválidos o repetidos → 400', async () => {

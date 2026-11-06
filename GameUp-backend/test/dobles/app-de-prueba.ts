@@ -52,6 +52,7 @@ import {
   OBSERVACION_LECTURA_REPOSITORY,
 } from '../../src/modules/observaciones/domain/observacion.repository.js';
 import { PRACTICA_CASA_REPOSITORY } from '../../src/modules/practica-casa/domain/practica-casa.repository.js';
+import { NIVEL_JUEGO_REPOSITORY } from '../../src/modules/niveles-juego/domain/nivel-juego.repository.js';
 import { PrismaService } from '../../src/prisma/prisma.service.js';
 import { SupabaseService } from '../../src/supabase/supabase.service.js';
 import {
@@ -63,6 +64,7 @@ import { AsignacionesEnMemoria } from './asignaciones-en-memoria.js';
 import { AutenticadorFalso } from './autenticador-falso.js';
 import { EstudiantesEnMemoria } from './estudiantes-en-memoria.js';
 import { IntentosEnMemoria } from './intentos-en-memoria.js';
+import { NivelesJuegoEnMemoria } from './niveles-juego-en-memoria.js';
 import { ValidacionesEnMemoria } from './validaciones-en-memoria.js';
 import {
   AlmacenEnMemoria,
@@ -89,6 +91,8 @@ export interface OpcionesAppDePrueba {
   intentos?: IntentosEnMemoria;
   /** Validaciones y grabaciones en memoria (fase 7). */
   validaciones?: ValidacionesEnMemoria;
+  /** Escalera de niveles por juego en memoria (fase 9). */
+  nivelesJuego?: NivelesJuegoEnMemoria;
   /** Observaciones, notificaciones y práctica en casa en memoria (fase 8). */
   notificaciones?: NotificacionesEnMemoria;
   observaciones?: ObservacionesEnMemoria;
@@ -118,11 +122,25 @@ export async function crearAppDePrueba(
   const asignaciones =
     opciones.asignaciones ??
     new AsignacionesEnMemoria(usuarios, estudiantes, modulos);
+  const nivelesJuego =
+    opciones.nivelesJuego ??
+    new NivelesJuegoEnMemoria(
+      modulos,
+      usuarios,
+      () => asignaciones.intentosFilas,
+    );
   const intentos =
-    opciones.intentos ?? new IntentosEnMemoria(asignaciones, modulos);
+    opciones.intentos ??
+    new IntentosEnMemoria(asignaciones, modulos, nivelesJuego);
   const validaciones =
     opciones.validaciones ??
-    new ValidacionesEnMemoria(usuarios, estudiantes, modulos, asignaciones);
+    new ValidacionesEnMemoria(
+      usuarios,
+      estudiantes,
+      modulos,
+      asignaciones,
+      nivelesJuego,
+    );
   const notificaciones =
     opciones.notificaciones ?? new NotificacionesEnMemoria();
   const observaciones =
@@ -188,7 +206,9 @@ export async function crearAppDePrueba(
     .overrideProvider(OBSERVACION_ESCRITURA_REPOSITORY)
     .useValue(observaciones)
     .overrideProvider(PRACTICA_CASA_REPOSITORY)
-    .useValue(practicas);
+    .useValue(practicas)
+    .overrideProvider(NIVEL_JUEGO_REPOSITORY)
+    .useValue(nivelesJuego);
 
   for (const { provide, useValue } of opciones.reemplazos ?? []) {
     builder = builder.overrideProvider(provide).useValue(useValue);

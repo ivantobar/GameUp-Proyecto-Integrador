@@ -20,6 +20,9 @@ export const MENSAJE_MODULO_NO_EXISTE = 'El módulo no existe.';
  *  - TALLERISTA: ve los publicados y los suyos; modifica solo los suyos.
  *  - ESTUDIANTE y ACUDIENTE: ven un módulo solo si está asignado a él (o a
  *    uno de sus estudiantes). Nunca lo modifican.
+ *  - El módulo de la escalera de niveles (fase 9) lo ven todos aunque no esté
+ *    publicado: no se asigna y su contenido es genérico (sin datos de nadie).
+ *    Solo lo modifica la directora (su autora).
  * Lo que no puede ver responde 404, para no revelar borradores ajenos.
  */
 @Injectable()
@@ -60,6 +63,7 @@ export class AccesoModuloService {
     actual: UsuarioAutenticado,
     modulo: Modulo,
   ): Promise<boolean> {
+    if (modulo.esEscalera) return true;
     switch (actual.rol) {
       case 'DIRECTORA':
         return true;
