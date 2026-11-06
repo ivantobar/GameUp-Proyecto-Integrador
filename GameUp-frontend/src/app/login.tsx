@@ -38,6 +38,11 @@ const problemNotices: Record<
     title: 'No pudimos entrar',
     message: 'Tu cuenta no tiene acceso a GameUP. Habla con la fundación.',
   },
+  unavailable: {
+    title: 'GameUP no está disponible',
+    message:
+      'No pudimos verificar tu cuenta en este momento. Espera un momento e inténtalo otra vez.',
+  },
   connection: {
     title: 'Sin conexión',
     message: 'Revisa la conexión a internet e inténtalo otra vez.',

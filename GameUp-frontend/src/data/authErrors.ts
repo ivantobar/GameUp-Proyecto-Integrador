@@ -19,3 +19,15 @@ export class AccountNotAllowedError extends Error {
     this.name = 'AccountNotAllowedError';
   }
 }
+
+/**
+ * El backend de GameUP respondió, pero el servicio que verifica las cuentas
+ * (la API de seguridad) no está disponible. No es un problema de la
+ * conexión del teléfono: hay que intentarlo en un momento.
+ */
+export class SignInUnavailableError extends Error {
+  constructor() {
+    super('El inicio de sesión no está disponible en este momento');
+    this.name = 'SignInUnavailableError';
+  }
+}

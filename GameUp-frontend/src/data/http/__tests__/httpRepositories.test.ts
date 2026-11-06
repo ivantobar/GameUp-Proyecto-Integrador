@@ -9,6 +9,7 @@ import {
 import {
   AccountNotAllowedError,
   InvalidCredentialsError,
+  SignInUnavailableError,
 } from '../../authErrors';
 import { createHttpRepositories } from '../createHttpRepositories';
 import { createMemoryTokenStore } from '../tokenStore';
@@ -83,9 +84,15 @@ describe('AuthRepository (HTTP)', () => {
   });
 
   it('503 o sin red: no son credenciales inválidas', async () => {
+    // 503: respondió el backend, pero no la API de seguridad.
     const down = setup(() => errorResponse(503, 'API de seguridad caída'));
     await expect(
       down.repos.auth.signIn({ email: 'a@b.co', password: 'x' }),
+    ).rejects.toBeInstanceOf(SignInUnavailableError);
+
+    const broken = setup(() => errorResponse(500, 'Error interno'));
+    await expect(
+      broken.repos.auth.signIn({ email: 'a@b.co', password: 'x' }),
     ).rejects.toBeInstanceOf(ServerError);
 
     const offline = setup(() => {

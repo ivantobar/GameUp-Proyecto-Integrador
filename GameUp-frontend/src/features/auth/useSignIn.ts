@@ -2,6 +2,7 @@ import { useState } from 'react';
 import {
   AccountNotAllowedError,
   InvalidCredentialsError,
+  SignInUnavailableError,
 } from '@/data/authErrors';
 import { useRepositories } from '@/data/RepositoryProvider';
 import type { AuthSession } from '@/data/types';
@@ -13,11 +14,13 @@ import {
 } from './credentials';
 
 /** Por qué no se pudo entrar, cuando el formulario estaba bien escrito. */
-export type SignInProblem = 'invalid' | 'notAllowed' | 'connection';
+export type SignInProblem =
+  'invalid' | 'notAllowed' | 'unavailable' | 'connection';
 
 function problemOf(error: unknown): SignInProblem {
   if (error instanceof InvalidCredentialsError) return 'invalid';
   if (error instanceof AccountNotAllowedError) return 'notAllowed';
+  if (error instanceof SignInUnavailableError) return 'unavailable';
   return 'connection';
 }
 

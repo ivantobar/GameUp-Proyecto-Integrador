@@ -1,6 +1,14 @@
 import type { ApiClient } from '@/services/api';
-import { ForbiddenError, UnauthorizedError } from '@/services/apiErrors';
-import { AccountNotAllowedError, InvalidCredentialsError } from '../authErrors';
+import {
+  ForbiddenError,
+  ServerError,
+  UnauthorizedError,
+} from '@/services/apiErrors';
+import {
+  AccountNotAllowedError,
+  InvalidCredentialsError,
+  SignInUnavailableError,
+} from '../authErrors';
 import type { AuthRepository } from '../repositories';
 import type { LoginDto, LoginRespuestaDto } from './dto/auth';
 import { toAuthSession } from './mappers/sessionMapper';
@@ -41,6 +49,11 @@ export function createHttpAuthRepository(
         if (error instanceof UnauthorizedError)
           throw new InvalidCredentialsError();
         if (error instanceof ForbiddenError) throw new AccountNotAllowedError();
+        // 503: el backend respondió, pero la API de seguridad no (por
+        // ejemplo, se estaba despertando en Render). No es la red del teléfono.
+        if (error instanceof ServerError && error.status === 503) {
+          throw new SignInUnavailableError();
+        }
         throw error;
       }
 
