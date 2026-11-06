@@ -2,7 +2,9 @@ import type { Configuracion } from '../../catalogo/domain/juegos/estrategia-jueg
 import type { Intento } from './intento.entity.js';
 
 export interface NuevoIntento {
-  asignacionId: bigint;
+  /** null: intento de la escalera de niveles. */
+  asignacionId: bigint | null;
+  estudianteId: bigint;
   actividadId: bigint;
   resultado: Configuracion;
   estrellas: number;

@@ -36,12 +36,15 @@ model actividad {
   configuracion       Json                  @default("{}")
   orden               Int                   @default(0)
   activa              Boolean               @default(true)
+  /// Nivel (1-5) de la escalera del juego; solo en el módulo de la escalera.
+  nivel_juego         Int?                  @db.SmallInt
   modulo              modulo                @relation(fields: [modulo_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   tipo_juego          tipo_juego            @relation(fields: [tipo_juego_id], references: [id], onUpdate: NoAction)
   actividad_contenido actividad_contenido[]
   intento             intento[]
  
   @@unique([id, modulo_id], map: "uq_actividad_id_modulo")
+  @@unique([tipo_juego_id, nivel_juego], map: "uq_actividad_nivel_juego", where: raw("((nivel_juego IS NOT NULL) AND activa)"))
   @@index([modulo_id, orden], map: "ix_actividad_modulo")
   @@index([tipo_juego_id], map: "ix_actividad_tipo_juego")
 }
@@ -140,6 +143,9 @@ model estudiante {
   nivel                 nivel                   @relation(fields: [nivel_id], references: [id], onUpdate: NoAction)
   usuario               usuario                 @relation(fields: [usuario_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   historial_nivel       historial_nivel[]
+  historial_nivel_juego historial_nivel_juego[]
+  intento               intento[]
+  nivel_juego_estudiante nivel_juego_estudiante[]
   observacion           observacion[]
   practica_casa         practica_casa[]
   tallerista_estudiante tallerista_estudiante[]
@@ -183,20 +189,27 @@ model historial_nivel {
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model intento {
   id                   BigInt                @id @default(autoincrement())
-  asignacion_id        BigInt
+  /// Vacío en los intentos de la escalera de niveles (no tienen asignación).
+  asignacion_id        BigInt?
   actividad_id         BigInt
+  /// De quién es el intento. Con asignación, es el estudiante de la asignación.
+  estudiante_id        BigInt
   numero_intento       Int
   resultado            Json                  @default("{}")
   estrellas            Int                   @default(0)
   fecha                DateTime              @default(now()) @db.Timestamptz(6)
   grabacion_estudiante grabacion_estudiante?
   actividad            actividad             @relation(fields: [actividad_id], references: [id], onUpdate: NoAction)
-  asignacion           asignacion            @relation(fields: [asignacion_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  asignacion           asignacion?           @relation(fields: [asignacion_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  estudiante           estudiante            @relation(fields: [estudiante_id], references: [usuario_id], onDelete: Cascade, onUpdate: NoAction)
+  historial_nivel_juego historial_nivel_juego?
   validacion           validacion?
  
   @@unique([asignacion_id, actividad_id, numero_intento], map: "uq_intento")
+  @@unique([estudiante_id, actividad_id, numero_intento], map: "uq_intento_escalera", where: raw("(asignacion_id IS NULL)"))
   @@index([actividad_id], map: "ix_intento_actividad")
   @@index([asignacion_id], map: "ix_intento_asignacion")
+  @@index([estudiante_id, actividad_id], map: "ix_intento_estudiante")
 }
  
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -213,6 +226,8 @@ model modulo {
   publicado    Boolean      @default(false)
   orden        Int          @default(0)
   creado_en    DateTime     @default(now()) @db.Timestamptz(6)
+  /// Módulo con las actividades de la escalera de niveles por juego: no se asigna.
+  es_escalera  Boolean      @unique(map: "uq_modulo_escalera", where: raw("es_escalera")) @default(false)
   actividad    actividad[]
   asignacion   asignacion[]
   contenido    contenido[]
@@ -281,6 +296,51 @@ model observacion {
   @@index([estudiante_id, fecha(sort: Desc)], map: "ix_observacion_estudiante")
 }
 
+/// Migración 20261106000000_niveles_por_juego. Nivel actual (1-5) de cada estudiante en
+/// cada juego con escalera (Emparejar, Clasificar, Secuenciar y Memoria).
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model nivel_juego_estudiante {
+  estudiante_id  BigInt
+  tipo_juego_id  BigInt
+  nivel_actual   Int        @default(1) @db.SmallInt
+  completado     Boolean    @default(false)
+  actualizado_en DateTime   @default(now()) @db.Timestamptz(6)
+  estudiante     estudiante @relation(fields: [estudiante_id], references: [usuario_id], onDelete: Cascade, onUpdate: NoAction)
+  tipo_juego     tipo_juego @relation(fields: [tipo_juego_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@id([estudiante_id, tipo_juego_id])
+  @@index([tipo_juego_id], map: "ix_nivel_juego_est_tipo")
+}
+
+/// Migración 20261106000000_niveles_por_juego. Cada subida (VALIDACION) o ajuste manual
+/// (AJUSTE, con motivo) del nivel de un estudiante en un juego.
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+/// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
+model historial_nivel_juego {
+  id             BigInt     @id @default(autoincrement())
+  estudiante_id  BigInt
+  tipo_juego_id  BigInt
+  nivel_anterior Int        @db.SmallInt
+  nivel_nuevo    Int        @db.SmallInt
+  completado     Boolean
+  origen         String
+  intento_id     BigInt?    @unique(map: "uq_histnivjuego_intento", where: raw("(intento_id IS NOT NULL)"))
+  cambiado_por   BigInt
+  motivo         String?
+  fecha          DateTime   @default(now()) @db.Timestamptz(6)
+  estudiante     estudiante @relation(fields: [estudiante_id], references: [usuario_id], onDelete: Cascade, onUpdate: NoAction)
+  tipo_juego     tipo_juego @relation(fields: [tipo_juego_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  intento        intento?   @relation(fields: [intento_id], references: [id], onUpdate: NoAction)
+  usuario        usuario    @relation(fields: [cambiado_por], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([estudiante_id, tipo_juego_id, fecha(sort: Desc)], map: "ix_histnivjuego_estudiante")
+  @@index([tipo_juego_id], map: "ix_histnivjuego_tipo")
+  @@index([cambiado_por], map: "ix_histnivjuego_cambiado_por")
+}
+
 /// Migración 20261105120000_practica_casa. Escrito a mano (no hay base local para `db pull`):
 /// al aplicarla en una base local, compáralo con lo que genere `npx prisma db pull`.
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
@@ -326,6 +386,8 @@ model tipo_juego {
   nombre      String
   descripcion String?
   actividad   actividad[]
+  historial_nivel_juego  historial_nivel_juego[]
+  nivel_juego_estudiante nivel_juego_estudiante[]
 }
  
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -348,6 +410,7 @@ model usuario {
   asignacion            asignacion[]
   estudiante            estudiante?
   historial_nivel       historial_nivel[]
+  historial_nivel_juego historial_nivel_juego[]
   modulo                modulo[]
   notificacion          notificacion[]
   observacion           observacion[]

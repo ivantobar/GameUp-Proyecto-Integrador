@@ -26,6 +26,7 @@ import type {
 const SELECCION_PENDIENTE = {
   id: true,
   asignacion_id: true,
+  estudiante_id: true,
   actividad_id: true,
   numero_intento: true,
   fecha: true,
@@ -39,11 +40,7 @@ const SELECCION_PENDIENTE = {
       modulo: { select: { id: true, nombre: true } },
     },
   },
-  asignacion: {
-    select: {
-      estudiante: { select: { usuario: { select: SELECCION_PERSONA } } },
-    },
-  },
+  estudiante: { select: { usuario: { select: SELECCION_PERSONA } } },
   grabacion_estudiante: { select: { eliminada_en: true } },
 } satisfies Prisma.intentoSelect;
 
@@ -79,19 +76,16 @@ export class PrismaValidacionRepository
     estudianteId: bigint | null,
     paginacion: Paginacion,
   ): Promise<Pagina<ItemRevision>> {
-    const asignacion: Prisma.asignacionWhereInput = {};
+    // Por el estudiante del intento: con o sin asignación (escalera).
+    const where: Prisma.intentoWhereInput = { validacion: { is: null } };
     if (alcance.tipo === 'tallerista') {
-      asignacion.estudiante = {
+      where.estudiante = {
         tallerista_estudiante: {
           some: { tallerista_id: alcance.talleristaId, activo: true },
         },
       };
     }
-    if (estudianteId !== null) asignacion.estudiante_id = estudianteId;
-    const where: Prisma.intentoWhereInput = {
-      validacion: { is: null },
-      asignacion,
-    };
+    if (estudianteId !== null) where.estudiante_id = estudianteId;
 
     const [filas, total] = await this.prisma.$transaction([
       this.prisma.intento.findMany({
@@ -105,24 +99,30 @@ export class PrismaValidacionRepository
       this.prisma.intento.count({ where }),
     ]);
 
-    // Cuántos pendientes hay de cada actividad («intento n de n»).
+    // Cuántos pendientes hay de cada actividad («intento n de n»), por
+    // estudiante y asignación (vacía en la escalera).
     const grupos =
       filas.length === 0
         ? []
         : await this.prisma.intento.groupBy({
-            by: ['asignacion_id', 'actividad_id'],
+            by: ['asignacion_id', 'estudiante_id', 'actividad_id'],
             where: {
               validacion: { is: null },
               OR: filas.map((f) => ({
                 asignacion_id: f.asignacion_id,
+                estudiante_id: f.estudiante_id,
                 actividad_id: f.actividad_id,
               })),
             },
             _count: { _all: true },
           });
-    const pendientesDe = (a: bigint, b: bigint) =>
-      grupos.find((g) => g.asignacion_id === a && g.actividad_id === b)?._count
-        ._all ?? 1;
+    const pendientesDe = (f: (typeof filas)[number]) =>
+      grupos.find(
+        (g) =>
+          g.asignacion_id === f.asignacion_id &&
+          g.estudiante_id === f.estudiante_id &&
+          g.actividad_id === f.actividad_id,
+      )?._count._all ?? 1;
 
     const items = filas.map((f): ItemRevision => {
       const codigo = f.actividad.tipo_juego.codigo;
@@ -135,14 +135,14 @@ export class PrismaValidacionRepository
         fecha: f.fecha,
         tipoJuego: codigo,
         resultado: (f.resultado ?? {}) as Configuracion,
-        estudiante: f.asignacion.estudiante.usuario,
+        estudiante: f.estudiante.usuario,
         actividad: {
           id: f.actividad.id,
           titulo: f.actividad.titulo,
           vocal: typeof vocal === 'string' ? vocal : null,
         },
         modulo: f.actividad.modulo,
-        pendientesMismaActividad: pendientesDe(f.asignacion_id, f.actividad_id),
+        pendientesMismaActividad: pendientesDe(f),
         // Sin validar, eliminada_en solo puede venir del plazo de 30 días.
         grabacion: g
           ? {

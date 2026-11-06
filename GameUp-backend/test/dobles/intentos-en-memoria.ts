@@ -81,6 +81,9 @@ export class IntentosEnMemoria
   }
 
   async registrar(d: NuevoIntento): Promise<Intento> {
+    // Los intentos de la escalera (sin asignación) llegan en la fase 3.
+    if (d.asignacionId === null)
+      throw new Error('doble: intento sin asignación no soportado todavía');
     const asignacion = this.asignaciones.filas.find(
       (a) => a.id === d.asignacionId,
     )!;

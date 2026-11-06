@@ -23,7 +23,8 @@ export type EstadoGrabacion = (typeof ESTADOS_GRABACION)[number];
 
 export interface Intento {
   id: bigint;
-  asignacionId: bigint;
+  /** null: intento de la escalera de niveles (no tiene asignación). */
+  asignacionId: bigint | null;
   actividadId: bigint;
   estudianteId: bigint;
   tipoJuego: CodigoJuego;

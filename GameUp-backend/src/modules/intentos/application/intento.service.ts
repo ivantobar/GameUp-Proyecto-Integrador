@@ -55,6 +55,7 @@ export class IntentoService {
 
     return this.escritura.registrar({
       asignacionId: asignacion.id,
+      estudianteId: asignacion.estudiante.id,
       actividadId: actividad.id,
       resultado: validado,
       // Las estrellas son de práctica de vocales; los demás juegos no dan nota.
