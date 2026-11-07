@@ -350,12 +350,12 @@ export function createFakeBackend() {
     }
     if (esPersonal && method === 'GET' && ruta === '/asignaciones') {
       const id = params.get('estudianteId');
+      const estado = params.get('estado');
       const ids = id ? [id] : visibles;
       const items = ids
         .filter((e) => visibles.includes(e))
-        .flatMap((e) =>
-          (asignaciones[e] ?? []).map((a) => asignacionDto(e, a)),
-        );
+        .flatMap((e) => (asignaciones[e] ?? []).map((a) => asignacionDto(e, a)))
+        .filter((a) => !estado || a.estado === estado);
       return jsonResponse(200, {
         items,
         total: items.length,

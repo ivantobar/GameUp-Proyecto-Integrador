@@ -3,12 +3,14 @@ import { router } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 import {
   AppText,
+  Button,
   InitialsAvatar,
   PressableCard,
   ProgressBar,
   Screen,
   ScreenHeader,
   StateView,
+  TextField,
 } from '@/components/ui';
 import { useRefreshOnFocus } from '@/data/useRefreshOnFocus';
 import { spacing } from '@/theme';
@@ -22,6 +24,8 @@ interface StudentRosterViewProps {
   emptyTitle: string;
   emptyMessage?: string;
   headerRight?: ReactNode;
+  /** Muestra «Buscar por nombre» (la directora ve a todos). */
+  searchable?: boolean;
 }
 
 /**
@@ -35,8 +39,10 @@ export function StudentRosterView({
   emptyTitle,
   emptyMessage,
   headerRight,
+  searchable = false,
 }: StudentRosterViewProps) {
-  const { resource, reload, refresh } = useStudentRoster();
+  const roster = useStudentRoster();
+  const { resource, reload, refresh, rows } = roster;
   useRefreshOnFocus(refresh);
 
   return (
@@ -59,15 +65,43 @@ export function StudentRosterView({
         <StateView kind="empty" title={emptyTitle} message={emptyMessage} />
       ) : null}
       {resource.status === 'ready' && resource.data.length > 0 ? (
-        <View style={styles.list}>
-          {resource.data.map((row) => (
-            <StudentRow
-              key={row.student.id}
-              row={row}
-              onPress={() => router.push(routes.detail(row.student.id))}
+        <>
+          {searchable ? (
+            <TextField
+              label="Buscar por nombre"
+              value={roster.query}
+              onChangeText={roster.setQuery}
+              autoCorrect={false}
+              autoCapitalize="none"
+              testID="buscar-estudiante"
             />
-          ))}
-        </View>
+          ) : null}
+          {rows.length === 0 ? (
+            <StateView
+              kind="empty"
+              title="No encontramos a nadie con ese nombre"
+              message="Revisa cómo está escrito."
+            />
+          ) : (
+            <View style={styles.list}>
+              {rows.map((row) => (
+                <StudentRow
+                  key={row.student.id}
+                  row={row}
+                  onPress={() => router.push(routes.detail(row.student.id))}
+                />
+              ))}
+            </View>
+          )}
+          {roster.hasMore ? (
+            <Button
+              label="Ver más"
+              variant="secondary"
+              accessibilityHint={`Hay ${roster.matchCount} en total`}
+              onPress={roster.showMore}
+            />
+          ) : null}
+        </>
       ) : null}
     </Screen>
   );
@@ -76,9 +110,11 @@ export function StudentRosterView({
 function StudentRow({ row, onPress }: { row: RosterRow; onPress: () => void }) {
   const { student, percent } = row;
   const progressText =
-    percent === null
-      ? 'Progreso no disponible'
-      : `Progreso oficial: ${percent} %`;
+    percent === undefined
+      ? 'Buscando su progreso…'
+      : percent === null
+        ? 'Progreso no disponible'
+        : `Progreso oficial: ${percent} %`;
   return (
     <PressableCard
       onPress={onPress}
@@ -89,7 +125,7 @@ function StudentRow({ row, onPress }: { row: RosterRow; onPress: () => void }) {
         <InitialsAvatar initials={student.initials} />
         <View style={styles.texts}>
           <AppText variant="bodyStrong">{student.displayName}</AppText>
-          {percent === null ? (
+          {percent === null || percent === undefined ? (
             <AppText variant="support" tone="secundario">
               {progressText}
             </AppText>

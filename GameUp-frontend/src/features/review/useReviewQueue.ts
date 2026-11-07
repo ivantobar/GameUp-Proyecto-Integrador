@@ -45,8 +45,9 @@ function errorText(error: unknown): string {
 }
 
 /**
- * «Por escuchar»: actividades pendientes de los estudiantes asignados al
- * docente, y sus acciones (validar, pedir práctica, nota de voz).
+ * «Por escuchar» (docente) y «Por validar» (directora): actividades
+ * pendientes que le corresponden a la sesión, y sus acciones (validar,
+ * pedir práctica, nota de voz).
  */
 export function useReviewQueue() {
   const { staff, reviews } = useRepositories();
@@ -54,7 +55,8 @@ export function useReviewQueue() {
   const [busyId, setBusyId] = useState<string | null>(null);
 
   const load = useCallback(async (): Promise<ReviewQueue> => {
-    const teacher = await staff.getCurrentTeacher();
+    // Docente o directora: el backend decide qué intentos le corresponden.
+    const teacher = await staff.getCurrentStaff();
     const items = await reviews.listPendingReviews(teacher.id);
     return { teacher, items };
   }, [staff, reviews]);

@@ -2,6 +2,7 @@ import type {
   ActivityContent,
   AssignableModule,
   Assignment,
+  AssignmentState,
   AuthSession,
   Credentials,
   GameLevel,
@@ -145,6 +146,11 @@ export interface ProgressRepository {
 }
 
 export interface StaffRepository {
+  /**
+   * Adulto con sesión, sea docente o directora (por ejemplo, para «Por
+   * escuchar» y «Por validar»). Con la API sale de `GET /auth/me`.
+   */
+  getCurrentStaff(): Promise<StaffProfile>;
   /** Docente con sesión. Con la API saldrá del token. */
   getCurrentTeacher(): Promise<StaffProfile>;
   /** Acudiente con sesión. */
@@ -238,6 +244,19 @@ export interface AssignmentManagementRepository {
   remove(assignmentId: string): Promise<void>;
 }
 
+/**
+ * Cifras del «Resumen» de la directora. Cada una es una consulta aparte:
+ * si una falla, las demás se siguen mostrando.
+ */
+export interface OverviewRepository {
+  /** Estudiantes que puede ver la sesión. */
+  countStudents(): Promise<number>;
+  /** Actividades que esperan validación. */
+  countPendingReviews(): Promise<number>;
+  /** Asignaciones en ese estado. */
+  countAssignments(state: AssignmentState): Promise<number>;
+}
+
 /** Conjunto de repositorios que se inyecta en la app. */
 export interface Repositories {
   auth: AuthRepository;
@@ -255,4 +274,5 @@ export interface Repositories {
   guardians: GuardianRepository;
   directory: StudentDirectoryRepository;
   assignmentManagement: AssignmentManagementRepository;
+  overview: OverviewRepository;
 }

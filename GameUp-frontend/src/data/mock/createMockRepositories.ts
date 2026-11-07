@@ -246,7 +246,9 @@ export function createMockRepositories({
    */
   const visibleStudents = (): string[] => {
     const session = state.session;
-    if (session?.role === 'director') return Object.keys(mockStudentSummaries);
+    if (session?.role === 'director') {
+      return Object.keys(mockStudentSummaries);
+    }
     if (session?.role === 'guardian') {
       const own = mockGuardianStudents[session.userId];
       return own ? [own] : [];
@@ -472,6 +474,16 @@ export function createMockRepositories({
       },
     },
     staff: {
+      getCurrentStaff: () => {
+        const session = state.session;
+        if (session?.role === 'director' || session?.role === 'guardian') {
+          return respond({
+            id: session.userId,
+            displayName: session.displayName,
+          });
+        }
+        return respond(mockTeacher);
+      },
       getCurrentTeacher: () => respond(mockTeacher),
       getCurrentGuardian: () => respond(mockGuardian),
     },
@@ -493,7 +505,11 @@ export function createMockRepositories({
         return respond(undefined);
       },
       listPendingReviews: (teacherId) => {
-        const mine = mockTeacherStudents[teacherId] ?? [];
+        // Como el backend: la directora ve los de todos; la docente, los suyos.
+        const mine =
+          state.session?.role === 'director'
+            ? Object.keys(mockStudentSummaries)
+            : (mockTeacherStudents[teacherId] ?? []);
         return respond(
           state.reviews.filter(
             (r) =>
@@ -646,6 +662,26 @@ export function createMockRepositories({
         }
         return respond(undefined);
       },
+    },
+    overview: {
+      countStudents: () =>
+        canAssign()
+          ? respond(visibleStudents().length)
+          : rejectWith(new AssignmentError('notAllowed')),
+      countPendingReviews: () =>
+        respond(
+          state.reviews.filter(
+            (r) =>
+              r.status === 'pending_validation' &&
+              visibleStudents().includes(r.student.id),
+          ).length,
+        ),
+      countAssignments: (assignmentState) =>
+        respond(
+          visibleStudents()
+            .flatMap((id) => assignmentsOf(id))
+            .filter((a) => a.state === assignmentState).length,
+        ),
     },
     guardians: {
       listStudents: (guardianId) => {

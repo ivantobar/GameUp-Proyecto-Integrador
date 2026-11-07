@@ -439,6 +439,47 @@ describe.each(implementations)('contrato de la versión %s', (_name, create) => 
     });
   });
 
+  describe('espacio de la directora', () => {
+    beforeEach(async () => {
+      await signInAs('directora@gameup.test');
+    });
+
+    it('la sesión es un StaffProfile, aunque no sea docente', async () => {
+      const staff = await settle(repos.staff.getCurrentStaff());
+      expect(Object.keys(staff).sort()).toEqual(['displayName', 'id']);
+    });
+
+    it('ve más estudiantes que la docente (Lucía no es de la docente)', async () => {
+      const students = await settle(repos.directory.listStudents());
+      expect(students.map((s) => s.id)).toContain('est-demo-004');
+    });
+
+    it('el resumen son números enteros', async () => {
+      const counts = await Promise.all([
+        settle(repos.overview.countStudents()),
+        settle(repos.overview.countPendingReviews()),
+        settle(repos.overview.countAssignments('assigned')),
+        settle(repos.overview.countAssignments('inProgress')),
+        settle(repos.overview.countAssignments('completed')),
+      ]);
+      counts.forEach((n) => {
+        expect(Number.isInteger(n)).toBe(true);
+        expect(n).toBeGreaterThanOrEqual(0);
+      });
+      expect(counts[0]).toBe(4);
+    });
+
+    it('puede asignar a una estudiante que no es de la docente', async () => {
+      const created = await settle(
+        repos.assignmentManagement.assign({
+          moduleId: 'routines',
+          studentId: 'est-demo-004',
+        }),
+      );
+      expect(created.state).toBe('assigned');
+    });
+  });
+
   describe('asignaciones de la tallerista', () => {
     beforeEach(async () => {
       await signInAs('docente@gameup.test');

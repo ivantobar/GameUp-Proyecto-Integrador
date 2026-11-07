@@ -17,3 +17,11 @@ export const teacherRoutes: StaffRoutes = {
     params: { id },
   }),
 };
+
+export const directorRoutes: StaffRoutes = {
+  detail: (id) => ({ pathname: '/director/student/[id]', params: { id } }),
+  assign: (id) => ({
+    pathname: '/director/student/[id]/assign',
+    params: { id },
+  }),
+};

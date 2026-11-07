@@ -28,12 +28,12 @@ describe('validateCredentials', () => {
 });
 
 describe('roleHomes', () => {
-  it('cada rol con pantallas tiene su inicio; la directora todavía no', () => {
+  it('cada rol tiene su inicio (también la directora)', () => {
     expect(roleHomes).toEqual({
       student: '/student',
       teacher: '/teacher',
       guardian: '/guardian',
-      director: null,
+      director: '/director',
     });
   });
 });

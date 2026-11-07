@@ -1,45 +1,129 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRepositories } from '@/data/RepositoryProvider';
 import { useResource } from '@/data/useResource';
 import type { StudentSummary } from '@/data/types';
 import { overallPercent } from './assignmentText';
-import { runLimited } from './runLimited';
+import { createLimiter } from './runLimited';
 
 /** Pedidos de progreso a la vez: no satura la red ni el backend. */
 export const PROGRESS_CONCURRENCY = 5;
+/** Filas que se muestran de una vez («Ver más» agrega otras tantas). */
+export const ROSTER_PAGE_SIZE = 20;
 
 export interface RosterRow {
   student: StudentSummary;
   /**
-   * Progreso oficial de 0 a 100 (solo lo validado), o `null` si no se pudo
-   * cargar: esa fila dice «Progreso no disponible» y las demás siguen.
+   * Progreso oficial de 0 a 100 (solo lo validado); `null` si no se pudo
+   * cargar («Progreso no disponible»); `undefined` mientras se pide.
    */
-  percent: number | null;
+  percent: number | null | undefined;
+}
+
+/** Sin mayúsculas ni tildes: «maria» encuentra a «María». */
+export function normalizeName(text: string): string {
+  const lower = text.trim().toLowerCase();
+  return typeof lower.normalize === 'function'
+    ? lower.normalize('NFD').replace(/[̀-ͯ]/g, '')
+    : lower;
 }
 
 /**
- * Estudiantes que puede ver el adulto con sesión, cada uno con su progreso
- * oficial. Si falla la lista, falla la pantalla; si falla el progreso de un
- * estudiante, solo esa fila.
+ * Estudiantes que puede ver el adulto con sesión, con búsqueda por nombre
+ * (en el teléfono: el backend no la ofrece) y su progreso oficial.
+ *
+ * La lista completa es barata; el progreso, no: se pide solo para las filas
+ * visibles, de a `ROSTER_PAGE_SIZE`, con a lo sumo `PROGRESS_CONCURRENCY`
+ * pedidos a la vez en total. Si falla el de un estudiante, solo esa fila
+ * queda sin progreso.
  */
 export function useStudentRoster() {
   const { directory } = useRepositories();
+  const load = useCallback(() => directory.listStudents(), [directory]);
+  const { resource, reload, refresh: refreshList } = useResource(load);
 
-  const load = useCallback(async (): Promise<RosterRow[]> => {
-    const students = await directory.listStudents();
-    const progress = await runLimited(
-      students,
-      PROGRESS_CONCURRENCY,
-      (student) => directory.getStudentProgress(student.id),
+  const [query, setQueryValue] = useState('');
+  const [limit, setLimit] = useState(ROSTER_PAGE_SIZE);
+  const [progress, setProgress] = useState<Record<string, number | null>>({});
+  /** Sube con cada «refresh»: las filas visibles vuelven a pedir su progreso. */
+  const [version, setVersion] = useState(0);
+  /** Versión ya pedida (o en curso) de cada estudiante. */
+  const requested = useRef(new Map<string, number>());
+  const limiter = useMemo(() => createLimiter(PROGRESS_CONCURRENCY), []);
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+
+  const students = useMemo(
+    () => (resource.status === 'ready' ? resource.data : []),
+    [resource],
+  );
+  const matches = useMemo(() => {
+    const wanted = normalizeName(query);
+    if (!wanted) return students;
+    return students.filter((s) =>
+      normalizeName(s.displayName).includes(wanted),
     );
-    return students.map((student, index) => {
-      const result = progress[index];
-      return {
-        student,
-        percent: result?.ok ? overallPercent(result.value) : null,
-      };
-    });
-  }, [directory]);
+  }, [students, query]);
+  const visible = useMemo(() => matches.slice(0, limit), [matches, limit]);
 
-  return useResource(load);
+  useEffect(() => {
+    visible
+      .filter((s) => requested.current.get(s.id) !== version)
+      .forEach((student) => {
+        requested.current.set(student.id, version);
+        limiter(() => directory.getStudentProgress(student.id)).then(
+          (value) => {
+            if (mounted.current) {
+              setProgress((prev) => ({
+                ...prev,
+                [student.id]: overallPercent(value),
+              }));
+            }
+          },
+          () => {
+            if (mounted.current) {
+              setProgress((prev) => ({ ...prev, [student.id]: null }));
+            }
+          },
+        );
+      });
+  }, [visible, version, directory, limiter]);
+
+  const setQuery = useCallback((text: string) => {
+    setQueryValue(text);
+    setLimit(ROSTER_PAGE_SIZE);
+  }, []);
+
+  const showMore = useCallback(
+    () => setLimit((value) => value + ROSTER_PAGE_SIZE),
+    [],
+  );
+
+  /** Vuelve a pedir la lista y el progreso visible, sin ocultar lo que se ve. */
+  const refresh = useCallback(() => {
+    refreshList();
+    setVersion((value) => value + 1);
+  }, [refreshList]);
+
+  const rows: RosterRow[] = visible.map((student) => ({
+    student,
+    percent: progress[student.id],
+  }));
+
+  return {
+    resource,
+    reload,
+    refresh,
+    query,
+    setQuery,
+    rows,
+    /** Cuántos coinciden con la búsqueda (o todos, sin búsqueda). */
+    matchCount: matches.length,
+    hasMore: matches.length > visible.length,
+    showMore,
+  };
 }

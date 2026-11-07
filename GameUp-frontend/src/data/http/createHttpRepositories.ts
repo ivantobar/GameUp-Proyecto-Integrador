@@ -4,6 +4,7 @@ import { createHttpAssignmentManagementRepository } from './httpAssignmentManage
 import { createHttpAuthRepository } from './httpAuthRepository';
 import { createHttpGuardianRepository } from './httpGuardianRepository';
 import { createHttpLevelRepository } from './httpLevelRepository';
+import { createHttpOverviewRepository } from './httpOverviewRepository';
 import { createHttpReviewRepository } from './httpReviewRepository';
 import { createHttpStaffRepository } from './httpStaffRepository';
 import {
@@ -42,5 +43,6 @@ export function createHttpRepositories(
     guardians: createHttpGuardianRepository(api),
     directory: createHttpStudentDirectoryRepository(api),
     assignmentManagement: createHttpAssignmentManagementRepository(api),
+    overview: createHttpOverviewRepository(api),
   };
 }

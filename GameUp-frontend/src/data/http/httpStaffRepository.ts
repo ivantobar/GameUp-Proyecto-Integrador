@@ -13,6 +13,7 @@ export function createHttpStaffRepository(api: ApiClient): StaffRepository {
     toStaffProfile(await api.get<SesionUsuarioDto>('/auth/me'));
 
   return {
+    getCurrentStaff: currentUser,
     getCurrentTeacher: currentUser,
     getCurrentGuardian: currentUser,
   };

@@ -139,11 +139,17 @@ export const mockStudentSummaries: Record<string, StudentSummary> = {
     displayName: 'Samuel O.',
     initials: 'SO',
   },
+  // No está a cargo de la docente: solo la ve la directora.
+  'est-demo-004': {
+    id: 'est-demo-004',
+    displayName: 'Lucía R.',
+    initials: 'LR',
+  },
 };
 
-/** Docente → estudiantes asignados. */
+/** Docente → estudiantes asignados (Lucía no es suya). */
 export const mockTeacherStudents: Record<string, string[]> = {
-  [mockTeacher.id]: Object.keys(mockStudentSummaries),
+  [mockTeacher.id]: [mockStudent.id, 'est-demo-002', 'est-demo-003'],
 };
 
 /**
@@ -263,6 +269,16 @@ export const mockStudentAssignments: Record<string, StudentAssignment[]> = {
   ],
   // Samuel todavía no tiene módulos asignados.
   'est-demo-003': [],
+  'est-demo-004': [
+    {
+      id: 'asig-demo-006',
+      moduleId: 'numbers',
+      moduleTitle: 'Números',
+      state: 'completed',
+      progress: 100,
+      suggestedDate: null,
+    },
+  ],
 };
 
 /** Acudiente → estudiante asociado (solo Martín). */
@@ -279,10 +295,11 @@ function hoursAgo(hours: number): string {
  * una grabación, juega «Habla conmigo» como estudiante y aparecerá arriba.
  */
 export function createSeedReviews(): ReviewItem[] {
-  const [martin, valentina, samuel] = [
+  const [martin, valentina, samuel, lucia] = [
     mockStudentSummaries[mockStudent.id],
     mockStudentSummaries['est-demo-002'],
     mockStudentSummaries['est-demo-003'],
+    mockStudentSummaries['est-demo-004'],
   ] as StudentSummary[];
   return [
     {
@@ -320,6 +337,15 @@ export function createSeedReviews(): ReviewItem[] {
       submittedAt: hoursAgo(28),
       status: 'pending_validation',
       listening: { firstTryCorrect: 4, total: 5 },
+    },
+    // De una estudiante que no es de la docente: solo la ve la directora.
+    {
+      id: 'rev-demo-004',
+      kind: 'listening',
+      student: lucia,
+      submittedAt: hoursAgo(30),
+      status: 'pending_validation',
+      listening: { firstTryCorrect: 3, total: 5 },
     },
   ];
 }
