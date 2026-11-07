@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 
 export type Resource<T> =
-  { status: 'loading' } | { status: 'error' } | { status: 'ready'; data: T };
+  | { status: 'loading' }
+  /** `error`: lo que falló, para elegir el mensaje (por ejemplo, sin permiso). */
+  | { status: 'error'; error?: unknown }
+  | { status: 'ready'; data: T };
 
 /**
  * Carga datos asíncronos y expone carga, error y listo, más `reload` para
@@ -19,7 +22,7 @@ export function useResource<T>(load: () => Promise<T>) {
       })
       .catch((error: unknown) => {
         console.warn('[GameUP] No se pudieron cargar los datos', error);
-        if (active) setResource({ status: 'error' });
+        if (active) setResource({ status: 'error', error });
       });
     return () => {
       active = false;

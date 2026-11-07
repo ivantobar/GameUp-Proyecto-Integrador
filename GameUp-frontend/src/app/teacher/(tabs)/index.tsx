@@ -44,6 +44,8 @@ export default function TeacherReviewScreen() {
 
   return (
     <Screen
+      // Dentro de las pestañas: la barra inferior ya respeta el borde.
+      safeAreaBottom={false}
       header={
         <ScreenHeader
           left={

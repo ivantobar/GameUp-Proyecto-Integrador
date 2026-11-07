@@ -447,3 +447,41 @@ export interface MemoryBoard {
   id: string;
   pairs: PictureFace[];
 }
+
+/*
+ * Gestión de asignaciones (docente y directora). Asignar un módulo a un
+ * estudiante empieza el ciclo realización → validación → progreso.
+ */
+
+/** Estado de un módulo asignado: asignado, en curso o completado. */
+export type AssignmentState = 'assigned' | 'inProgress' | 'completed';
+
+/** Un módulo asignado a un estudiante, con su avance oficial. */
+export interface StudentAssignment {
+  id: string;
+  moduleId: ModuleId;
+  /** Nombre del módulo («Vocal A»). */
+  moduleTitle: string;
+  state: AssignmentState;
+  /** Progreso oficial de 0 a 100: solo lo validado. */
+  progress: number;
+  /** Fecha sugerida para terminarlo (AAAA-MM-DD), o `null`. */
+  suggestedDate: string | null;
+}
+
+/** Módulo publicado que se puede asignar. */
+export interface AssignableModule {
+  id: ModuleId;
+  title: string;
+  description: string | null;
+  /** Nombre de su categoría («Lenguaje»). */
+  category: string;
+}
+
+/** Lo que se envía al asignar. */
+export interface NewAssignment {
+  moduleId: ModuleId;
+  studentId: string;
+  /** AAAA-MM-DD, no antes de hoy (hora de Bogotá). Opcional. */
+  suggestedDate?: string;
+}

@@ -7,6 +7,7 @@ import {
   type ResumePoint,
   type ReviewItem,
   type StaffProfile,
+  type StudentAssignment,
   type StudentProfile,
   type StudentSummary,
   type TeacherNote,
@@ -143,6 +144,125 @@ export const mockStudentSummaries: Record<string, StudentSummary> = {
 /** Docente → estudiantes asignados. */
 export const mockTeacherStudents: Record<string, string[]> = {
   [mockTeacher.id]: Object.keys(mockStudentSummaries),
+};
+
+/**
+ * Módulos de la fundación (ficticios). Solo los publicados se pueden
+ * asignar; «Borrador: sílabas» está para comprobar que no se ofrece.
+ * `activities`: cuántas actividades activas tiene (para el progreso).
+ */
+export interface MockModule {
+  id: string;
+  title: string;
+  description: string | null;
+  category: string;
+  published: boolean;
+  activities: number;
+}
+
+export const mockModules: MockModule[] = [
+  {
+    id: 'colors',
+    title: 'Colores',
+    description: 'Reconocer y nombrar colores',
+    category: 'Pensar y recordar',
+    published: true,
+    activities: 10,
+  },
+  {
+    id: 'numbers',
+    title: 'Números',
+    description: 'Contar del 1 al 10',
+    category: 'Pensar y recordar',
+    published: true,
+    activities: 20,
+  },
+  {
+    id: 'letters',
+    title: 'Letras',
+    description: 'Las vocales con la boca y la voz',
+    category: 'Lenguaje',
+    published: true,
+    activities: 10,
+  },
+  {
+    id: 'stories',
+    title: 'Cuentos',
+    description: null,
+    category: 'Lenguaje',
+    published: true,
+    activities: 6,
+  },
+  {
+    id: 'routines',
+    title: 'Rutinas de la casa',
+    description: 'Ordenar los pasos de cada día',
+    category: 'Pensar y recordar',
+    published: true,
+    activities: 4,
+  },
+  {
+    id: 'draft-syllables',
+    title: 'Borrador: sílabas',
+    description: null,
+    category: 'Lenguaje',
+    published: false,
+    activities: 0,
+  },
+];
+
+/**
+ * Módulos asignados a cada estudiante. Los de Martín coinciden con su
+ * «Mi progreso» (`mockOfficialProgress`). «Cuentos» no tiene intentos: se
+ * puede quitar; los demás ya empezaron.
+ */
+export const mockStudentAssignments: Record<string, StudentAssignment[]> = {
+  [mockStudent.id]: [
+    {
+      id: 'asig-demo-001',
+      moduleId: 'colors',
+      moduleTitle: 'Colores',
+      state: 'inProgress',
+      progress: 80,
+      suggestedDate: null,
+    },
+    {
+      id: 'asig-demo-002',
+      moduleId: 'numbers',
+      moduleTitle: 'Números',
+      state: 'inProgress',
+      progress: 55,
+      suggestedDate: null,
+    },
+    {
+      id: 'asig-demo-003',
+      moduleId: 'letters',
+      moduleTitle: 'Letras',
+      state: 'inProgress',
+      progress: 10,
+      suggestedDate: null,
+    },
+    {
+      id: 'asig-demo-004',
+      moduleId: 'stories',
+      moduleTitle: 'Cuentos',
+      state: 'assigned',
+      progress: 0,
+      suggestedDate: null,
+    },
+  ],
+  'est-demo-002': [
+    {
+      id: 'asig-demo-005',
+      moduleId: 'letters',
+      moduleTitle: 'Letras',
+      state: 'inProgress',
+      progress: 40,
+      suggestedDate: null,
+    },
+  ],
+  // Samuel todavía no tiene módulos asignados.
+  'est-demo-003': [],
 };
 
 /** Acudiente → estudiante asociado (solo Martín). */

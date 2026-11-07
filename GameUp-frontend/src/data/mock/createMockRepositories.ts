@@ -1,10 +1,13 @@
 import { InvalidCredentialsError } from '../authErrors';
+import { bogotaToday } from '../bogotaDate';
 import type { Repositories } from '../repositories';
+import { AssignmentError, StudentAccessError } from '../studentErrors';
 import {
   LADDER_GAMES,
   LADDER_LEVELS,
   MAX_STARS,
   type Assignment,
+  type AuthSession,
   type GameId,
   type GameLevel,
   type GameResult,
@@ -15,6 +18,7 @@ import {
   type ReviewItem,
   type SpeechAttempt,
   type StarCount,
+  type StudentAssignment,
   type StudentSummary,
   type TeacherNote,
   type VowelPractice,
@@ -29,9 +33,11 @@ import {
   mockAssignments,
   mockGuardian,
   mockGuardianStudents,
+  mockModules,
   mockOfficialProgress,
   mockResumePoint,
   mockStudent,
+  mockStudentAssignments,
   mockStudentSummaries,
   mockTeacher,
   mockTeacherNote,
@@ -134,6 +140,12 @@ export function createMockRepositories({
       [mockStudent.id]: clone<TeacherNote>(mockTeacherNote),
     } as Record<string, TeacherNote>,
     practicedDays: new Set<string>(),
+    /** Quién inició sesión (decide qué estudiantes ve). */
+    session: null as AuthSession | null,
+    studentAssignments: clone<Record<string, StudentAssignment[]>>(
+      mockStudentAssignments,
+    ),
+    nextAssignment: 100,
     /** Nivel de cada estudiante en cada juego (todos empiezan en el 1). */
     levels: {} as Record<
       string,
@@ -228,6 +240,53 @@ export function createMockRepositories({
       });
   };
 
+  /**
+   * Como el backend: la directora ve a todos; el acudiente, al suyo; la
+   * docente (o el «Modo desarrollo», sin sesión), a sus estudiantes.
+   */
+  const visibleStudents = (): string[] => {
+    const session = state.session;
+    if (session?.role === 'director') return Object.keys(mockStudentSummaries);
+    if (session?.role === 'guardian') {
+      const own = mockGuardianStudents[session.userId];
+      return own ? [own] : [];
+    }
+    if (session?.role === 'student') return [];
+    return mockTeacherStudents[mockTeacher.id] ?? [];
+  };
+  const canSee = (studentId: string) => visibleStudents().includes(studentId);
+  const canAssign = () =>
+    state.session?.role !== 'student' && state.session?.role !== 'guardian';
+
+  const assignmentsOf = (studentId: string): StudentAssignment[] => {
+    const list = state.studentAssignments[studentId] ?? [];
+    state.studentAssignments[studentId] = list;
+    return list;
+  };
+
+  /**
+   * Progreso oficial. El de Martín es el de «Mi progreso» (lo que valida la
+   * profe lo sube); el de los demás sale de sus asignaciones.
+   */
+  const progressOf = (studentId: string): OfficialProgress => {
+    if (studentId === mockStudent.id) {
+      return { ...state.progress, pendingValidation: pendingFor(studentId) };
+    }
+    return {
+      modules: assignmentsOf(studentId).map((a) => {
+        const total =
+          mockModules.find((m) => m.id === a.moduleId)?.activities ?? 0;
+        return {
+          moduleId: a.moduleId,
+          title: a.moduleTitle,
+          validated: Math.round((a.progress / 100) * total),
+          total,
+        };
+      }),
+      pendingValidation: pendingFor(studentId),
+    };
+  };
+
   /** Cambia el estado de la revisión y del intento original. */
   const setReviewStatus = (
     reviewId: string,
@@ -245,12 +304,16 @@ export function createMockRepositories({
 
   return {
     auth: {
-      signOut: () => respond(undefined),
+      signOut: () => {
+        state.session = null;
+        return respond(undefined);
+      },
       signIn: ({ email, password }) => {
         const session = mockAccounts[email.trim().toLowerCase()];
         if (!session || password !== MOCK_PASSWORD) {
           return rejectWith(new InvalidCredentialsError());
         }
+        state.session = session;
         return respond(session);
       },
     },
@@ -479,6 +542,108 @@ export function createMockRepositories({
           text: note?.text ?? '',
           audioUri,
         };
+        return respond(undefined);
+      },
+    },
+    directory: {
+      listStudents: () => respond(visibleStudents().map(summaryOf)),
+      getStudent: (studentId) =>
+        canSee(studentId)
+          ? respond(summaryOf(studentId))
+          : rejectWith(new StudentAccessError()),
+      getStudentProgress: (studentId) =>
+        canSee(studentId)
+          ? respond(progressOf(studentId))
+          : rejectWith(new StudentAccessError()),
+    },
+    assignmentManagement: {
+      listForStudent: (studentId) =>
+        canSee(studentId)
+          ? respond(assignmentsOf(studentId))
+          : rejectWith(new AssignmentError('notFound')),
+      listAssignableModules: () =>
+        canAssign()
+          ? respond(
+              mockModules
+                .filter((m) => m.published)
+                .map(({ id, title, description, category }) => ({
+                  id,
+                  title,
+                  description,
+                  category,
+                })),
+            )
+          : rejectWith(new AssignmentError('notAllowed')),
+      assign: ({ moduleId, studentId, suggestedDate }) => {
+        if (!canAssign()) return rejectWith(new AssignmentError('notAllowed'));
+        if (!canSee(studentId)) {
+          return rejectWith(new AssignmentError('notFound'));
+        }
+        if (suggestedDate !== undefined) {
+          if (!/^\d{4}-\d{2}-\d{2}$/.test(suggestedDate)) {
+            return rejectWith(new AssignmentError('invalid'));
+          }
+          if (suggestedDate < bogotaToday()) {
+            return rejectWith(new AssignmentError('notAssignable'));
+          }
+        }
+        const module = mockModules.find((m) => m.id === moduleId);
+        if (!module) return rejectWith(new AssignmentError('notFound'));
+        if (!module.published) {
+          return rejectWith(new AssignmentError('notAssignable'));
+        }
+        const list = assignmentsOf(studentId);
+        if (
+          list.some((a) => a.moduleId === moduleId && a.state !== 'completed')
+        ) {
+          return rejectWith(new AssignmentError('alreadyAssigned'));
+        }
+        state.nextAssignment += 1;
+        const created: StudentAssignment = {
+          id: `asig-demo-${state.nextAssignment}`,
+          moduleId,
+          moduleTitle: module.title,
+          state: 'assigned',
+          progress: 0,
+          suggestedDate: suggestedDate ?? null,
+        };
+        list.push(created);
+        // En «Mi progreso» de Martín aparece el módulo nuevo, en 0.
+        if (
+          studentId === mockStudent.id &&
+          !state.progress.modules.some((m) => m.moduleId === moduleId)
+        ) {
+          state.progress.modules.push({
+            moduleId,
+            title: module.title,
+            validated: 0,
+            total: module.activities,
+          });
+        }
+        return respond(created);
+      },
+      remove: (assignmentId) => {
+        if (!canAssign()) return rejectWith(new AssignmentError('notAllowed'));
+        const owner = Object.keys(state.studentAssignments).find((id) =>
+          assignmentsOf(id).some((a) => a.id === assignmentId),
+        );
+        if (!owner || !canSee(owner)) {
+          return rejectWith(new AssignmentError('notFound'));
+        }
+        const list = assignmentsOf(owner);
+        const target = list.find((a) => a.id === assignmentId);
+        // Como el backend: si ya hay intentos, no se puede quitar.
+        if (!target || target.state !== 'assigned' || target.progress > 0) {
+          return rejectWith(new AssignmentError('hasAttempts'));
+        }
+        state.studentAssignments[owner] = list.filter(
+          (a) => a.id !== assignmentId,
+        );
+        if (owner === mockStudent.id) {
+          state.progress.modules = state.progress.modules.filter(
+            (m) => m.moduleId !== target.moduleId,
+          );
+        }
         return respond(undefined);
       },
     },

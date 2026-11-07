@@ -1,5 +1,6 @@
 import type {
   ActivityContent,
+  AssignableModule,
   Assignment,
   AuthSession,
   Credentials,
@@ -10,6 +11,7 @@ import type {
   LevelUp,
   ListeningResult,
   NewGameResult,
+  NewAssignment,
   NewListeningResult,
   NewSpeechAttempt,
   OfficialProgress,
@@ -18,6 +20,7 @@ import type {
   StaffProfile,
   SpeechAttempt,
   StarCount,
+  StudentAssignment,
   StudentProfile,
   StudentSummary,
   Vowel,
@@ -208,6 +211,33 @@ export interface GuardianRepository {
   markPracticedToday(guardianId: string, studentId: string): Promise<void>;
 }
 
+/**
+ * Estudiantes que puede ver el adulto con sesión (docente: los suyos;
+ * directora: todos). El backend decide quiénes son; la app no filtra.
+ * Si el estudiante no le corresponde (403 o 404), rechaza con
+ * `StudentAccessError` (`./studentErrors`).
+ */
+export interface StudentDirectoryRepository {
+  listStudents(): Promise<StudentSummary[]>;
+  getStudent(studentId: string): Promise<StudentSummary>;
+  /** Progreso oficial de ese estudiante: solo lo validado. */
+  getStudentProgress(studentId: string): Promise<OfficialProgress>;
+}
+
+/**
+ * Asignar módulos (docente y directora). Si el backend dice que no, rechaza
+ * con `AssignmentError` y su motivo (`./studentErrors`).
+ */
+export interface AssignmentManagementRepository {
+  /** Módulos asignados a un estudiante, con su estado y avance. */
+  listForStudent(studentId: string): Promise<StudentAssignment[]>;
+  /** Solo los módulos publicados: los demás no se pueden asignar. */
+  listAssignableModules(): Promise<AssignableModule[]>;
+  assign(input: NewAssignment): Promise<StudentAssignment>;
+  /** Quitar una asignación. No se puede deshacer. */
+  remove(assignmentId: string): Promise<void>;
+}
+
 /** Conjunto de repositorios que se inyecta en la app. */
 export interface Repositories {
   auth: AuthRepository;
@@ -223,4 +253,6 @@ export interface Repositories {
   staff: StaffRepository;
   reviews: ReviewRepository;
   guardians: GuardianRepository;
+  directory: StudentDirectoryRepository;
+  assignmentManagement: AssignmentManagementRepository;
 }

@@ -5,9 +5,15 @@ import {
   mockAssignments,
   mockOfficialProgress,
   mockResumePoint,
+  mockModules,
   mockStudent,
+  mockStudentAssignments,
+  mockStudentSummaries,
+  mockTeacherStudents,
+  mockTeacher,
   mockVowelPractice,
 } from '@/data/mock/fixtures';
+import { bogotaToday } from '@/data/bogotaDate';
 import { ladderContent } from '@/data/mock/ladderContent';
 import {
   LADDER_GAMES,
@@ -15,6 +21,7 @@ import {
   type GameId,
   type LadderGameId,
   type PictureFace,
+  type StudentAssignment,
 } from '@/data/types';
 import { createFakeFetch, errorResponse, jsonResponse } from './fakeFetch';
 
@@ -123,6 +130,43 @@ function intentoGuardado(actividadId: string, tipoJuego: string) {
   };
 }
 
+const ESTADOS_ASIGNACION = {
+  assigned: 'ASIGNADO',
+  inProgress: 'EN_CURSO',
+  completed: 'COMPLETADO',
+} as const;
+
+/** Estudiante como lo devuelve `GET /estudiantes` (EstudianteResumenDto). */
+function estudianteDto(id: string) {
+  const resumen = mockStudentSummaries[id];
+  return {
+    id,
+    displayName: resumen?.displayName ?? 'Estudiante',
+    initials: resumen?.initials ?? 'ES',
+    nivel: { id: '1', nombre: 'BAJO' },
+    estado: 'ACTIVO',
+  };
+}
+
+/** Asignación como la devuelve `GET /asignaciones` (AsignacionDto). */
+function asignacionDto(estudianteId: string, a: StudentAssignment) {
+  const resumen = estudianteDto(estudianteId);
+  return {
+    id: a.id,
+    modulo: { id: a.moduleId, nombre: a.moduleTitle },
+    estudiante: {
+      id: estudianteId,
+      displayName: resumen.displayName,
+      initials: resumen.initials,
+    },
+    asignadoPor: { id: '3', displayName: 'Profe Laura' },
+    fechaAsignacion: '2026-11-05T15:00:00.000Z',
+    fechaSugerida: a.suggestedDate,
+    estado: ESTADOS_ASIGNACION[a.state],
+    progreso: a.progress,
+  };
+}
+
 /**
  * Backend GameUP falso, con las mismas cuentas ficticias que los datos
  * simulados. Sirve para comprobar que la versión HTTP y la simulada se
@@ -146,6 +190,12 @@ export function createFakeBackend() {
       pendientesValidacion: 0,
       actualizadoEn: '2026-11-06T15:00:00.000Z',
     }));
+
+  // Asignaciones de cada estudiante (copia: cada prueba empieza igual).
+  const asignaciones: Record<string, StudentAssignment[]> = JSON.parse(
+    JSON.stringify(mockStudentAssignments),
+  ) as Record<string, StudentAssignment[]>;
+  let siguienteAsignacion = 500;
 
   return createFakeFetch(({ url, method, headers, body }) => {
     const path = url.replace(FAKE_API_URL, '');
@@ -216,6 +266,164 @@ export function createFakeBackend() {
       if (path.startsWith('/estudiantes/')) {
         return errorResponse(404, 'No existe');
       }
+    }
+
+    // ─── Tallerista y directora: estudiantes, módulos y asignaciones ───
+    const esPersonal =
+      session.role === 'teacher' || session.role === 'director';
+    const visibles =
+      session.role === 'director'
+        ? Object.keys(mockStudentSummaries)
+        : (mockTeacherStudents[mockTeacher.id] ?? []);
+    const [ruta, consulta = ''] = path.split('?');
+    const params = new URLSearchParams(consulta);
+
+    if (ruta === '/modulos' || ruta?.startsWith('/asignaciones')) {
+      // Solo DIRECTORA y TALLERISTA crean, quitan o listan módulos.
+      if (!esPersonal && !(method === 'GET' && ruta === '/asignaciones')) {
+        return errorResponse(403, 'Sin permiso');
+      }
+    }
+    if (esPersonal && method === 'GET' && ruta === '/estudiantes') {
+      const page = Number(params.get('page') ?? '1');
+      const limit = Number(params.get('limit') ?? '20');
+      const items = visibles.slice((page - 1) * limit, page * limit);
+      return jsonResponse(200, {
+        items: items.map(estudianteDto),
+        total: visibles.length,
+        page,
+        limit,
+      });
+    }
+    const ficha = /^\/estudiantes\/([\w-]+)(\/progreso)?$/.exec(ruta ?? '');
+    if (esPersonal && method === 'GET' && ficha && ficha[1] !== 'me') {
+      const id = ficha[1] ?? '';
+      if (!visibles.includes(id)) return errorResponse(404, 'No existe');
+      if (!ficha[2]) {
+        return jsonResponse(200, {
+          ...estudianteDto(id),
+          nombres: 'Nombre',
+          apellidos: 'Ficticio',
+          fechaIngreso: '2026-02-03',
+          personajeAvatar: null,
+          cuentaActiva: true,
+        });
+      }
+      const modulos = (asignaciones[id] ?? []).map((a) => {
+        const total =
+          mockModules.find((m) => m.id === a.moduleId)?.activities ?? 0;
+        return {
+          asignacionId: a.id,
+          modulo: { id: a.moduleId, nombre: a.moduleTitle },
+          estado: ESTADOS_ASIGNACION[a.state],
+          progreso: a.progress,
+          validadas: Math.round((a.progress / 100) * total),
+          total,
+          pendientesValidacion: 0,
+        };
+      });
+      return jsonResponse(200, { modulos, pendientesValidacion: 0 });
+    }
+    if (esPersonal && method === 'GET' && ruta === '/modulos') {
+      const soloPublicados = params.get('publicado') === 'true';
+      const items = mockModules
+        .filter((m) => !soloPublicados || m.published)
+        .map((m, orden) => ({
+          id: m.id,
+          nombre: m.title,
+          descripcion: m.description,
+          categoria: { id: '1', nombre: m.category },
+          nivel: { id: '1', nombre: 'BAJO' },
+          creadoPor: { id: '1', displayName: 'Directora' },
+          musicaId: null,
+          portadaContenidoId: null,
+          publicado: m.published,
+          orden,
+          creadoEn: '2026-11-01T15:00:00.000Z',
+        }));
+      return jsonResponse(200, {
+        items,
+        total: items.length,
+        page: 1,
+        limit: 50,
+      });
+    }
+    if (esPersonal && method === 'GET' && ruta === '/asignaciones') {
+      const id = params.get('estudianteId');
+      const ids = id ? [id] : visibles;
+      const items = ids
+        .filter((e) => visibles.includes(e))
+        .flatMap((e) =>
+          (asignaciones[e] ?? []).map((a) => asignacionDto(e, a)),
+        );
+      return jsonResponse(200, {
+        items,
+        total: items.length,
+        page: 1,
+        limit: 50,
+      });
+    }
+    if (esPersonal && method === 'POST' && ruta === '/asignaciones') {
+      const { moduloId, estudianteId, fechaSugerida } = body as {
+        moduloId?: string;
+        estudianteId?: string;
+        fechaSugerida?: string;
+      };
+      if (!moduloId || !estudianteId) {
+        return errorResponse(400, 'Faltan datos');
+      }
+      if (
+        fechaSugerida !== undefined &&
+        !/^\d{4}-\d{2}-\d{2}$/.test(fechaSugerida)
+      ) {
+        return errorResponse(
+          400,
+          'fechaSugerida debe tener el formato AAAA-MM-DD',
+        );
+      }
+      if (!visibles.includes(estudianteId)) {
+        return errorResponse(404, 'El estudiante no existe');
+      }
+      const modulo = mockModules.find((m) => m.id === moduloId);
+      if (!modulo || !modulo.published) {
+        return errorResponse(422, 'Módulo sin publicar o inexistente');
+      }
+      if (fechaSugerida !== undefined && fechaSugerida < bogotaToday()) {
+        return errorResponse(422, 'La fecha sugerida ya pasó');
+      }
+      const lista = asignaciones[estudianteId] ?? [];
+      asignaciones[estudianteId] = lista;
+      if (
+        lista.some((a) => a.moduleId === moduloId && a.state !== 'completed')
+      ) {
+        return errorResponse(409, 'Ya tiene ese módulo asignado sin completar');
+      }
+      siguienteAsignacion += 1;
+      const nueva: StudentAssignment = {
+        id: String(siguienteAsignacion),
+        moduleId: moduloId,
+        moduleTitle: modulo.title,
+        state: 'assigned',
+        progress: 0,
+        suggestedDate: fechaSugerida ?? null,
+      };
+      lista.push(nueva);
+      return jsonResponse(201, asignacionDto(estudianteId, nueva));
+    }
+    const quitar = /^\/asignaciones\/([\w-]+)$/.exec(ruta ?? '');
+    if (esPersonal && method === 'DELETE' && quitar) {
+      const id = quitar[1];
+      const duenio = visibles.find((e) =>
+        (asignaciones[e] ?? []).some((a) => a.id === id),
+      );
+      if (!duenio) return errorResponse(404, 'No existe');
+      const lista = asignaciones[duenio] ?? [];
+      const objetivo = lista.find((a) => a.id === id);
+      if (!objetivo || objetivo.state !== 'assigned' || objetivo.progress > 0) {
+        return errorResponse(409, 'El estudiante ya hizo intentos');
+      }
+      asignaciones[duenio] = lista.filter((a) => a.id !== id);
+      return jsonResponse(204);
     }
 
     if (method === 'GET' && path === '/auth/me') {

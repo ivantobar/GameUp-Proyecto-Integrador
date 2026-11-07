@@ -19,6 +19,8 @@ export interface ApiClient {
   get<T>(path: string, options?: RequestOptions): Promise<T>;
   post<T>(path: string, body?: unknown, options?: RequestOptions): Promise<T>;
   put<T>(path: string, body?: unknown, options?: RequestOptions): Promise<T>;
+  /** DELETE sin cuerpo (por ejemplo, quitar una asignación; responde 204). */
+  delete<T>(path: string, options?: RequestOptions): Promise<T>;
   /**
    * POST `multipart/form-data` (por ejemplo, un audio). `fetch` pone la
    * cabecera con su separador; espera más, porque sube un archivo.
@@ -53,7 +55,7 @@ export interface ApiClientConfig {
   fetchFn?: typeof fetch;
 }
 
-type Method = 'GET' | 'POST' | 'PUT';
+type Method = 'GET' | 'POST' | 'PUT' | 'DELETE';
 
 /** Qué lleva el cuerpo de la petición. */
 type Payload =
@@ -173,6 +175,7 @@ export function createApiClient({
     get: (path, options) => request('GET', path, NO_BODY, options),
     post: (path, body, options) => request('POST', path, json(body), options),
     put: (path, body, options) => request('PUT', path, json(body), options),
+    delete: (path, options) => request('DELETE', path, NO_BODY, options),
     postForm: (path, form, options) =>
       request(
         'POST',
