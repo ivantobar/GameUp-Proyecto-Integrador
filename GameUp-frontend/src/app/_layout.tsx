@@ -1,7 +1,9 @@
 import { useEffect } from 'react';
 import { router, SplashScreen, Stack } from 'expo-router';
 import { useFonts } from 'expo-font';
+import { env } from '@/config/env';
 import { createRepositories } from '@/data/createRepositories';
+import { ConfigErrorScreen } from '@/features/config/ConfigErrorScreen';
 import { RepositoryProvider } from '@/data/RepositoryProvider';
 import { useStackScreenOptions } from '@/features/motion/useStackScreenOptions';
 import { fontAssets } from '@/theme/fonts';
@@ -42,6 +44,11 @@ export default function RootLayout() {
   }, [ready, fontError]);
 
   if (!ready) return null;
+
+  // Versión publicada mal configurada: en lugar de las rutas, un aviso para
+  // la familia. Va después de las fuentes, y el efecto de arriba ya ocultó
+  // la pantalla de bienvenida.
+  if (env.configProblem) return <ConfigErrorScreen />;
 
   return (
     <RepositoryProvider repositories={repositories}>

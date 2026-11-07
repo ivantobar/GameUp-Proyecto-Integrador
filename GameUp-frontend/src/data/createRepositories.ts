@@ -10,6 +10,8 @@ interface CreateRepositoriesOptions {
   onSessionExpired: () => void;
   /** Por defecto, `EXPO_PUBLIC_DATA_SOURCE`. */
   dataSource?: DataSource;
+  /** Por defecto, `__DEV__`. Fuera de desarrollo nunca se usan los simulados. */
+  isDev?: boolean;
 }
 
 /**
@@ -19,8 +21,12 @@ interface CreateRepositoriesOptions {
 export function createRepositories({
   onSessionExpired,
   dataSource = env.dataSource,
+  isDev = __DEV__,
 }: CreateRepositoriesOptions): Repositories {
-  if (dataSource === 'mock') return createMockRepositories();
+  // Segunda barrera: aunque alguien pase `mock`, una versión publicada
+  // siempre habla con la API (las cuentas simuladas tienen la contraseña en
+  // el código).
+  if (isDev && dataSource === 'mock') return createMockRepositories();
 
   const tokens = createSecureTokenStore();
   const api = createApiClient({

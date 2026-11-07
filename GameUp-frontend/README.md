@@ -81,9 +81,15 @@ EXPO_PUBLIC_API_URL=http://192.168.1.20:3000/api/v1
 Para elegir de dónde salen los datos:
 
 ```bash
-EXPO_PUBLIC_DATA_SOURCE=mock   # datos ficticios, sin backend (por defecto)
+EXPO_PUBLIC_DATA_SOURCE=mock   # datos ficticios, sin backend (por defecto, solo en desarrollo)
 EXPO_PUBLIC_DATA_SOURCE=api    # la API NestJS de EXPO_PUBLIC_API_URL
 ```
+
+> `mock` solo existe en desarrollo. En una versión publicada (fuera de
+> `__DEV__`) la app usa **siempre** la API, y `EXPO_PUBLIC_API_URL` debe
+> empezar por `https://`: si falta o es `http://`, muestra «GameUP no está
+> bien configurado» y no deja iniciar sesión. En desarrollo se acepta
+> `http://` con la IP local.
 
 > Las variables `EXPO_PUBLIC_*` quedan dentro de la app y cualquiera puede
 > leerlas. **Nunca** pongas aquí claves secretas (`DATABASE_URL`,
