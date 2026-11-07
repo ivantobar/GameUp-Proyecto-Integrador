@@ -20,9 +20,15 @@ export class PersonaDto {
   displayName: string;
 }
 
-/** Estudiante en listados (StudentSummary en la app). */
+/**
+ * Estudiante en listados (StudentSummary en la app).
+ *
+ * Es el perfil de aprendizaje en GameUP: los datos personales (documento,
+ * fecha de nacimiento, diagnóstico) son de ASISCO UP y no se guardan aquí.
+ * El idEstudiante de ASISCO UP solo lo ve la directora, en /usuarios.
+ */
 export class EstudianteResumenDto {
-  @ApiProperty({ example: '31' })
+  @ApiProperty({ example: '31', description: 'Id interno de GameUP' })
   id: string;
 
   @ApiProperty({
@@ -43,10 +49,16 @@ export class EstudianteResumenDto {
 
 /** Ficha del estudiante (directora, tallerista a cargo, acudiente). */
 export class EstudianteDetalleDto extends EstudianteResumenDto {
-  @ApiProperty({ example: 'Martín José' })
+  @ApiProperty({
+    example: 'Martín José',
+    description: 'Copia de solo lectura; GameUP no la edita',
+  })
   nombres: string;
 
-  @ApiProperty({ example: 'Cruz Pérez' })
+  @ApiProperty({
+    example: 'Cruz Pérez',
+    description: 'Copia de solo lectura; GameUP no la edita',
+  })
   apellidos: string;
 
   @ApiProperty({ example: '2026-02-03', format: 'date' })

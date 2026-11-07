@@ -27,7 +27,12 @@ export function setupSwagger(app: INestApplication, publicUrl?: string): void {
     .setTitle('GameUP API')
     .setDescription(
       'API del aula virtual inclusiva GameUP (Fundación ASISCO-UP). ' +
-        'Todas las rutas de la API están bajo /api/v1.',
+        'Todas las rutas de la API están bajo /api/v1.\n\n' +
+        'Integración: la identidad y el JWT son de la API de seguridad; ' +
+        'los datos personales de estudiantes y acudientes, los vínculos ' +
+        'familiares y el consentimiento informado son de ASISCO UP. GameUP ' +
+        'guarda solo el perfil de aprendizaje y lo relaciona con ASISCO UP ' +
+        'mediante idEstudianteExterno.',
     )
     .setVersion('1.0.0')
     // "/" = el mismo servidor desde donde se abre /api-docs (local o Render),
@@ -50,11 +55,16 @@ export function setupSwagger(app: INestApplication, publicUrl?: string): void {
       BEARER_AUTH,
     )
     .addTag('health', 'Estado del backend y de sus conexiones')
-    .addTag('auth', 'Inicio y cierre de sesión con la API de seguridad')
+    .addTag(
+      'auth',
+      'Inicio y cierre de sesión: reenvía a la API de seguridad y usa su JWT (GameUP no emite tokens)',
+    )
     .addTag('usuarios', 'Cuentas de GameUP (solo la directora)')
     .addTag(
       'estudiantes',
-      'Estudiantes, sus vínculos, nivel y consentimiento de voz',
+      'Perfil de aprendizaje del estudiante en GameUP (nivel, avatar, ' +
+        'talleristas, acudientes y verificación del consentimiento de voz). ' +
+        'Los datos personales los administra ASISCO UP.',
     )
     .addTag(
       'catalogo',
