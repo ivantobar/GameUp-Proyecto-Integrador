@@ -41,13 +41,25 @@ export class AuthController {
     summary: 'Iniciar sesión',
     description:
       'Reenvía las credenciales a la API de seguridad y devuelve su token con la ' +
-      'sesión de la app. La persona debe tener cuenta activa en GameUP.',
+      'sesión de la app.\n\n' +
+      '**Alta automática en el primer inicio de sesión:** si la persona aún no tiene ' +
+      'cuenta en GameUP y su rol de seguridad da acceso (ADMIN→DIRECTORA, TALLERISTA, ' +
+      'ACUDIENTE, ESTUDIANTE) y está en `ALTA_AUTOMATICA_ROLES`, se crea su cuenta y ' +
+      'entra. El ESTUDIANTE además debe existir en ASISCO UP con su `id_usuario` de ' +
+      'seguridad (de ahí sale su `idEstudianteExterno`). Una cuenta que ya existe ' +
+      'nunca se reactiva ni cambia de rol. Solo pasa aquí: las demás rutas nunca crean cuentas.',
   })
   @ApiOkResponse({ type: LoginRespuestaDto })
   @ApiErrores(400, {
     401: 'Correo o contraseña incorrectos',
-    403: 'Sin cuenta en GameUP, cuenta inactiva o rol sin acceso (ej.: DONANTE)',
-    503: 'La API de seguridad no responde o no está configurada',
+    403:
+      'Rol sin acceso (ej.: DONANTE); cuenta inactiva, estudiante egresado o retirado; ' +
+      'rol de seguridad distinto al de GameUP; varios roles con acceso (la directora da ' +
+      'el alta con POST /usuarios); estudiante que ASISCO UP no encuentra; datos que ya ' +
+      'usa otra cuenta; o alta automática apagada para ese rol. El `message` dice cuál.',
+    503:
+      'La API de seguridad no responde o no está configurada, o ASISCO UP no responde ' +
+      'durante el alta de un estudiante («Espera un momento e inténtalo otra vez»)',
   })
   async login(@Body() dto: LoginDto): Promise<LoginRespuestaDto> {
     const sesion = await this.auth.iniciarSesion(dto.correo, dto.contrasena);

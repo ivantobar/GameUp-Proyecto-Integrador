@@ -25,9 +25,13 @@ import {
 } from '../src/common/errors/dominio.errors.js';
 import { ParseBigIntPipe } from '../src/common/pipes/parse-bigint.pipe.js';
 import { Prisma } from '../src/generated/prisma/client.js';
+import { ROLES_ALTA_AUTOMATICA } from '../src/modules/auth/application/alta-automatica.service.js';
 import { Cuenta } from '../src/modules/auth/domain/cuenta.entity.js';
+import { CONSULTA_ESTUDIANTE_EXTERNO } from '../src/modules/estudiantes/domain/estudiante-externo.js';
 import { crearAppDePrueba } from './dobles/app-de-prueba.js';
+import { AutenticadorFalso } from './dobles/autenticador-falso.js';
 import { CuentaRepositoryEnMemoria } from './dobles/cuentas-en-memoria.js';
+import { UsuariosEnMemoria } from './dobles/usuarios-en-memoria.js';
 import {
   identidad,
   VerificadorTokenFalso,
@@ -264,6 +268,157 @@ describe('Base común: autenticación, roles y errores (e2e)', () => {
       const res = await get('/no-existe', 'token-directora').expect(404);
       expect(res.body).toMatchObject({ statusCode: 404, error: 'Not Found' });
     });
+  });
+});
+
+describe('Alta automática al primer login (e2e)', () => {
+  let app: INestApplication<App>;
+  let usuarios: UsuariosEnMemoria;
+  const consultaAsisco = {
+    porIdUsuarioAuth: vi.fn(async (id: bigint) => (id === 1000n ? 77n : null)),
+  };
+
+  const NUEVAS: Record<string, IdentidadExterna> = {
+    'token-tallerista-nueva': identidad(700, ['TALLERISTA'], {
+      nombres: 'Tallerista',
+      apellidos: 'Nueva',
+      correo: 'tallerista.nueva@ejemplo.com',
+    }),
+    'token-acudiente-nuevo': identidad(800, ['ACUDIENTE']),
+    'token-directora-nueva': identidad(900, ['ADMIN']),
+    'token-estudiante-nuevo': identidad(1000, ['ESTUDIANTE']),
+    'token-solo-guard': identidad(1100, ['ACUDIENTE']),
+  };
+  const credenciales = Object.fromEntries(
+    Object.keys(NUEVAS).map((token) => [
+      `${token}@ejemplo.com`,
+      { contrasena: 'clave', token },
+    ]),
+  );
+
+  beforeAll(async () => {
+    usuarios = new UsuariosEnMemoria();
+    app = await crearAppDePrueba({
+      verificador: new VerificadorTokenFalso(NUEVAS),
+      autenticador: new AutenticadorFalso(credenciales),
+      usuarios,
+      controllers: [PruebaController],
+      reemplazos: [
+        { provide: CONSULTA_ESTUDIANTE_EXTERNO, useValue: consultaAsisco },
+      ],
+    });
+  });
+
+  afterAll(async () => {
+    await app.close();
+  });
+
+  const login = (token: string) =>
+    request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .send({ correo: `${token}@ejemplo.com`, contrasena: 'clave' });
+  const deAuth = (id: bigint) =>
+    usuarios.todos().filter((u) => u.idUsuarioAuth === id);
+
+  it('el AuthGuard NO crea cuentas: sin fila, cualquier petición sigue en 403', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/api/v1/prueba/yo')
+      .set('Authorization', 'Bearer token-solo-guard')
+      .expect(403);
+    expect(res.body.message).toMatch(/aún no está registrada en GameUP/);
+    await request(app.getHttpServer())
+      .get('/api/v1/auth/me')
+      .set('Authorization', 'Bearer token-solo-guard')
+      .expect(403);
+    expect(usuarios.todos()).toHaveLength(0);
+  });
+
+  it('primer login de una tallerista: crea la cuenta y devuelve el token', async () => {
+    const res = await login('token-tallerista-nueva').expect(200);
+    expect(res.body).toMatchObject({
+      token: 'token-tallerista-nueva',
+      usuario: { role: 'teacher', displayName: 'Tallerista Nueva' },
+    });
+    const [cuenta] = deAuth(700n);
+    expect(cuenta).toMatchObject({
+      rol: 'TALLERISTA',
+      nombres: 'Tallerista',
+      apellidos: 'Nueva',
+      correo: 'tallerista.nueva@ejemplo.com',
+      activo: true,
+      estudiante: null,
+    });
+    expect(res.body.usuario.userId).toBe(cuenta?.id.toString());
+  });
+
+  it('segundo login: entra a la misma cuenta, sin crear otra', async () => {
+    await login('token-tallerista-nueva').expect(200);
+    expect(deAuth(700n)).toHaveLength(1);
+  });
+
+  it('después del alta, el guard acepta su token', async () => {
+    await request(app.getHttpServer())
+      .get('/api/v1/prueba/yo')
+      .set('Authorization', 'Bearer token-tallerista-nueva')
+      .expect(200);
+  });
+
+  it('acudiente y directora (ADMIN) también se crean', async () => {
+    const acudiente = await login('token-acudiente-nuevo').expect(200);
+    expect(acudiente.body.usuario.role).toBe('guardian');
+    const directora = await login('token-directora-nueva').expect(200);
+    expect(directora.body.usuario.role).toBe('director');
+    expect(deAuth(800n)[0]).toMatchObject({
+      rol: 'ACUDIENTE',
+      idAcudienteExterno: null,
+    });
+    expect(deAuth(900n)[0]?.rol).toBe('DIRECTORA');
+  });
+
+  it('estudiante: toma su idEstudianteExterno de ASISCO UP con su propio token', async () => {
+    const res = await login('token-estudiante-nuevo').expect(200);
+    expect(res.body.usuario.role).toBe('student');
+    expect(consultaAsisco.porIdUsuarioAuth).toHaveBeenCalledWith(
+      1000n,
+      'token-estudiante-nuevo',
+    );
+    expect(deAuth(1000n)[0]?.estudiante).toEqual({
+      idEstudianteExterno: 77n,
+      nivelId: 1n,
+      estado: 'ACTIVO',
+    });
+  });
+});
+
+describe('Alta automática apagada (e2e)', () => {
+  let app: INestApplication<App>;
+  let usuarios: UsuariosEnMemoria;
+
+  beforeAll(async () => {
+    usuarios = new UsuariosEnMemoria();
+    app = await crearAppDePrueba({
+      verificador: new VerificadorTokenFalso({
+        'token-nueva': identidad(700, ['TALLERISTA']),
+      }),
+      autenticador: new AutenticadorFalso({
+        'nueva@ejemplo.com': { contrasena: 'clave', token: 'token-nueva' },
+      }),
+      usuarios,
+      reemplazos: [{ provide: ROLES_ALTA_AUTOMATICA, useValue: [] }],
+    });
+  });
+
+  afterAll(async () => {
+    await app.close();
+  });
+
+  it('ALTA_AUTOMATICA_ROLES vacía → 403 como antes y no crea nada', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/api/v1/auth/login')
+      .send({ correo: 'nueva@ejemplo.com', contrasena: 'clave' })
+      .expect(403);
+    expect(res.body.message).toMatch(/aún no está registrada en GameUP/);
+    expect(usuarios.todos()).toHaveLength(0);
   });
 });
 

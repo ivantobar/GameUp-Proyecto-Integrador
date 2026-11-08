@@ -137,6 +137,7 @@ Si al actualizar Prisma npm avisa de scripts bloqueados:
 | `AUTH_CACHE_TTL_SEG` | No | `300` | Segundos que se recuerda un token verificado (máx. 300 y nunca más que su `exp`) |
 | `ASISCO_API_URL` | No | — | URL base de ASISCO UP, sin `/api` (ej. `https://proyecto-asiscoup-g1-jvaz.onrender.com`). Activa la integración: consentimiento de voz (`autorizaGrabacionVoz`) y copia de los vínculos de acudientes al iniciar sesión. Sin ella, no se graba voz (falla cerrado) y la directora vincula acudientes a mano |
 | `ASISCO_API_TIMEOUT_MS` | No | `5000` | Espera máxima por llamada a ASISCO UP (500 a 30000) |
+| `ALTA_AUTOMATICA_ROLES` | No | `ESTUDIANTE,ACUDIENTE,TALLERISTA,DIRECTORA` | Roles de GameUP cuya cuenta se crea sola en el primer inicio de sesión (separados por comas). Vacía = apagada: sin cuenta, 403 y alta manual con `POST /usuarios`. El ESTUDIANTE además necesita `ASISCO_API_URL` |
 | `LIMPIEZA_GRABACIONES_MIN` | No | `30` | Cada cuántos minutos se borran de Storage las grabaciones validadas pendientes y las vencidas (30 días). `0` la desactiva |
 | `CONSENTIMIENTO_SIMULADO` | No | `false` | **Solo desarrollo**: todos los estudiantes figuran con consentimiento de voz. Prohibido en producción |
 
@@ -172,6 +173,8 @@ y en los DTO, `@ApiProperty({ example: ... })` en cada campo.
   por `id_usuario_auth`:
   - sin cuenta en GameUP, cuenta inactiva, rol DONANTE/desconocido, o rol
     externo que no coincide con el local → **403** con un mensaje claro;
+  - el guard **nunca crea cuentas**: eso solo pasa en `POST /auth/login`
+    (ver «Alta automática al primer inicio de sesión»);
   - el mapeo de roles (ADMIN → DIRECTORA, TALLERISTA, ACUDIENTE, ESTUDIANTE)
     vive solo en `src/modules/auth/domain/mapeador-roles.ts`.
 - **Dos niveles de autorización:** `@Roles('DIRECTORA', ...)` en la ruta
@@ -199,10 +202,10 @@ y en los DTO, `@ApiProperty({ example: ... })` en cada campo.
 
 | Método y ruta | Quién | Qué hace |
 |---|---|---|
-| `POST /auth/login` | público | `{ correo, contrasena }` → reenvía a la API de seguridad y devuelve `{ token, expiraEn, usuario: { userId, role, displayName } }`. Sincroniza nombres, apellidos y correo en `usuario` |
+| `POST /auth/login` | público | `{ correo, contrasena }` → reenvía a la API de seguridad y devuelve `{ token, expiraEn, usuario: { userId, role, displayName } }`. Sincroniza nombres, apellidos y correo en `usuario`. Si la persona aún no tiene cuenta, la crea (alta automática) |
 | `GET /auth/me` | cualquier sesión | `{ userId, role, displayName }` |
 | `POST /auth/logout` | cualquier sesión | 204. GameUP olvida el token de su caché; la app debe descartarlo |
-| `POST /usuarios` | directora | Alta de la copia mínima (para ESTUDIANTE crea también `estudiante`) |
+| `POST /usuarios` | directora | Alta manual de la copia mínima (para ESTUDIANTE crea también `estudiante`). Ya no es obligatoria: queda para casos especiales (varios roles, nivel distinto, `idAcudienteExterno`) |
 | `GET /usuarios?rol&activo&page&limit` | directora | Listado paginado |
 | `GET /usuarios/:id` | directora | Una cuenta |
 | `PATCH /usuarios/:id/estado` | directora | `{ activo }`. Una cuenta inactiva recibe 403 |
@@ -361,12 +364,42 @@ aparte (`resumen.pendientesValidacion`) y no suman.
 - **Configuración por juego:** una estrategia por tipo de juego
   (`src/modules/catalogo/domain/juegos/`). Ver «Configuración de los juegos».
 
+### Alta automática al primer inicio de sesión
+
+Ya no hace falta dar de alta a nadie a mano. La primera vez que una persona
+inicia sesión (`POST /auth/login`), si no tiene fila en `usuario` y su rol
+de seguridad da acceso, el backend crea su cuenta
+(`src/modules/auth/application/alta-automatica.service.ts`):
+
+- **Un solo rol con acceso** (ADMIN→DIRECTORA, TALLERISTA, ACUDIENTE,
+  ESTUDIANTE) y presente en `ALTA_AUTOMATICA_ROLES` → se crea con ese rol,
+  con `UsuarioService.crear` (las mismas reglas que `POST /usuarios`).
+  Nombres, apellidos y correo salen de la API de seguridad («Sin nombre» /
+  «Sin apellido» si faltan; sin correo si otra cuenta ya lo usa).
+- **Varios roles con acceso** → 403 «Tu cuenta tiene varios roles en la
+  fundación…»: la directora la da de alta con `POST /usuarios`.
+- **ESTUDIANTE:** su `idEstudianteExterno` sale de ASISCO UP
+  (`GET /api/estudiantes/por-usuario/{id_usuario}`, con el token del
+  estudiante). Si ASISCO UP no lo tiene, falta `ASISCO_API_URL` o responde
+  por otra persona → 403 «Aún no te encontramos en ASISCO UP…»; si ASISCO UP
+  no responde → 503. Empieza en el nivel inicial (BAJO).
+- **ACUDIENTE:** se crea sin `idAcudienteExterno`; sus vínculos los copia el
+  login desde ASISCO UP, como siempre. **TALLERISTA** no ve estudiantes hasta
+  que la directora se los asigne.
+- Una cuenta que **ya existe** nunca se toca: inactiva, egresada/retirada o
+  con otro rol sigue recibiendo su 403.
+- Cada alta deja un log `info` con el id interno, el `id_usuario_auth` y el
+  rol (nada más).
+
+Para volver al alta manual, deja `ALTA_AUTOMATICA_ROLES` vacía.
+
 ### Primera directora
 
-`POST /usuarios` solo lo puede usar una directora, así que la primera se crea
-una sola vez con `prisma/scripts/alta_primera_directora.sql` (instrucciones
-dentro del archivo). La persona debe existir antes en la API de seguridad con
-rol ADMIN. El script se niega a correr si ya hay una directora o si falta
+Con el alta automática, la primera directora solo tiene que iniciar sesión
+con su cuenta ADMIN de la API de seguridad. Si el alta está apagada para
+DIRECTORA, se crea una sola vez con `prisma/scripts/alta_primera_directora.sql`
+(instrucciones dentro del archivo), porque `POST /usuarios` solo lo puede usar
+una directora. El script se niega a correr si ya hay una directora o si falta
 reemplazar algún valor.
 
 ```bash

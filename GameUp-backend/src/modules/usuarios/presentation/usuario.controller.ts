@@ -43,7 +43,11 @@ export class UsuarioController {
     summary: 'Dar de alta una cuenta (directora)',
     description:
       'Crea la copia mínima de una persona que ya existe en la API de seguridad. ' +
-      'Para ESTUDIANTE crea también su fila en estudiante (nivel inicial BAJO si no se indica).',
+      'Para ESTUDIANTE crea también su fila en estudiante (nivel inicial BAJO si no se indica).\n\n' +
+      '**Ya no es obligatorio:** con `ALTA_AUTOMATICA_ROLES`, la cuenta se crea sola en el ' +
+      'primer inicio de sesión (POST /auth/login). Esta ruta queda para casos especiales: ' +
+      'personas con varios roles en la fundación, un nivel inicial distinto, un ' +
+      '`idAcudienteExterno`, o un rol con el alta automática apagada.',
   })
   @ApiCreatedResponse({ type: UsuarioDto })
   @ApiErrores(400, 401, 403, {

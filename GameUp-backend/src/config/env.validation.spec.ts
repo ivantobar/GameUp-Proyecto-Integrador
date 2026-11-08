@@ -86,6 +86,44 @@ describe('validateEnv', () => {
     ).toThrow(/inválidas/);
   });
 
+  describe('ALTA_AUTOMATICA_ROLES', () => {
+    it('por defecto, los cuatro roles', () => {
+      expect(validateEnv({ DATABASE_URL: DB }).ALTA_AUTOMATICA_ROLES).toBe(
+        'ESTUDIANTE,ACUDIENTE,TALLERISTA,DIRECTORA',
+      );
+    });
+
+    it.each([
+      'ESTUDIANTE',
+      'ESTUDIANTE,ACUDIENTE',
+      ' TALLERISTA , DIRECTORA ',
+      'ACUDIENTE,ACUDIENTE',
+      'ESTUDIANTE,ACUDIENTE,TALLERISTA,DIRECTORA',
+    ])('acepta %j', (valor) => {
+      expect(
+        validateEnv({ DATABASE_URL: DB, ALTA_AUTOMATICA_ROLES: valor })
+          .ALTA_AUTOMATICA_ROLES,
+      ).toBe(valor);
+    });
+
+    it.each(['', '   '])('vacía (%j) es válida: apaga el alta', (valor) => {
+      expect(() =>
+        validateEnv({ DATABASE_URL: DB, ALTA_AUTOMATICA_ROLES: valor }),
+      ).not.toThrow();
+    });
+
+    it.each([
+      ['ADMIN', /no reconoce: ADMIN/],
+      ['estudiante', /no reconoce: estudiante/],
+      ['ESTUDIANTE,DONANTE', /no reconoce: DONANTE/],
+      ['ESTUDIANTE;ACUDIENTE', /no reconoce: ESTUDIANTE;ACUDIENTE/],
+    ])('rechaza %j', (valor, mensaje) => {
+      expect(() =>
+        validateEnv({ DATABASE_URL: DB, ALTA_AUTOMATICA_ROLES: valor }),
+      ).toThrow(mensaje);
+    });
+  });
+
   it('Supabase es opcional', () => {
     const env = validateEnv({ DATABASE_URL: DB, NODE_ENV: 'production' });
     expect(env.SUPABASE_URL).toBeUndefined();

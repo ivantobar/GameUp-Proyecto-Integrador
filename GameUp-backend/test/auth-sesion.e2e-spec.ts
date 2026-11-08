@@ -50,7 +50,7 @@ describe('Auth: login, me y logout (e2e)', () => {
       }),
       'token-donante': identidad(300, ['DONANTE']),
       'token-retirado': identidad(600, ['ESTUDIANTE']),
-      'token-sin-cuenta': identidad(400, ['ACUDIENTE']),
+      'token-sin-cuenta': identidad(400, ['ESTUDIANTE']),
     });
     app = await crearAppDePrueba({
       verificador,
@@ -162,12 +162,16 @@ describe('Auth: login, me y logout (e2e)', () => {
         .expect(403);
     });
 
-    it('autenticado afuera pero sin fila en GameUP → 403 con mensaje claro', async () => {
+    it('estudiante sin fila y sin ASISCO UP → 403 con el motivo, sin crear cuenta', async () => {
+      const antes = usuarios.todos().length;
       const res = await login({
         correo: 'nueva@ejemplo.com',
         contrasena: 'clave-4',
       }).expect(403);
-      expect(res.body.message).toMatch(/aún no está registrada en GameUP/);
+      expect(res.body.message).toBe(
+        'Aún no te encontramos en ASISCO UP. Pide a la fundación que revise tu registro.',
+      );
+      expect(usuarios.todos()).toHaveLength(antes);
     });
   });
 

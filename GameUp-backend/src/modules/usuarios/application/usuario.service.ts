@@ -1,7 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { UsuarioAutenticado } from '../../../common/auth/usuario-autenticado.js';
 import {
-  ConflictoError,
   RecursoNoEncontradoError,
   ReglaNegocioError,
 } from '../../../common/errors/dominio.errors.js';
@@ -9,6 +8,7 @@ import type {
   Pagina,
   Paginacion,
 } from '../../../common/paginacion/paginacion.js';
+import { CampoEnUsoError } from '../domain/campo-en-uso.error.js';
 import {
   normalizarNuevoUsuario,
   type DatosNuevoUsuario,
@@ -18,25 +18,17 @@ import {
   NIVEL_CONSULTA,
   USUARIO_ESCRITURA_REPOSITORY,
   USUARIO_LECTURA_REPOSITORY,
-  type CampoUnico,
   type FiltroUsuarios,
   type NivelConsulta,
   type UsuarioEscrituraRepository,
   type UsuarioLecturaRepository,
 } from '../domain/usuario.repository.js';
 
-const MENSAJE_CAMPO_EN_USO: Record<CampoUnico, string> = {
-  idUsuarioAuth: 'Ya existe una cuenta con ese id de la API de seguridad.',
-  correo: 'Ya existe una cuenta con ese correo.',
-  idAcudienteExterno:
-    'Ya existe una cuenta con ese id de acudiente del núcleo familiar.',
-  idEstudianteExterno:
-    'Ya existe una cuenta con ese id de estudiante del núcleo familiar.',
-};
-
 /**
  * Casos de uso de la directora sobre las cuentas de GameUP. El rol
  * (solo DIRECTORA) lo exige el controlador con @Roles; aquí van las reglas.
+ * `crear` también lo usa el alta automática del primer login, para que las
+ * dos vías creen exactamente lo mismo.
  */
 @Injectable()
 export class UsuarioService {
@@ -53,9 +45,8 @@ export class UsuarioService {
     const datos = normalizarNuevoUsuario(entrada);
 
     // Regla 7: se valida antes de escribir; los índices únicos son el respaldo.
-    const enUso = await this.lectura.camposEnUso(datos);
-    const primero = enUso[0];
-    if (primero) throw new ConflictoError(MENSAJE_CAMPO_EN_USO[primero]);
+    const [primero, ...resto] = await this.lectura.camposEnUso(datos);
+    if (primero) throw new CampoEnUsoError([primero, ...resto]);
 
     let nivelId = datos.nivelId;
     if (datos.rol === 'ESTUDIANTE') {

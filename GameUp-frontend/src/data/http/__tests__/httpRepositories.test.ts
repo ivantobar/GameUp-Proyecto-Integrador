@@ -83,6 +83,35 @@ describe('AuthRepository (HTTP)', () => {
     ).rejects.toBeInstanceOf(AccountNotAllowedError);
   });
 
+  it('403 con motivo del backend: lo lleva para mostrarlo', async () => {
+    const motivo =
+      'Aún no te encontramos en ASISCO UP. Pide a la fundación que revise tu registro.';
+    const { repos } = setup(() => errorResponse(403, motivo));
+
+    const error: unknown = await repos.auth
+      .signIn({ email: 'a@b.co', password: 'x' })
+      .catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(AccountNotAllowedError);
+    expect((error as AccountNotAllowedError).reason).toBe(motivo);
+  });
+
+  it('403 sin motivo (o técnico): no lleva motivo y la pantalla usa el general', async () => {
+    const sinMensaje = setup(() => jsonResponse(403, { statusCode: 403 }));
+    const e1: unknown = await sinMensaje.repos.auth
+      .signIn({ email: 'a@b.co', password: 'x' })
+      .catch((e: unknown) => e);
+    expect(e1).toBeInstanceOf(AccountNotAllowedError);
+    expect((e1 as AccountNotAllowedError).reason).toBeNull();
+
+    const tecnico = setup(() =>
+      errorResponse(403, 'PrismaClientKnownRequestError: usuario 123'),
+    );
+    const e2: unknown = await tecnico.repos.auth
+      .signIn({ email: 'a@b.co', password: 'x' })
+      .catch((e: unknown) => e);
+    expect((e2 as AccountNotAllowedError).reason).toBeNull();
+  });
+
   it('503 o sin red: no son credenciales inválidas', async () => {
     // 503: respondió el backend, pero no la API de seguridad.
     const down = setup(() => errorResponse(503, 'API de seguridad caída'));
