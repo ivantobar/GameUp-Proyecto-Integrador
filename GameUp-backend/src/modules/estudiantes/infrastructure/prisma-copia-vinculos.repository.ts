@@ -43,21 +43,26 @@ export class PrismaCopiaVinculosRepository implements CopiaVinculosRepository {
             data: { es_principal: false },
           });
         }
-        await tx.acudiente_estudiante.upsert({
-          where: {
-            acudiente_id_estudiante_id: {
+        // Sin upsert: Prisma lo traduce a INSERT ... ON CONFLICT y elige el
+        // índice parcial uq_acudiente_principal (estudiante_id WHERE
+        // es_principal), que PostgreSQL no acepta sin su WHERE («there is no
+        // unique or exclusion constraint matching the ON CONFLICT
+        // specification»). Se actualiza y, si no había fila, se crea; todo
+        // dentro de la transacción.
+        const actualizados = await tx.acudiente_estudiante.updateMany({
+          where: { acudiente_id: acudienteId, estudiante_id: v.estudianteId },
+          data: { parentesco: v.parentesco, es_principal: v.esPrincipal },
+        });
+        if (actualizados.count === 0) {
+          await tx.acudiente_estudiante.create({
+            data: {
               acudiente_id: acudienteId,
               estudiante_id: v.estudianteId,
+              parentesco: v.parentesco,
+              es_principal: v.esPrincipal,
             },
-          },
-          create: {
-            acudiente_id: acudienteId,
-            estudiante_id: v.estudianteId,
-            parentesco: v.parentesco,
-            es_principal: v.esPrincipal,
-          },
-          update: { parentesco: v.parentesco, es_principal: v.esPrincipal },
-        });
+          });
+        }
       }
     });
   }
