@@ -7,6 +7,7 @@ import {
   type ResumePoint,
   type ReviewItem,
   type StaffProfile,
+  type StudentAssignment,
   type StudentProfile,
   type StudentSummary,
   type TeacherNote,
@@ -138,11 +139,146 @@ export const mockStudentSummaries: Record<string, StudentSummary> = {
     displayName: 'Samuel O.',
     initials: 'SO',
   },
+  // No está a cargo de la docente: solo la ve la directora.
+  'est-demo-004': {
+    id: 'est-demo-004',
+    displayName: 'Lucía R.',
+    initials: 'LR',
+  },
 };
 
-/** Docente → estudiantes asignados. */
+/** Docente → estudiantes asignados (Lucía no es suya). */
 export const mockTeacherStudents: Record<string, string[]> = {
-  [mockTeacher.id]: Object.keys(mockStudentSummaries),
+  [mockTeacher.id]: [mockStudent.id, 'est-demo-002', 'est-demo-003'],
+};
+
+/**
+ * Módulos de la fundación (ficticios). Solo los publicados se pueden
+ * asignar; «Borrador: sílabas» está para comprobar que no se ofrece.
+ * `activities`: cuántas actividades activas tiene (para el progreso).
+ */
+export interface MockModule {
+  id: string;
+  title: string;
+  description: string | null;
+  category: string;
+  published: boolean;
+  activities: number;
+}
+
+export const mockModules: MockModule[] = [
+  {
+    id: 'colors',
+    title: 'Colores',
+    description: 'Reconocer y nombrar colores',
+    category: 'Pensar y recordar',
+    published: true,
+    activities: 10,
+  },
+  {
+    id: 'numbers',
+    title: 'Números',
+    description: 'Contar del 1 al 10',
+    category: 'Pensar y recordar',
+    published: true,
+    activities: 20,
+  },
+  {
+    id: 'letters',
+    title: 'Letras',
+    description: 'Las vocales con la boca y la voz',
+    category: 'Lenguaje',
+    published: true,
+    activities: 10,
+  },
+  {
+    id: 'stories',
+    title: 'Cuentos',
+    description: null,
+    category: 'Lenguaje',
+    published: true,
+    activities: 6,
+  },
+  {
+    id: 'routines',
+    title: 'Rutinas de la casa',
+    description: 'Ordenar los pasos de cada día',
+    category: 'Pensar y recordar',
+    published: true,
+    activities: 4,
+  },
+  {
+    id: 'draft-syllables',
+    title: 'Borrador: sílabas',
+    description: null,
+    category: 'Lenguaje',
+    published: false,
+    activities: 0,
+  },
+];
+
+/**
+ * Módulos asignados a cada estudiante. Los de Martín coinciden con su
+ * «Mi progreso» (`mockOfficialProgress`). «Cuentos» no tiene intentos: se
+ * puede quitar; los demás ya empezaron.
+ */
+export const mockStudentAssignments: Record<string, StudentAssignment[]> = {
+  [mockStudent.id]: [
+    {
+      id: 'asig-demo-001',
+      moduleId: 'colors',
+      moduleTitle: 'Colores',
+      state: 'inProgress',
+      progress: 80,
+      suggestedDate: null,
+    },
+    {
+      id: 'asig-demo-002',
+      moduleId: 'numbers',
+      moduleTitle: 'Números',
+      state: 'inProgress',
+      progress: 55,
+      suggestedDate: null,
+    },
+    {
+      id: 'asig-demo-003',
+      moduleId: 'letters',
+      moduleTitle: 'Letras',
+      state: 'inProgress',
+      progress: 10,
+      suggestedDate: null,
+    },
+    {
+      id: 'asig-demo-004',
+      moduleId: 'stories',
+      moduleTitle: 'Cuentos',
+      state: 'assigned',
+      progress: 0,
+      suggestedDate: null,
+    },
+  ],
+  'est-demo-002': [
+    {
+      id: 'asig-demo-005',
+      moduleId: 'letters',
+      moduleTitle: 'Letras',
+      state: 'inProgress',
+      progress: 40,
+      suggestedDate: null,
+    },
+  ],
+  // Samuel todavía no tiene módulos asignados.
+  'est-demo-003': [],
+  'est-demo-004': [
+    {
+      id: 'asig-demo-006',
+      moduleId: 'numbers',
+      moduleTitle: 'Números',
+      state: 'completed',
+      progress: 100,
+      suggestedDate: null,
+    },
+  ],
 };
 
 /** Acudiente → estudiante asociado (solo Martín). */
@@ -159,10 +295,11 @@ function hoursAgo(hours: number): string {
  * una grabación, juega «Habla conmigo» como estudiante y aparecerá arriba.
  */
 export function createSeedReviews(): ReviewItem[] {
-  const [martin, valentina, samuel] = [
+  const [martin, valentina, samuel, lucia] = [
     mockStudentSummaries[mockStudent.id],
     mockStudentSummaries['est-demo-002'],
     mockStudentSummaries['est-demo-003'],
+    mockStudentSummaries['est-demo-004'],
   ] as StudentSummary[];
   return [
     {
@@ -200,6 +337,15 @@ export function createSeedReviews(): ReviewItem[] {
       submittedAt: hoursAgo(28),
       status: 'pending_validation',
       listening: { firstTryCorrect: 4, total: 5 },
+    },
+    // De una estudiante que no es de la docente: solo la ve la directora.
+    {
+      id: 'rev-demo-004',
+      kind: 'listening',
+      student: lucia,
+      submittedAt: hoursAgo(30),
+      status: 'pending_validation',
+      listening: { firstTryCorrect: 3, total: 5 },
     },
   ];
 }

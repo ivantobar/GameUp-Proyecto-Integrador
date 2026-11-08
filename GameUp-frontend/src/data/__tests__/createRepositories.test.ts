@@ -1,4 +1,3 @@
-import { parseDataSource } from '@/config/env';
 import { createRepositories } from '../createRepositories';
 
 jest.mock('expo-secure-store', () => ({
@@ -7,18 +6,8 @@ jest.mock('expo-secure-store', () => ({
   deleteItemAsync: jest.fn(() => Promise.resolve()),
 }));
 
-describe('EXPO_PUBLIC_DATA_SOURCE', () => {
-  it.each([
-    [undefined, 'mock'],
-    ['', 'mock'],
-    ['mock', 'mock'],
-    ['otra-cosa', 'mock'],
-    ['api', 'api'],
-    [' API ', 'api'],
-  ])('%p → %s', (value, expected) => {
-    expect(parseDataSource(value)).toBe(expected);
-  });
-});
+// La tabla de `parseDataSource` y `checkApiUrl` vive en
+// `src/config/__tests__/env.test.ts`.
 
 describe('punto de composición', () => {
   it('con mock, los datos simulados responden sin backend', async () => {
@@ -47,4 +36,65 @@ describe('punto de composición', () => {
     await expect(repos.students.getCurrentStudent()).rejects.toThrow();
     expect(onSessionExpired).toHaveBeenCalledTimes(1);
   });
+
+  it('fuera de desarrollo, aunque se pida mock, usa la API', async () => {
+    const onSessionExpired = jest.fn();
+    const repos = createRepositories({
+      dataSource: 'mock',
+      isDev: false,
+      onSessionExpired,
+    });
+
+    // Un simulado respondería con el estudiante ficticio; la API, sin
+    // sesión, lo rechaza y vuelve a «Iniciar sesión».
+    await expect(repos.students.getCurrentStudent()).rejects.toThrow();
+    expect(onSessionExpired).toHaveBeenCalledTimes(1);
+  });
 });
+
+describe('fuera de desarrollo con EXPO_PUBLIC_DATA_SOURCE=mock', () => {
+  const original = {
+    dev: __DEV__,
+    url: process.env.EXPO_PUBLIC_API_URL,
+    source: process.env.EXPO_PUBLIC_DATA_SOURCE,
+  };
+
+  afterEach(() => {
+    (globalThis as unknown as { __DEV__: boolean }).__DEV__ = original.dev;
+    restore('EXPO_PUBLIC_API_URL', original.url);
+    restore('EXPO_PUBLIC_DATA_SOURCE', original.source);
+  });
+
+  it('createRepositories() nunca devuelve los repositorios simulados', async () => {
+    (globalThis as unknown as { __DEV__: boolean }).__DEV__ = false;
+    process.env.EXPO_PUBLIC_DATA_SOURCE = 'mock';
+    process.env.EXPO_PUBLIC_API_URL = 'https://api.gameup.test/api/v1';
+
+    const mockFactory = jest.fn();
+
+    let create: typeof createRepositories | undefined;
+    jest.isolateModules(() => {
+      jest.doMock('../mock/createMockRepositories', () => ({
+        createMockRepositories: mockFactory,
+      }));
+      create = jest.requireActual<typeof import('../createRepositories')>(
+        '../createRepositories',
+      ).createRepositories;
+    });
+
+    // Sin opciones: todo sale de las variables de entorno y de `__DEV__`.
+    const onSessionExpired = jest.fn();
+    const repos = create!({ onSessionExpired });
+
+    expect(mockFactory).not.toHaveBeenCalled();
+    await expect(repos.students.getCurrentStudent()).rejects.toThrow();
+    // Sin sesión, la API ni siquiera llama a la red: vuelve a «Iniciar sesión».
+    expect(onSessionExpired).toHaveBeenCalledTimes(1);
+  });
+});
+
+/** Devuelve la variable a su valor (asignar `undefined` dejaría el texto "undefined"). */
+function restore(name: string, value: string | undefined) {
+  if (value === undefined) delete process.env[name];
+  else process.env[name] = value;
+}

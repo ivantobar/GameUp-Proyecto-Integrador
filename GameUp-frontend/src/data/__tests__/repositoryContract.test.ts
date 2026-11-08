@@ -6,6 +6,7 @@ import { createMemoryTokenStore } from '../http/tokenStore';
 import { createMockRepositories } from '../mock/createMockRepositories';
 import { MOCK_PASSWORD } from '../mock/fixtures';
 import type { Repositories } from '../repositories';
+import { AssignmentError, StudentAccessError } from '../studentErrors';
 
 /**
  * Sustitución de Liskov: la versión simulada y la HTTP cumplen el mismo
@@ -424,6 +425,146 @@ describe.each(implementations)('contrato de la versión %s', (_name, create) => 
 
     it('cerrar sesión no falla', async () => {
       await expect(settle(repos.auth.signOut())).resolves.toBeUndefined();
+    });
+
+    it('no puede asignar actividades (notAllowed)', async () => {
+      const error = await settle(
+        repos.assignmentManagement.assign({
+          moduleId: 'routines',
+          studentId: 'est-demo-001',
+        }),
+      ).catch((e: unknown) => e);
+      expect(error).toBeInstanceOf(AssignmentError);
+      expect((error as AssignmentError).problem).toBe('notAllowed');
+    });
+  });
+
+  describe('espacio de la directora', () => {
+    beforeEach(async () => {
+      await signInAs('directora@gameup.test');
+    });
+
+    it('la sesión es un StaffProfile, aunque no sea docente', async () => {
+      const staff = await settle(repos.staff.getCurrentStaff());
+      expect(Object.keys(staff).sort()).toEqual(['displayName', 'id']);
+    });
+
+    it('ve más estudiantes que la docente (Lucía no es de la docente)', async () => {
+      const students = await settle(repos.directory.listStudents());
+      expect(students.map((s) => s.id)).toContain('est-demo-004');
+    });
+
+    it('el resumen son números enteros', async () => {
+      const counts = await Promise.all([
+        settle(repos.overview.countStudents()),
+        settle(repos.overview.countPendingReviews()),
+        settle(repos.overview.countAssignments('assigned')),
+        settle(repos.overview.countAssignments('inProgress')),
+        settle(repos.overview.countAssignments('completed')),
+      ]);
+      counts.forEach((n) => {
+        expect(Number.isInteger(n)).toBe(true);
+        expect(n).toBeGreaterThanOrEqual(0);
+      });
+      expect(counts[0]).toBe(4);
+    });
+
+    it('puede asignar a una estudiante que no es de la docente', async () => {
+      const created = await settle(
+        repos.assignmentManagement.assign({
+          moduleId: 'routines',
+          studentId: 'est-demo-004',
+        }),
+      );
+      expect(created.state).toBe('assigned');
+    });
+  });
+
+  describe('asignaciones de la tallerista', () => {
+    beforeEach(async () => {
+      await signInAs('docente@gameup.test');
+    });
+
+    const problemOf = (promise: Promise<unknown>) =>
+      settle(promise).then(
+        () => 'sin error',
+        (e: unknown) => (e instanceof AssignmentError ? e.problem : e),
+      );
+
+    it('ve a sus estudiantes con su progreso oficial', async () => {
+      const students = await settle(repos.directory.listStudents());
+      expect(students.length).toBeGreaterThan(0);
+      const first = students[0]!;
+      expect(Object.keys(first).sort()).toEqual([
+        'displayName',
+        'id',
+        'initials',
+      ]);
+      const progress = await settle(
+        repos.directory.getStudentProgress(first.id),
+      );
+      expect(Array.isArray(progress.modules)).toBe(true);
+    });
+
+    it('solo se ofrecen módulos publicados', async () => {
+      const modules = await settle(
+        repos.assignmentManagement.listAssignableModules(),
+      );
+      expect(modules.map((m) => m.id)).toContain('routines');
+      expect(modules.map((m) => m.id)).not.toContain('draft-syllables');
+    });
+
+    it('asignar, repetir (alreadyAssigned) y quitar sin intentos', async () => {
+      const created = await settle(
+        repos.assignmentManagement.assign({
+          moduleId: 'routines',
+          studentId: 'est-demo-003',
+        }),
+      );
+      expect(created).toMatchObject({
+        moduleId: 'routines',
+        moduleTitle: 'Rutinas de la casa',
+        state: 'assigned',
+        progress: 0,
+        suggestedDate: null,
+      });
+      expect(
+        await problemOf(
+          repos.assignmentManagement.assign({
+            moduleId: 'routines',
+            studentId: 'est-demo-003',
+          }),
+        ),
+      ).toBe('alreadyAssigned');
+
+      await settle(repos.assignmentManagement.remove(created.id));
+      const list = await settle(
+        repos.assignmentManagement.listForStudent('est-demo-003'),
+      );
+      expect(list).toEqual([]);
+    });
+
+    it('un módulo sin publicar → notAssignable', async () => {
+      expect(
+        await problemOf(
+          repos.assignmentManagement.assign({
+            moduleId: 'draft-syllables',
+            studentId: 'est-demo-003',
+          }),
+        ),
+      ).toBe('notAssignable');
+    });
+
+    it('quitar una que ya empezó → hasAttempts', async () => {
+      expect(
+        await problemOf(repos.assignmentManagement.remove('asig-demo-001')),
+      ).toBe('hasAttempts');
+    });
+
+    it('un estudiante ajeno → StudentAccessError', async () => {
+      await expect(
+        settle(repos.directory.getStudent('est-ajeno')),
+      ).rejects.toBeInstanceOf(StudentAccessError);
     });
   });
 });

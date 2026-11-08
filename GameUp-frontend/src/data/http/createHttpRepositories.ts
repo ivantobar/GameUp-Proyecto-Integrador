@@ -1,8 +1,10 @@
 import type { ApiClient } from '@/services/api';
 import type { Repositories } from '../repositories';
+import { createHttpAssignmentManagementRepository } from './httpAssignmentManagementRepository';
 import { createHttpAuthRepository } from './httpAuthRepository';
 import { createHttpGuardianRepository } from './httpGuardianRepository';
 import { createHttpLevelRepository } from './httpLevelRepository';
+import { createHttpOverviewRepository } from './httpOverviewRepository';
 import { createHttpReviewRepository } from './httpReviewRepository';
 import { createHttpStaffRepository } from './httpStaffRepository';
 import {
@@ -12,6 +14,7 @@ import {
   createHttpPracticeRepository,
   createHttpProgressRepository,
 } from './httpStudentFlowRepositories';
+import { createHttpStudentDirectoryRepository } from './httpStudentDirectoryRepository';
 import { createHttpStudentRepository } from './httpStudentRepository';
 import {
   createHttpRecordingRepository,
@@ -38,5 +41,8 @@ export function createHttpRepositories(
     results: createHttpResultRepository(api),
     reviews: createHttpReviewRepository(api),
     guardians: createHttpGuardianRepository(api),
+    directory: createHttpStudentDirectoryRepository(api),
+    assignmentManagement: createHttpAssignmentManagementRepository(api),
+    overview: createHttpOverviewRepository(api),
   };
 }

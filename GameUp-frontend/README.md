@@ -37,6 +37,14 @@ App móvil de **GameUP**, el aula virtual inclusiva de la Fundación ASISCO-UP.
 > API no se muestra.
 > Los permisos de cada rol los verifica el backend.
 >
+> **Docente y directora (auditoría C1–C3):** la tallerista tiene dos
+> pestañas, «Por escuchar» y **«Mis estudiantes»**: ve el progreso oficial
+> de cada uno, abre su detalle y **asigna** o **quita** módulos publicados.
+> La **directora** tiene su espacio: «Estudiantes» (todos, con búsqueda),
+> «Por validar» (la misma bandeja, con los pendientes de todos) y
+> «Resumen» (cifras generales). Fuera de desarrollo la app usa siempre la
+> API y exige `https://`.
+>
 > **Tareas y juego libre:** el aviso «Tu profe te dejó…» de Inicio y las
 > tarjetas con la insignia «Tarea» abren la actividad con su `actividadId`
 > en la ruta: su resultado llega al docente. Abierto de otra forma, el juego
@@ -81,9 +89,15 @@ EXPO_PUBLIC_API_URL=http://192.168.1.20:3000/api/v1
 Para elegir de dónde salen los datos:
 
 ```bash
-EXPO_PUBLIC_DATA_SOURCE=mock   # datos ficticios, sin backend (por defecto)
+EXPO_PUBLIC_DATA_SOURCE=mock   # datos ficticios, sin backend (por defecto, solo en desarrollo)
 EXPO_PUBLIC_DATA_SOURCE=api    # la API NestJS de EXPO_PUBLIC_API_URL
 ```
+
+> `mock` solo existe en desarrollo. En una versión publicada (fuera de
+> `__DEV__`) la app usa **siempre** la API, y `EXPO_PUBLIC_API_URL` debe
+> empezar por `https://`: si falta o es `http://`, muestra «GameUP no está
+> bien configurado» y no deja iniciar sesión. En desarrollo se acepta
+> `http://` con la IP local.
 
 > Las variables `EXPO_PUBLIC_*` quedan dentro de la app y cualquiera puede
 > leerlas. **Nunca** pongas aquí claves secretas (`DATABASE_URL`,
@@ -104,7 +118,7 @@ npm start                # las demás veces
    - `estudiante@gameup.test` → Inicio del estudiante.
    - `docente@gameup.test` → «Por escuchar».
    - `acudiente@gameup.test` → «Practicar en casa».
-   - `directora@gameup.test` → aviso «llega en una próxima versión».
+   - `directora@gameup.test` → «Estudiantes» de la directora.
    El enlace **Ir al modo desarrollo** abre el selector de abajo.
 3. **Modo desarrollo**:
    - **Catálogo de componentes**: cada componente en todos sus estados.
@@ -126,6 +140,20 @@ npm start                # las demás veces
      familia; también se puede grabar una nota de voz para la familia.
    - **Ver la app como → Acudiente**: «Practicar en casa», con el sonido de
      la semana, los pasos, la nota de la profe y «Lo practicamos hoy».
+   - **Ver la app como → Docente → Mis estudiantes**: Martín, Valentina y
+     Samuel con su progreso oficial. Toca uno → detalle → «Asignar
+     actividad» → elige «Rutinas de la casa» (las que ya tiene salen como
+     «Ya asignado»; «Borrador: sílabas» no aparece porque no está
+     publicado) → «Asignar». Vuelve con «Actividad asignada». «Quitar» pide
+     confirmación; solo se puede quitar lo que no ha empezado («Cuentos» de
+     Martín).
+   - **Ver la app como → Directora**: además de los tres, ve a Lucía (que no
+     es de la docente). «Estudiantes» busca sin tildes («lucia»). «Por
+     validar» muestra también los pendientes de Lucía. «Resumen» cuenta
+     estudiantes, por validar y asignaciones sin empezar, en curso y
+     completadas.
+   - Cada entrada del «Modo desarrollo» entra con la cuenta ficticia de su
+     rol: los datos simulados deciden con ella qué estudiantes se ven.
    - Los datos simulados viven en memoria: al recargar la app (o cerrar
      Expo Go) vuelven a los iniciales.
    - El parlante lee la instrucción con la voz del teléfono. En iPhone no
@@ -179,7 +207,8 @@ GameUp-frontend/
     │   ├── login.tsx       #   Iniciar sesión
     │   ├── dev/            #   selector de rol, catálogo y prueba de conexión
     │   ├── student/        #   (tabs)/ Inicio, Juegos, Progreso · speak/ · find-mouth/
-    │   ├── teacher/        #   «Por escuchar» (docente)
+    │   ├── teacher/        #   (tabs)/ «Por escuchar» y «Mis estudiantes» · student/[id]/ detalle y assign
+    │   ├── director/       #   (tabs)/ «Estudiantes», «Por validar», «Resumen» · student/[id]/ (mismas vistas)
     │   └── guardian/       #   «Practicar en casa» (acudiente)
     ├── theme/              # Tokens: colores, tipografía, espacios, movimiento
     ├── components/ui/      # Componentes base reutilizables
@@ -258,6 +287,38 @@ niño real.
 - Al subir de nivel, «Juegos» muestra una celebración breve y solo visual,
   una vez por subida. El último nivel visto se guarda con
   `expo-secure-store` (`src/features/games/levelCelebration.ts`).
+
+### Docente y directora: rutas y datos
+
+| Ruta                                                | Quién              | Qué muestra                                                      |
+| --------------------------------------------------- | ------------------ | ---------------------------------------------------------------- |
+| `/teacher` (`(tabs)/index`)                         | Tallerista         | «Por escuchar» (igual que antes)                                 |
+| `/teacher/students`                                 | Tallerista         | «Mis estudiantes» con su progreso oficial                        |
+| `/teacher/student/[id]` · `/director/student/[id]`  | Tallerista, directora | Progreso por módulo, niveles por juego, asignaciones, «Asignar actividad» |
+| `…/student/[id]/assign`                             | Tallerista, directora | Elegir un módulo publicado y una fecha sugerida (hora de Bogotá) |
+| `/director` (`(tabs)/index`)                        | Directora          | Todos los estudiantes, con búsqueda por nombre                   |
+| `/director/review`                                  | Directora          | «Por validar»: la misma bandeja de revisión, de todos            |
+| `/director/summary`                                 | Directora          | «Resumen»: cifras generales                                      |
+
+- `directory` (`StudentDirectoryRepository`): `GET /estudiantes`,
+  `GET /estudiantes/:id` y `GET /estudiantes/:id/progreso`.
+- `assignmentManagement` (`AssignmentManagementRepository`):
+  `GET /modulos?publicado=true`, `GET /asignaciones?estudianteId=`,
+  `POST /asignaciones` y `DELETE /asignaciones/:id`. Los errores se
+  traducen según el endpoint: en POST, 409 = «ya asignado» y 422 = «sin
+  publicar o fecha pasada»; en DELETE, 409 = «ya empezó a practicarla».
+- `overview` (`OverviewRepository`): lee el `total` de `GET /estudiantes`,
+  `GET /revisiones/pendientes` y `GET /asignaciones?estado=` (con
+  `limit=1`). Si una cifra falla, esa tarjeta dice «No disponible».
+- La búsqueda por nombre es local (el backend no la ofrece). El progreso
+  de la lista se pide solo para las filas visibles, de 20 en 20, con 5
+  pedidos a la vez como máximo.
+- La app no decide permisos: si el backend responde 403 o 404, se muestra
+  «No puedes ver a este estudiante» (no «Revisa la conexión»).
+
+**Con la API:** pon `EXPO_PUBLIC_DATA_SOURCE=api` y entra con las cuentas de
+prueba del backend (tallerista o directora). Solo se pueden asignar módulos
+publicados; la fecha sugerida no puede ser anterior a hoy en Bogotá.
 
 ## 8. Agregar un juego
 

@@ -13,7 +13,10 @@ import {
   ScreenHeader,
   type IconName,
 } from '@/components/ui';
+import { env } from '@/config/env';
 import { useDevSettings } from '@/data/mock/devSettings';
+import { MOCK_PASSWORD } from '@/data/mock/fixtures';
+import { useRepositories } from '@/data/RepositoryProvider';
 import { colors, spacing } from '@/theme';
 
 interface RoleEntry {
@@ -23,17 +26,42 @@ interface RoleEntry {
   phase: string;
   /** Ruta de entrada, cuando el flujo ya existe. */
   href?: Href;
+  /**
+   * Cuenta ficticia con la que entra en los datos simulados: decide qué
+   * estudiantes ve (la directora, todos; la docente, los suyos).
+   */
+  mockEmail?: string;
 }
 
-/** Roles con mockup. La directora no tiene mockup y no se diseña todavía. */
+/** Roles con pantallas. La directora no tiene mockup: usa el estilo del docente. */
 const roles: readonly RoleEntry[] = [
-  { label: 'Estudiante', icon: 'student', phase: 'Fase 2', href: '/student' },
-  { label: 'Docente', icon: 'teacher', phase: 'Fase 5', href: '/teacher' },
+  {
+    label: 'Estudiante',
+    icon: 'student',
+    phase: 'Fase 2',
+    href: '/student',
+    mockEmail: 'estudiante@gameup.test',
+  },
+  {
+    label: 'Docente',
+    icon: 'teacher',
+    phase: 'Fase 5',
+    href: '/teacher',
+    mockEmail: 'docente@gameup.test',
+  },
   {
     label: 'Acudiente',
     icon: 'guardian',
     phase: 'Fase 5',
     href: '/guardian',
+    mockEmail: 'acudiente@gameup.test',
+  },
+  {
+    label: 'Directora',
+    icon: 'book',
+    phase: 'C1',
+    href: '/director',
+    mockEmail: 'directora@gameup.test',
   },
 ];
 
@@ -44,6 +72,19 @@ const roles: readonly RoleEntry[] = [
  */
 export default function DevHome() {
   const { settings, update } = useDevSettings();
+  const { auth } = useRepositories();
+
+  /** Con datos simulados, entra con la cuenta ficticia del rol y abre su espacio. */
+  const enterAs = async (href: Href, mockEmail?: string) => {
+    if (env.dataSource === 'mock' && mockEmail) {
+      try {
+        await auth.signIn({ email: mockEmail, password: MOCK_PASSWORD });
+      } catch {
+        // Solo desarrollo: si falla, se abre igual con la sesión anterior.
+      }
+    }
+    router.push(href);
+  };
   return (
     <Screen header={<ScreenHeader title="Modo desarrollo" />}>
       <Notice
@@ -107,12 +148,14 @@ export default function DevHome() {
         <AppText variant="label" tone="secundario" accessibilityRole="header">
           Ver la app como
         </AppText>
-        {roles.map(({ label, icon, phase, href }) =>
+        {roles.map(({ label, icon, phase, href, mockEmail }) =>
           href ? (
             <PressableCard
               key={label}
               accessibilityLabel={`Entrar como ${label}`}
-              onPress={() => router.push(href)}
+              onPress={() => {
+                enterAs(href, mockEmail).catch(() => {});
+              }}
             >
               <View style={styles.roleRow}>
                 <Icon name={icon} color={colors.verde.oscuro} />

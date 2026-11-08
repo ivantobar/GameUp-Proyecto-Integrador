@@ -111,15 +111,15 @@ describe('Iniciar sesión (simulado)', () => {
     expect(router.replace).not.toHaveBeenCalled();
   });
 
-  it('la directora entra, pero su espacio todavía no existe', async () => {
+  it('la directora entra a su espacio (/director)', async () => {
     await renderLogin(createMockRepositories({ delayMs: 0 }));
 
     await signIn('directora@gameup.test', MOCK_PASSWORD);
 
+    expect(router.replace).toHaveBeenCalledWith('/director');
     expect(
-      screen.getByText('Tu espacio en GameUP llega en una próxima versión.'),
-    ).toBeOnTheScreen();
-    expect(router.replace).not.toHaveBeenCalled();
+      screen.queryByText('Tu espacio en GameUP llega en una próxima versión.'),
+    ).toBeNull();
   });
 
   it('el botón del ojo muestra y oculta la contraseña', async () => {

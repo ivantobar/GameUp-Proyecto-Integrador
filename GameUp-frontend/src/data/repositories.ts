@@ -1,6 +1,8 @@
 import type {
   ActivityContent,
+  AssignableModule,
   Assignment,
+  AssignmentState,
   AuthSession,
   Credentials,
   GameLevel,
@@ -10,6 +12,7 @@ import type {
   LevelUp,
   ListeningResult,
   NewGameResult,
+  NewAssignment,
   NewListeningResult,
   NewSpeechAttempt,
   OfficialProgress,
@@ -18,6 +21,7 @@ import type {
   StaffProfile,
   SpeechAttempt,
   StarCount,
+  StudentAssignment,
   StudentProfile,
   StudentSummary,
   Vowel,
@@ -142,6 +146,11 @@ export interface ProgressRepository {
 }
 
 export interface StaffRepository {
+  /**
+   * Adulto con sesión, sea docente o directora (por ejemplo, para «Por
+   * escuchar» y «Por validar»). Con la API sale de `GET /auth/me`.
+   */
+  getCurrentStaff(): Promise<StaffProfile>;
   /** Docente con sesión. Con la API saldrá del token. */
   getCurrentTeacher(): Promise<StaffProfile>;
   /** Acudiente con sesión. */
@@ -208,6 +217,46 @@ export interface GuardianRepository {
   markPracticedToday(guardianId: string, studentId: string): Promise<void>;
 }
 
+/**
+ * Estudiantes que puede ver el adulto con sesión (docente: los suyos;
+ * directora: todos). El backend decide quiénes son; la app no filtra.
+ * Si el estudiante no le corresponde (403 o 404), rechaza con
+ * `StudentAccessError` (`./studentErrors`).
+ */
+export interface StudentDirectoryRepository {
+  listStudents(): Promise<StudentSummary[]>;
+  getStudent(studentId: string): Promise<StudentSummary>;
+  /** Progreso oficial de ese estudiante: solo lo validado. */
+  getStudentProgress(studentId: string): Promise<OfficialProgress>;
+}
+
+/**
+ * Asignar módulos (docente y directora). Si el backend dice que no, rechaza
+ * con `AssignmentError` y su motivo (`./studentErrors`).
+ */
+export interface AssignmentManagementRepository {
+  /** Módulos asignados a un estudiante, con su estado y avance. */
+  listForStudent(studentId: string): Promise<StudentAssignment[]>;
+  /** Solo los módulos publicados: los demás no se pueden asignar. */
+  listAssignableModules(): Promise<AssignableModule[]>;
+  assign(input: NewAssignment): Promise<StudentAssignment>;
+  /** Quitar una asignación. No se puede deshacer. */
+  remove(assignmentId: string): Promise<void>;
+}
+
+/**
+ * Cifras del «Resumen» de la directora. Cada una es una consulta aparte:
+ * si una falla, las demás se siguen mostrando.
+ */
+export interface OverviewRepository {
+  /** Estudiantes que puede ver la sesión. */
+  countStudents(): Promise<number>;
+  /** Actividades que esperan validación. */
+  countPendingReviews(): Promise<number>;
+  /** Asignaciones en ese estado. */
+  countAssignments(state: AssignmentState): Promise<number>;
+}
+
 /** Conjunto de repositorios que se inyecta en la app. */
 export interface Repositories {
   auth: AuthRepository;
@@ -223,4 +272,7 @@ export interface Repositories {
   staff: StaffRepository;
   reviews: ReviewRepository;
   guardians: GuardianRepository;
+  directory: StudentDirectoryRepository;
+  assignmentManagement: AssignmentManagementRepository;
+  overview: OverviewRepository;
 }

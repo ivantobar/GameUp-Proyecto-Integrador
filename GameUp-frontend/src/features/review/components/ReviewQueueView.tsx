@@ -24,8 +24,25 @@ import {
 import { useReviewQueue } from '@/features/review/useReviewQueue';
 import { spacing } from '@/theme';
 
-/** Pantalla 8 · Docente: «Por escuchar». */
-export default function TeacherReviewScreen() {
+interface ReviewQueueViewProps {
+  /** «Por escuchar» (docente) o «Por validar» (directora). */
+  title: string;
+  /**
+   * Aviso «Gestos de la fundación» (grabar el gesto de cada sonido). Es
+   * tarea de la tallerista; la directora no lo ve.
+   */
+  showGestureNotice?: boolean;
+}
+
+/**
+ * Bandeja de revisión: Pantalla 8 · Docente «Por escuchar», y «Por validar»
+ * de la directora. Qué intentos aparecen lo decide el backend según la
+ * sesión (la tallerista, los de sus estudiantes; la directora, todos).
+ */
+export function ReviewQueueView({
+  title,
+  showGestureNotice = true,
+}: ReviewQueueViewProps) {
   const queue = useReviewQueue();
   const { resource, reload, refresh, message, busyId } = queue;
   const [filter, setFilter] = useState<ReviewFilter>('all');
@@ -44,6 +61,8 @@ export default function TeacherReviewScreen() {
 
   return (
     <Screen
+      // Dentro de las pestañas: la barra inferior ya respeta el borde.
+      safeAreaBottom={false}
       header={
         <ScreenHeader
           left={
@@ -52,7 +71,7 @@ export default function TeacherReviewScreen() {
               <HeaderBackButton onPress={() => router.back()} />
             ) : undefined
           }
-          title="Por escuchar"
+          title={title}
           right={<SignOutButton />}
         />
       }
@@ -135,22 +154,24 @@ export default function TeacherReviewScreen() {
             </View>
           )}
 
-          <Notice
-            icon="video"
-            tone="warm"
-            title="Gestos de la fundación"
-            message="Graba el gesto de cada sonido. Es el video que ven los niños en «Ver el gesto». Llega en una próxima versión."
-            action={
-              <Button
-                label="Grabar un gesto"
-                icon="video"
-                variant="secondary"
-                disabled
-                accessibilityHint="Próximamente"
-                onPress={() => {}}
-              />
-            }
-          />
+          {showGestureNotice ? (
+            <Notice
+              icon="video"
+              tone="warm"
+              title="Gestos de la fundación"
+              message="Graba el gesto de cada sonido. Es el video que ven los niños en «Ver el gesto». Llega en una próxima versión."
+              action={
+                <Button
+                  label="Grabar un gesto"
+                  icon="video"
+                  variant="secondary"
+                  disabled
+                  accessibilityHint="Próximamente"
+                  onPress={() => {}}
+                />
+              }
+            />
+          ) : null}
         </>
       ) : null}
     </Screen>
