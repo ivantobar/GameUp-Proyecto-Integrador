@@ -34,6 +34,8 @@ export function useSignIn() {
   const [password, setPasswordValue] = useState('');
   const [errors, setErrors] = useState<CredentialErrors>({});
   const [problem, setProblem] = useState<SignInProblem | null>(null);
+  /** Motivo del backend cuando la cuenta no puede entrar (ya revisado). */
+  const [reason, setReason] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   // Al corregir un campo, su aviso desaparece.
@@ -41,11 +43,13 @@ export function useSignIn() {
     setEmailValue(value);
     setErrors((current) => ({ ...current, email: undefined }));
     setProblem(null);
+    setReason(null);
   };
   const setPassword = (value: string) => {
     setPasswordValue(value);
     setErrors((current) => ({ ...current, password: undefined }));
     setProblem(null);
+    setReason(null);
   };
 
   /** Llena el formulario (cuentas de prueba en desarrollo). */
@@ -54,6 +58,7 @@ export function useSignIn() {
     setPasswordValue(values.password);
     setErrors({});
     setProblem(null);
+    setReason(null);
   };
 
   /** Devuelve la sesión si se pudo entrar; si no, `null` y deja el aviso. */
@@ -62,6 +67,7 @@ export function useSignIn() {
     const found = validateCredentials({ email, password });
     setErrors(found);
     setProblem(null);
+    setReason(null);
     if (hasErrors(found)) return null;
 
     setSubmitting(true);
@@ -69,6 +75,7 @@ export function useSignIn() {
       return await auth.signIn({ email: normalizeEmail(email), password });
     } catch (error: unknown) {
       setProblem(problemOf(error));
+      setReason(error instanceof AccountNotAllowedError ? error.reason : null);
       return null;
     } finally {
       setSubmitting(false);
@@ -83,6 +90,7 @@ export function useSignIn() {
     fill,
     errors,
     problem,
+    reason,
     submitting,
     submit,
   };

@@ -81,7 +81,13 @@ export default function LoginScreen() {
     }
   };
 
-  const notice = form.problem ? problemNotices[form.problem] : null;
+  const baseNotice = form.problem ? problemNotices[form.problem] : null;
+  // Si el backend explicó por qué la cuenta no puede entrar (inactiva, rol
+  // distinto, no está en ASISCO UP...), se muestra ese motivo.
+  const notice =
+    baseNotice && form.problem === 'notAllowed' && form.reason
+      ? { ...baseNotice, message: form.reason }
+      : baseNotice;
 
   return (
     <KeyboardAvoidingView

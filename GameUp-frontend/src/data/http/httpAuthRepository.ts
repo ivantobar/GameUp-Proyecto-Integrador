@@ -11,6 +11,7 @@ import {
 } from '../authErrors';
 import type { AuthRepository } from '../repositories';
 import type { LoginDto, LoginRespuestaDto } from './dto/auth';
+import { friendlyReason } from './mappers/friendlyReason';
 import { toAuthSession } from './mappers/sessionMapper';
 import { requireText } from './mappers/responseShape';
 import type { TokenStore } from './tokenStore';
@@ -48,7 +49,11 @@ export function createHttpAuthRepository(
         // Mismos errores que la versión simulada (sustitución de Liskov).
         if (error instanceof UnauthorizedError)
           throw new InvalidCredentialsError();
-        if (error instanceof ForbiddenError) throw new AccountNotAllowedError();
+        // 403: el backend dice el motivo (inactiva, rol distinto, no está
+        // en ASISCO UP...). Solo se pasa si es texto claro para la persona.
+        if (error instanceof ForbiddenError) {
+          throw new AccountNotAllowedError(friendlyReason(error.message));
+        }
         // 503: el backend respondió, pero la API de seguridad no (por
         // ejemplo, se estaba despertando en Render). No es la red del teléfono.
         if (error instanceof ServerError && error.status === 503) {

@@ -97,6 +97,27 @@ describe('Iniciar sesión (simulado)', () => {
     expect(router.replace).not.toHaveBeenCalled();
   });
 
+  it('si el backend dio el motivo, muestra ese motivo en vez del texto general', async () => {
+    const motivo =
+      'Tu cuenta de GameUP está desactivada. Habla con la directora de la fundación.';
+    const repositories = createMockRepositories({ delayMs: 0 });
+    jest
+      .spyOn(repositories.auth, 'signIn')
+      .mockRejectedValue(new AccountNotAllowedError(motivo));
+    await renderLogin(repositories);
+
+    await signIn('docente@gameup.test', MOCK_PASSWORD);
+
+    expect(screen.getByText('No pudimos entrar')).toBeOnTheScreen();
+    expect(screen.getByText(motivo)).toBeOnTheScreen();
+    expect(
+      screen.queryByText(
+        'Tu cuenta no tiene acceso a GameUP. Habla con la fundación.',
+      ),
+    ).toBeNull();
+    expect(router.replace).not.toHaveBeenCalled();
+  });
+
   it('si no responde el servicio de cuentas, no culpa a la conexión del teléfono', async () => {
     const repositories = createMockRepositories({ delayMs: 0 });
     jest

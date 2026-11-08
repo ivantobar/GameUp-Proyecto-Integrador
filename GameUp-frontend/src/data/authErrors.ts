@@ -10,11 +10,15 @@ export class InvalidCredentialsError extends Error {
 }
 
 /**
- * Las credenciales son correctas, pero la cuenta no puede usar GameUP: no
- * tiene cuenta en GameUP, está inactiva o su rol no tiene acceso.
+ * Las credenciales son correctas, pero la cuenta no puede usar GameUP: está
+ * inactiva, su rol no tiene acceso o no coincide, ASISCO UP no la encuentra...
+ *
+ * `reason` es el motivo que dio el backend, ya revisado para mostrarlo tal
+ * cual (texto claro, sin códigos ni ids). Si es `null`, la pantalla usa su
+ * texto general.
  */
 export class AccountNotAllowedError extends Error {
-  constructor() {
+  constructor(readonly reason: string | null = null) {
     super('La cuenta no tiene acceso a GameUP');
     this.name = 'AccountNotAllowedError';
   }
