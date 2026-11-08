@@ -43,7 +43,7 @@ services:
       - key: ASISCO_API_URL
         value: "https://proyecto-asiscoup-g1-jvaz.onrender.com"
       - key: ASISCO_API_TIMEOUT_MS
-        value: "5000"
+        value: "15000"
       # Nunca true en producción (la app no arrancaría).
       - key: CONSENTIMIENTO_SIMULADO
         value: "false"
