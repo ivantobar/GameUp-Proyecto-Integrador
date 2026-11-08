@@ -19,6 +19,7 @@ Cada fase vive en su rama, creada desde la rama de la fase anterior. Todas está
 | 8 | Acudiente, observaciones, notificaciones y práctica en casa | `backend/fase-8-acudiente` | `1aa768c` | `3cff8c9` |
 | 9 | Escalera de 5 niveles por juego (backend: 9.1 migración `79f69ef`, 9.2 reglas `5d5b109`, 9.3 subida y endpoints `8733ef8`) | `backend/fase-9-niveles-por-juego` | `8733ef8` | `main` (`fb4f0de`) |
 | 9 | Escalera en la app (frontend, 9.4) y esta documentación (9.5) | `frontend/niveles-por-juego` | ver `git log` | `8733ef8` |
+| — | Integración ASISCO UP: Swagger, consentimiento de voz y vínculos de acudientes (ver la sección 7) | `backend/integracion-asiscoup` | ver `git log` | `main` (`e0d160c`) |
 
 **Estado al cerrar la fase 9 (2026-11-06):**
 - Backend: `build` y `lint` pasan; 554 pruebas unitarias (44 archivos) y 171 e2e (12 archivos), incluida la de Swagger.
@@ -379,7 +380,7 @@ Las corre otra persona sobre las ramas subidas. Con la base en memoria no se pue
 ## 6. Otros pendientes abiertos
 
 - **Mapper del perfil:** confirmado el 2026-11-05 con una cuenta de prueba: `GET /api/auth/perfil` devuelve un objeto plano con `id_usuario` (número), `nombres`, `apellidos`, `correo_usuario` y `roles: [{ id_rol, nombre_rol }]`. El mapper ya lo leía bien y no cambió; se agregó una prueba con esa forma (valores ficticios) que comprueba que documento, teléfono, dirección y fecha de nacimiento no pasan a GameUP.
-- **Consentimiento vigente:** falta el endpoint del núcleo familiar. Mientras no exista, nunca se guarda audio; `CONSENTIMIENTO_SIMULADO` solo se permite fuera de producción.
+- **Consentimiento vigente:** resuelto con la integración ASISCO UP (sección 7): se lee `autorizaGrabacionVoz` cuando hay `ASISCO_API_URL`. Sin ella, nunca se guarda audio; `CONSENTIMIENTO_SIMULADO` solo se permite fuera de producción.
 - **Revocación de tokens:** un token revocado en la API de seguridad puede seguir sirviendo hasta 5 minutos, por la caché.
 - **Escalera de niveles (fase 9):**
   - **Pantalla de ajuste manual en la app:** el endpoint `PUT /estudiantes/:id/niveles-juego/:juego` existe y está probado, pero la app no tiene pantalla. Por ahora se usa Swagger.
@@ -394,3 +395,52 @@ Las corre otra persona sobre las ramas subidas. Con la base en memoria no se pue
   - pedir el audio antes de validar un intento de voz;
   - armar `WeeklyPractice` con las tres rutas de la fase 8 (ver la decisión 5 de la fase 8);
   - mostrar la retroalimentación de las actividades aprobadas.
+
+## 7. Integración ASISCO UP
+
+Rama `backend/integracion-asiscoup`, desde `main` (`e0d160c`). Sin migraciones y sin cambios en la app.
+
+**Reparto de responsabilidades (pedido por la profesora: no duplicar):**
+- **API de seguridad:** login, cuentas y JWT. GameUP reenvía el login y no emite tokens.
+- **ASISCO UP** (`https://proyecto-asiscoup-g1-jvaz.onrender.com`): datos personales de estudiantes y acudientes, vínculos familiares y consentimiento.
+- **GameUP:** módulos, juegos, asignaciones, intentos, validaciones, progreso y práctica en casa. `estudiante` es el *perfil de aprendizaje*, enlazado por `id_estudiante_externo` = `idEstudiante` de ASISCO UP.
+
+**Commits**
+
+| Commit | Qué cambia |
+|---|---|
+| `c291f74` | Swagger (solo textos): de quién es cada dato; sección «Perfil de aprendizaje del estudiante». |
+| `b373980` | Adaptador HTTP de consentimiento (primera versión, sin conectar). |
+| `603b469` | Permiso de voz: `autorizaGrabacionVoz`; `ConsentimientoModule` usa ASISCO UP si hay `ASISCO_API_URL`; variables nuevas en `env.validation.ts`, `.env.example` y `render.yaml`. |
+| `c7f6c6a` | Vínculos de acudientes: copia desde ASISCO UP al iniciar sesión; 409 al editarlos a mano. |
+| ver `git log` | Pruebas de los factories de los módulos, 409 en Swagger y esta documentación. |
+
+**Interruptor único: `ASISCO_API_URL`.** Todo lo de ASISCO UP se activa solo si existe. Sin ella, GameUP funciona exactamente como antes: no se graba voz (falla cerrado) y la directora vincula acudientes a mano. Para «apagar» la integración en Render basta con quitar la variable. `ASISCO_API_TIMEOUT_MS` (5000 por defecto) limita cada llamada.
+
+**Consentimiento de voz** (`GET /api/estudiantes/{idEstudianteExterno}/consentimiento`). Se graba solo si, a la vez: `tieneConsentimientoVigente === true`, `autorizaGrabacionVoz === true`, `requiereAceptarTerminos !== true` y el `idEstudiante` de la respuesta es el pedido (la ruta de ASISCO UP acepta varios tipos de id). Si falta el campo, el formato es raro, responde por otro niño o no responde → no se graba. 404 → sin consentimiento.
+
+**Vínculos de acudientes: `acudiente_estudiante` ahora es una copia de solo lectura.**
+- Cuando un ACUDIENTE inicia sesión, GameUP llama `GET /api/acudientes/me/estudiantes` con **el token de ese acudiente** y deja su copia igual a lo que dice ASISCO UP (en una transacción: borra lo que ya no está, mueve la marca de principal respetando `uq_acudiente_principal` y hace `upsert` del resto). Solo toma `idUsuarioAuth`, `idEstudiante`, `parentesco.nombre` y `esPrincipal`.
+- Si ASISCO UP responde por otro `idUsuarioAuth`, no se toca nada. Los estudiantes que no están en GameUP se ignoran. Si ASISCO UP falla, se registra un aviso (solo el código de estado), la copia queda como estaba y el login sigue.
+- Con `ASISCO_API_URL`, `POST`, `PATCH` y `DELETE /estudiantes/{id}/acudientes` responden **409** («Los acudientes se vinculan en ASISCO UP…»). `GET` sigue leyendo la copia.
+- **Por qué no se borra la tabla:** la usan los permisos del acudiente (`alcance.ts` y los repositorios de estudiantes, asignaciones y módulos), la función SQL `fn_notificar_acudientes` (avisos de nivel, observaciones y módulos nuevos) y el trigger `fn_practica_casa_vinculo`. Borrarla rompería todo eso.
+
+**Datos de prueba que conectan los tres sistemas** (cuentas ficticias):
+
+| Quién | API de seguridad (`id_usuario`) | ASISCO UP | GameUP |
+|---|---|---|---|
+| Estudiante GameUP | 13 | `idEstudiante` 12 | `id_estudiante_externo` = 12 (ajustado a mano en Supabase el 2026-11-08) |
+| Acudiente GameUP | 15 | `idAcudiente` 7, vinculado al 12 como Madre (principal) | cuenta ACUDIENTE |
+| Directora GameUp | 16 | — | cuenta DIRECTORA |
+
+**Pendientes de la integración**
+1. **Render:** tras unir a `main`, revisar que `ASISCO_API_URL` esté puesta (`render.yaml` ya la trae con valor).
+2. **Cambiar el `idEstudianteExterno` desde la app:** hoy solo se pone al crear el usuario. Falta un endpoint para la directora que lo cambie validando contra ASISCO UP.
+3. **Validar el `idEstudianteExterno` al crear el estudiante** (`POST /usuarios`) con `GET /api/estudiantes/:id` de ASISCO UP, comprobando que el `idEstudiante` de la respuesta sea el mismo.
+4. **Los vínculos se refrescan solo cuando el acudiente inicia sesión.** Si ASISCO UP quita un vínculo, GameUP lo nota en el siguiente login de ese acudiente.
+5. **Pantalla para aceptar los términos en GameUP (decisión pendiente).** ASISCO UP ofrece el texto legal (`GET /api/catalogos/versiones-terminos`) y `POST /api/consentimientos`.
+6. **Avisar a ASISCO UP:**
+   - (a) `/api/estudiantes/:id` con tres tipos de id puede confundir niños (ya hay choques reales: su estudiante 12 frente al usuario 12 de seguridad).
+   - (b) «Mis estudiantes vinculados» con una cuenta ADMIN creó un acudiente: debería aceptar solo cuentas ACUDIENTE y no crear registros al consultar.
+   - (c) Una cuenta de tallerista tiene rol ESTUDIANTE en seguridad y quedó como estudiante en ASISCO UP.
+   - (d) Varios endpoints con datos de menores responden sin token, y `POST /api/consentimientos` debería exigir el token del acudiente.

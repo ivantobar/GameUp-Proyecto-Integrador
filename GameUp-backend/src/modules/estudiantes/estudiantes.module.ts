@@ -29,6 +29,32 @@ import { ConsultaVinculosAsiscoUpHttp } from './infrastructure/vinculos-asiscoup
 import { EstudianteController } from './presentation/estudiante.controller.js';
 import { VinculosController } from './presentation/vinculos.controller.js';
 
+/** true con ASISCO_API_URL: los vínculos de acudientes son de ASISCO UP. */
+export function vinculosEnAsisco(
+  config: ConfigService<EnvironmentVariables, true>,
+): boolean {
+  return Boolean(config.get('ASISCO_API_URL', { infer: true }));
+}
+
+/**
+ * Sincronizador de vínculos con ASISCO UP, o null si falta ASISCO_API_URL
+ * (entonces el login no consulta nada). Se exporta para probarla sin Nest.
+ */
+export function crearSincronizadorVinculos(
+  config: ConfigService<EnvironmentVariables, true>,
+  copia: CopiaVinculosRepository,
+): SincronizadorVinculos | null {
+  const url = config.get('ASISCO_API_URL', { infer: true });
+  if (!url) return null;
+  return new SincronizacionVinculosService(
+    new ConsultaVinculosAsiscoUpHttp(
+      url,
+      config.get('ASISCO_API_TIMEOUT_MS', { infer: true }),
+    ),
+    copia,
+  );
+}
+
 /**
  * Estudiantes y sus vínculos. Exporta AccesoEstudianteService (regla de
  * relación), el puerto de lectura para los módulos de las fases siguientes y
@@ -66,26 +92,12 @@ import { VinculosController } from './presentation/vinculos.controller.js';
     {
       provide: VINCULOS_EN_ASISCO,
       inject: [ConfigService],
-      useFactory: (config: ConfigService<EnvironmentVariables, true>) =>
-        Boolean(config.get('ASISCO_API_URL', { infer: true })),
+      useFactory: vinculosEnAsisco,
     },
     {
       provide: SINCRONIZADOR_VINCULOS,
       inject: [ConfigService, COPIA_VINCULOS_REPOSITORY],
-      useFactory: (
-        config: ConfigService<EnvironmentVariables, true>,
-        copia: CopiaVinculosRepository,
-      ): SincronizadorVinculos | null => {
-        const url = config.get('ASISCO_API_URL', { infer: true });
-        if (!url) return null;
-        return new SincronizacionVinculosService(
-          new ConsultaVinculosAsiscoUpHttp(
-            url,
-            config.get('ASISCO_API_TIMEOUT_MS', { infer: true }),
-          ),
-          copia,
-        );
-      },
+      useFactory: crearSincronizadorVinculos,
     },
   ],
   exports: [

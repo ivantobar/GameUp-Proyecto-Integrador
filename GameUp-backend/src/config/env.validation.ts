@@ -119,7 +119,6 @@ export class EnvironmentVariables {
   @Max(30000)
   ASISCO_API_TIMEOUT_MS: number = 5000;
 
-
   /**
    * SOLO DESARROLLO: si es "true", todos los estudiantes figuran con
    * consentimiento de voz aceptado (para probar Habla conmigo mientras no
