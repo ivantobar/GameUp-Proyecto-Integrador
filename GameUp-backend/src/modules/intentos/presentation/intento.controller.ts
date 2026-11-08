@@ -18,7 +18,11 @@ import {
 } from '@nestjs/swagger';
 import type { ArchivoSubido } from '../../../common/almacenamiento/almacen-archivos.js';
 import { SubidaDeArchivo } from '../../../common/almacenamiento/subidas.js';
-import { Roles, UsuarioActual } from '../../../common/auth/decoradores.js';
+import {
+  Roles,
+  TokenActual,
+  UsuarioActual,
+} from '../../../common/auth/decoradores.js';
 import type { UsuarioAutenticado } from '../../../common/auth/usuario-autenticado.js';
 import { aBigInt } from '../../../common/ids/ids.js';
 import { ParseBigIntPipe } from '../../../common/pipes/parse-bigint.pipe.js';
@@ -112,12 +116,14 @@ export class IntentoController {
     @UsuarioActual() actual: UsuarioAutenticado,
     @Body() dto: RegistrarIntentoVozDto,
     @UploadedFile() audio: ArchivoSubido | undefined,
+    @TokenActual() token: string,
   ): Promise<IntentoVozDto> {
     const resultado = await this.habla.registrar(
       actual,
       aBigInt(dto.actividadId),
       dto.duracionSeg ?? null,
       audio ?? null,
+      token,
     );
     return IntentoMapper.aVozDto(resultado);
   }

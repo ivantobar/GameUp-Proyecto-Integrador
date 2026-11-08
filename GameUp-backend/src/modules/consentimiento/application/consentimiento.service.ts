@@ -30,18 +30,20 @@ export class ConsentimientoService {
   async consultarVoz(
     actual: UsuarioAutenticado,
     estudianteId: bigint,
+    token?: string | null,
   ): Promise<VerificacionConsentimiento> {
     const estudiante = await this.acceso.obtenerVisible(actual, estudianteId);
-    return this.verificar(estudiante.idEstudianteExterno);
+    return this.verificar(estudiante.idEstudianteExterno, token);
   }
 
   /** Para las grabaciones (fase 6): el llamador ya verificó la relación. */
   async verificar(
     idEstudianteExterno: bigint,
+    token?: string | null,
   ): Promise<VerificacionConsentimiento> {
     let consentimiento;
     try {
-      consentimiento = await this.consulta.vigente(idEstudianteExterno);
+      consentimiento = await this.consulta.vigente(idEstudianteExterno, token);
     } catch (error) {
       if (!(error instanceof ServicioExternoNoDisponibleError)) throw error;
       this.logger.warn('Consentimiento no verificable: no se guardará audio');

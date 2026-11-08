@@ -48,6 +48,27 @@ describe('ConsultaConsentimientoAsiscoUpHttp', () => {
     );
   });
 
+  it('reenvía el token de quien consulta (ASISCO UP responde 401 sin él)', async () => {
+    await crear().vigente(1n, 'jwt-de-prueba');
+    const [, init] = fetchFalso.mock.calls[0] as [string, RequestInit];
+    expect(init.headers).toMatchObject({
+      Authorization: 'Bearer jwt-de-prueba',
+    });
+  });
+
+  it('sin token no manda Authorization', async () => {
+    await crear().vigente(1n);
+    const [, init] = fetchFalso.mock.calls[0] as [string, RequestInit];
+    expect(init.headers).not.toHaveProperty('Authorization');
+  });
+
+  it('401 de ASISCO UP → no verificable (no se graba)', async () => {
+    fetchFalso.mockResolvedValue(json({ error: 'Falta Bearer' }, 401));
+    await expect(crear().vigente(1n)).rejects.toBeInstanceOf(
+      ServicioExternoNoDisponibleError,
+    );
+  });
+
   it('vigente y autoriza la voz → acepta, con la versión', async () => {
     await expect(crear().vigente(1n)).resolves.toEqual({
       aceptaTratamiento: true,

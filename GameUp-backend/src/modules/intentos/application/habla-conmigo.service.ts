@@ -80,6 +80,7 @@ export class HablaConmigoService {
     actividadId: bigint,
     duracionSeg: number | null,
     audio: ArchivoSubido | null,
+    token: string | null = null,
   ): Promise<IntentoDeVoz> {
     const { actividad, asignacion } = await this.contexto.resolver(
       actual,
@@ -105,6 +106,7 @@ export class HablaConmigoService {
     const estudiante = await this.acceso.existente(actual.id);
     const verificacion = await this.consentimiento.verificar(
       estudiante.idEstudianteExterno,
+      token,
     );
     let estado = estadoInicial(audio !== null, verificacion);
 

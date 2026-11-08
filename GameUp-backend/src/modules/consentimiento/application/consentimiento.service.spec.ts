@@ -64,8 +64,9 @@ describe('ConsentimientoService (fallar cerrado)', () => {
 
   it('pregunta por el id del estudiante en la API del núcleo familiar', async () => {
     const vigente = vi.fn(async () => null);
-    await crear({ vigente }).consultarVoz(ESTUDIANTE_10, 10n);
-    expect(vigente).toHaveBeenCalledWith(10000n); // idEstudianteExterno del estudiante 10
+    await crear({ vigente }).consultarVoz(ESTUDIANTE_10, 10n, 'jwt');
+    // idEstudianteExterno del estudiante 10, con el token de quien consulta
+    expect(vigente).toHaveBeenCalledWith(10000n, 'jwt');
   });
 
   it('estudiante ajeno → 404 sin consultar la API', async () => {

@@ -36,13 +36,17 @@ export class ConsultaConsentimientoAsiscoUpHttp implements ConsultaConsentimient
 
   async vigente(
     idEstudianteExterno: bigint,
+    token?: string | null,
   ): Promise<ConsentimientoVigente | null> {
     const url = `${this.baseUrl}/api/estudiantes/${idEstudianteExterno.toString()}/consentimiento`;
 
     let respuesta: Response;
     try {
+      // ASISCO UP exige Bearer en /consentimiento (401 sin él, 2026-11-08).
+      const headers: Record<string, string> = { Accept: 'application/json' };
+      if (token) headers.Authorization = `Bearer ${token}`;
       respuesta = await fetch(url, {
-        headers: { Accept: 'application/json' },
+        headers,
         signal: AbortSignal.timeout(this.timeoutMs),
       });
     } catch {

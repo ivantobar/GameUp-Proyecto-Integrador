@@ -6,7 +6,11 @@ import {
   ApiProperty,
   ApiTags,
 } from '@nestjs/swagger';
-import { Roles, UsuarioActual } from '../../../common/auth/decoradores.js';
+import {
+  Roles,
+  TokenActual,
+  UsuarioActual,
+} from '../../../common/auth/decoradores.js';
 import type { UsuarioAutenticado } from '../../../common/auth/usuario-autenticado.js';
 import { ParseBigIntPipe } from '../../../common/pipes/parse-bigint.pipe.js';
 import { ApiErrores } from '../../../docs/api-errores.js';
@@ -60,8 +64,11 @@ export class ConsentimientoController {
   @ApiErrores(401, 403)
   async propio(
     @UsuarioActual() actual: UsuarioAutenticado,
+    @TokenActual() token: string,
   ): Promise<ConsentimientoVozDto> {
-    return aDto(await this.consentimiento.consultarVoz(actual, actual.id));
+    return aDto(
+      await this.consentimiento.consultarVoz(actual, actual.id, token),
+    );
   }
 
   @Get(':id/consentimiento-voz')
@@ -76,7 +83,8 @@ export class ConsentimientoController {
   async deEstudiante(
     @UsuarioActual() actual: UsuarioAutenticado,
     @Param('id', ParseBigIntPipe) id: bigint,
+    @TokenActual() token: string,
   ): Promise<ConsentimientoVozDto> {
-    return aDto(await this.consentimiento.consultarVoz(actual, id));
+    return aDto(await this.consentimiento.consultarVoz(actual, id, token));
   }
 }

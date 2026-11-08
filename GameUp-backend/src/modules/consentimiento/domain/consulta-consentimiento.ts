@@ -19,8 +19,13 @@ export interface ConsultaConsentimiento {
   /**
    * Consentimiento vigente del estudiante, o null si no hay ninguno.
    * Lanza ServicioExternoNoDisponibleError si no se puede consultar.
+   * `token`: JWT de la API de seguridad de quien hace la petición; ASISCO UP
+   * lo exige desde el 2026-11-08 (sin él responde 401).
    */
-  vigente(idEstudianteExterno: bigint): Promise<ConsentimientoVigente | null>;
+  vigente(
+    idEstudianteExterno: bigint,
+    token?: string | null,
+  ): Promise<ConsentimientoVigente | null>;
 }
 
 export const CONSULTA_CONSENTIMIENTO = Symbol('CONSULTA_CONSENTIMIENTO');
