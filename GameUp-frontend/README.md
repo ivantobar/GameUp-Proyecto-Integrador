@@ -114,7 +114,12 @@ npm start                # las demás veces
 2. Aparece **Iniciar sesión**. Con `mock`, el inicio de sesión es
    simulado: en desarrollo, la tarjeta **Cuentas de prueba** llena el
    formulario (contraseña `gameup123`, solo datos ficticios). Con `api`
-   se entra con una cuenta real del backend y esas cuentas no aparecen.
+   se entra con una cuenta real de la API de seguridad y esas cuentas no
+   aparecen. No hace falta que la directora la dé de alta antes: la primera
+   vez que la persona entra, el backend crea su cuenta en GameUP (el
+   estudiante debe existir en ASISCO UP). Si no puede entrar, la pantalla
+   muestra el motivo que manda el backend (cuenta desactivada, rol distinto,
+   varios roles, no está en ASISCO UP…), nunca códigos ni ids.
    - `estudiante@gameup.test` → Inicio del estudiante.
    - `docente@gameup.test` → «Por escuchar».
    - `acudiente@gameup.test` → «Practicar en casa».

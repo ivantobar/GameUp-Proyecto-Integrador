@@ -20,6 +20,7 @@ Cada fase vive en su rama, creada desde la rama de la fase anterior. Todas está
 | 9 | Escalera de 5 niveles por juego (backend: 9.1 migración `79f69ef`, 9.2 reglas `5d5b109`, 9.3 subida y endpoints `8733ef8`) | `backend/fase-9-niveles-por-juego` | `8733ef8` | `main` (`fb4f0de`) |
 | 9 | Escalera en la app (frontend, 9.4) y esta documentación (9.5) | `frontend/niveles-por-juego` | ver `git log` | `8733ef8` |
 | — | Integración ASISCO UP: Swagger, consentimiento de voz y vínculos de acudientes (ver la sección 7) | `backend/integracion-asiscoup` | ver `git log` | `main` (`e0d160c`) |
+| — | Alta automática al primer login y motivo real del 403 en la app (ver la sección 8) | `backend/alta-automatica` | ver `git log` | `main` (`247c58d`) |
 
 **Estado al cerrar la fase 9 (2026-11-06):**
 - Backend: `build` y `lint` pasan; 554 pruebas unitarias (44 archivos) y 171 e2e (12 archivos), incluida la de Swagger.
@@ -99,7 +100,7 @@ Valen en todas las fases.
    - el texto legal cubre la voz;
    - siempre se guarda `codigo_version_terminos`.
 4. **Rol:** si el rol externo no coincide con el local, responde 403 y no se cambia el rol.
-5. **Cuentas:** se agrega `POST /usuarios`, solo para la directora, más un script SQL para la primera directora. GameUP no usa `/api/auth/registro/*`.
+5. **Cuentas:** se agrega `POST /usuarios`, solo para la directora, más un script SQL para la primera directora. GameUP no usa `/api/auth/registro/*`. *(Actualizada el 2026-11-08: las cuentas se crean solas en el primer login; `POST /usuarios` queda para casos especiales. Ver la sección 8.)*
 6. **Estrellas:** opción A, solo dentro de asignaciones y sin migración. El punto de retorno se deriva del último intento.
 7. **`practica_casa`:** va en una migración nueva, probada en local, y se pide confirmación antes de aplicarla en Supabase.
 8. **Nota de voz para la familia:** se pospone. En el MVP, la retroalimentación a la familia es texto en `observacion`.
@@ -444,3 +445,49 @@ Rama `backend/integracion-asiscoup`, desde `main` (`e0d160c`). Sin migraciones y
    - (b) «Mis estudiantes vinculados» con una cuenta ADMIN creó un acudiente: debería aceptar solo cuentas ACUDIENTE y no crear registros al consultar.
    - (c) Una cuenta de tallerista tiene rol ESTUDIANTE en seguridad y quedó como estudiante en ASISCO UP.
    - (d) Varios endpoints con datos de menores responden sin token, y `POST /api/consentimientos` debería exigir el token del acudiente.
+
+## 8. Alta automática al primer login
+
+Rama `backend/alta-automatica`, desde `main` (`247c58d`). Sin migraciones.
+
+**El problema (2026-11-08, pruebas en Expo Go contra Render):** cuatro cuentas creadas en la API de seguridad (directora, tallerista, acudiente y estudiante) iniciaban sesión con la contraseña correcta, pero GameUP respondía 403 «Tu cuenta no tiene acceso a GameUP». El resolutor exigía una fila en `usuario` que solo creaba la directora con `POST /usuarios` desde Swagger. La fundación no puede trabajar así, y la primera directora ni siquiera podía darse de alta a sí misma.
+
+**Decisión:** quien tiene cuenta válida en la API de seguridad y un rol con acceso entra a GameUP **sin alta manual**: la primera vez que inicia sesión, el backend crea su cuenta.
+
+**Por qué es seguro (comprobado por alex en Postman el 2026-11-08):**
+- `POST /api/auth/registro/administrador` de la API de seguridad **exige token de ADMIN** (sin token: 401/403). Nadie se vuelve DIRECTORA por su cuenta.
+- `POST /api/auth/registro` (sin token) **no permite** crear un ADMIN.
+- Los demás roles ven poco al entrar sin revisión: el estudiante solo lo suyo; el acudiente solo los niños vinculados en ASISCO UP (sin vínculo, nada); la tallerista solo los estudiantes que la directora le asigne (al principio, ninguno).
+
+**Reglas** (`src/modules/auth/application/alta-automatica.service.ts`):
+1. Solo cuando **no existe** fila en `usuario` con ese `id_usuario_auth` (el resolutor lanza `CuentaNoRegistradaError`, un 403 con tipo propio; no se comparan textos). Cuenta inactiva, estudiante EGRESADO/RETIRADO o rol distinto → el 403 de siempre. Nunca se reactiva ni se cambia el rol.
+2. **Solo en el login.** El `AuthGuard` (cada petición) nunca crea cuentas: sin fila, 403.
+3. El rol sale de `MapeadorRoles.aRolesGameUp`: ninguno → 403; **uno** → se crea con ese rol; **varios** → no se crea, 403 «Tu cuenta tiene varios roles en la fundación. Pide a la directora que te dé de alta en GameUP.».
+4. Copia mínima: `nombres`, `apellidos` y `correo` de la API de seguridad. Si faltan, «Sin nombre» / «Sin apellido» (los corrige la siguiente sincronización). Nunca contraseñas ni tokens.
+5. **Correo repetido:** si otra cuenta ya usa ese correo, se crea **sin correo** y queda un `warn` solo con ids. La identidad es `id_usuario_auth`, no el correo. En los logins siguientes, la sincronización de la copia falla por `uq_usuario_correo` mientras siga repetido; ese fallo se atrapa como siempre y la persona entra.
+6. **ESTUDIANTE:** necesita `idEstudianteExterno`. Se busca con el puerto `ConsultaEstudianteExterno` (`src/modules/estudiantes/domain/estudiante-externo.ts`), adaptador `ConsultaEstudianteAsiscoUpHttp`: `GET /api/estudiantes/por-usuario/{idUsuarioAuth}` con **el token del propio estudiante**, timeout `ASISCO_API_TIMEOUT_MS`, solo lee `idEstudiante` e `idUsuarioAuth` y en los logs solo pone el estado HTTP. Es la ruta exacta por `id_usuario` (comprobada en el Swagger en vivo, `/api/docs.json`, el 2026-11-08: `por-usuario/13` → `idEstudiante` 12; 404 si no existe). Se acepta solo si el `idUsuarioAuth` (o `id_usuario`) de la respuesta es el nuestro; si no, se trata como «no encontrado».
+   - Sin `ASISCO_API_URL`, no encontrado o `idUsuarioAuth` distinto → 403 «Aún no te encontramos en ASISCO UP. Pide a la fundación que revise tu registro.».
+   - ASISCO UP no responde, falla o responde con un formato raro → 503 «No pudimos consultar ASISCO UP. Espera un momento e inténtalo otra vez.».
+   - Ese `idEstudianteExterno` ya lo usa otra cuenta → 403 «Pide a la directora que revise tu cuenta.» y `warn` solo con ids.
+   - Nivel inicial: `niveles.inicial()` (BAJO), igual que `POST /usuarios`.
+7. **ACUDIENTE:** sin `idAcudienteExterno`. Después del alta, el login copia sus vínculos de ASISCO UP como siempre.
+8. **TALLERISTA y DIRECTORA:** sin más datos.
+9. **Misma lógica que `POST /usuarios`:** se llama a `UsuarioService.crear` (ahora exportado por `UsuariosModule`), que lanza `CampoEnUsoError` (409, igual que antes) con todos los campos repetidos.
+10. **Carreras:** si `crear` falla (por ejemplo, otro login simultáneo ganó el índice `uq_usuario_id_usuario_auth`), se vuelve a resolver: si la cuenta ya existe, entra normalmente; si sigue sin existir, 403 «Pide a la directora que revise tu cuenta.» y `warn` solo con ids y el tipo de error.
+11. Cada alta deja un log `info` con id interno, `id_usuario_auth` y rol.
+12. `POST /usuarios` sigue igual, para casos especiales (varios roles, otro nivel, `idAcudienteExterno`, rol con el alta apagada).
+
+**Interruptor `ALTA_AUTOMATICA_ROLES`:** roles de GameUP separados por comas. Por defecto `ESTUDIANTE,ACUDIENTE,TALLERISTA,DIRECTORA`; vacía = apagada (vuelve el 403 «aún no está registrada» y el alta manual). `env.validation.ts` solo admite valores de `RolGameUp`; está en `.env.example` y en `render.yaml`. Un rol fuera de la lista recibe el 403 de siempre.
+
+**App:** el 403 del login ya no se convierte siempre en «Tu cuenta no tiene acceso a GameUP. Habla con la fundación.». `AccountNotAllowedError` lleva el `message` del backend si es texto claro de hasta 200 caracteres (`friendlyReason` descarta códigos, ids, trazas y JSON), y la pantalla lo muestra. Si no viene, queda el texto general.
+
+**Pruebas:** el doble e2e (`test/dobles/app-de-prueba.ts`) ahora apaga ASISCO UP por defecto (`VINCULOS_EN_ASISCO`, `SINCRONIZADOR_VINCULOS` y `CONSULTA_ESTUDIANTE_EXTERNO`), aunque el `.env` local tenga `ASISCO_API_URL`. Antes, con esa variable, 2 pruebas de `estudiantes.e2e-spec.ts` fallaban también en `main` (409 «los acudientes se vinculan en ASISCO UP»).
+
+**Riesgos**
+- **El rol lo decide la API de seguridad.** Si está mal (como la tallerista con rol ESTUDIANTE, punto 6c de la sección 7), GameUP crea la cuenta con ese rol. Se corrige allá, y la directora desactiva la cuenta en GameUP (`PATCH /usuarios/:id/estado`). Una cuenta que ya existe nunca cambia de rol sola.
+- Si ASISCO UP empezara a rechazar el token del estudiante en `por-usuario` (401/403), el estudiante nuevo recibiría 503 en cada intento. El log dice el código de estado.
+
+**Pendientes**
+1. **Avisar a la directora de las cuentas nuevas.** No hay nada listo: `notificacion` solo admite los tipos AVANCE, NIVEL, OBSERVACION y NUEVO_MODULO (`notificacion_tipo_check`) y los avisos los crean triggers. Avisar «Nueva cuenta en GameUP: <rol>» exige una migración nueva; no se hizo.
+2. **Pantalla de la directora** para ver las cuentas nuevas y desactivarlas desde la app (hoy solo con `GET /usuarios` y `PATCH /usuarios/:id/estado`).
+3. **Avisar a ASISCO UP:** `GET /api/estudiantes/por-usuario/{id}` responde **sin token** con la ficha completa del menor (nombre, documento, diagnóstico). GameUP igual manda el token del estudiante y solo lee ids. Se suma al punto 6d de la sección 7.
