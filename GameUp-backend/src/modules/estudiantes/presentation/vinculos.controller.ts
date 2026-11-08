@@ -34,6 +34,10 @@ import {
   VinculoAcudienteDto,
 } from './dto/estudiante.dto.js';
 
+/** 409 de vincular, cambiar y quitar acudientes con ASISCO UP conectado. */
+const CONFLICTO_ASISCO =
+  'Con ASISCO UP conectado (ASISCO_API_URL) se responde 409: los acudientes se vinculan en ASISCO UP y GameUP copia los vínculos cuando el acudiente inicia sesión';
+
 /** Talleristas y acudientes de un estudiante. Solo la directora. */
 @ApiTags('estudiantes')
 @ApiBearerAuth(BEARER_AUTH)
@@ -111,7 +115,9 @@ export class VinculosController {
   @ApiOperation({ summary: 'Vincular un acudiente (directora)' })
   @ApiCreatedResponse({ type: VinculoAcudienteDto })
   @ApiErrores(400, 401, 403, 404, {
-    409: 'Ya está vinculado, o el estudiante ya tiene acudiente principal',
+    409:
+      'Ya está vinculado, o el estudiante ya tiene acudiente principal. ' +
+      CONFLICTO_ASISCO,
     422: 'La cuenta no es de un acudiente activo',
   })
   async vincularAcudiente(
@@ -135,7 +141,10 @@ export class VinculosController {
       'Marcar esPrincipal = true quita la marca al principal anterior.',
   })
   @ApiOkResponse({ type: VinculoAcudienteDto })
-  @ApiErrores(400, 401, 403, 404, { 422: 'No se envió ningún cambio' })
+  @ApiErrores(400, 401, 403, 404, {
+    409: CONFLICTO_ASISCO,
+    422: 'No se envió ningún cambio',
+  })
   async actualizarAcudiente(
     @Param('id', ParseBigIntPipe) id: bigint,
     @Param('acudienteId', ParseBigIntPipe) acudienteId: bigint,
@@ -153,7 +162,7 @@ export class VinculosController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Desvincular un acudiente (directora)' })
   @ApiNoContentResponse({ description: 'Vínculo eliminado' })
-  @ApiErrores(400, 401, 403, 404)
+  @ApiErrores(400, 401, 403, 404, { 409: CONFLICTO_ASISCO })
   async desvincularAcudiente(
     @Param('id', ParseBigIntPipe) id: bigint,
     @Param('acudienteId', ParseBigIntPipe) acudienteId: bigint,

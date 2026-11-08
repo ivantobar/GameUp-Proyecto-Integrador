@@ -1,12 +1,15 @@
 /**
- * Puerto ConsultaConsentimiento: el consentimiento vive en la API del núcleo
- * familiar (aceptaTratamiento, codigoVersion; el textoLegal incluye la
- * grabación de voz). GameUP no guarda una copia: lo consulta cada vez.
+ * Puerto ConsultaConsentimiento: el consentimiento vive en ASISCO UP (API del
+ * núcleo familiar). GameUP no guarda una copia: lo consulta cada vez con
+ * GET /api/estudiantes/{id}/consentimiento.
  *
- * Aún no existe un endpoint para leerlo (pendiente del otro grupo). Cuando
- * exista, se agrega un adaptador HTTP sin tocar los servicios.
+ * Desde los términos v1.1-2026, ASISCO UP separa el permiso de voz
+ * (autorizaGrabacionVoz). `aceptaTratamiento` significa aquí "se puede grabar
+ * la voz": el adaptador HTTP solo lo pone en true si hay consentimiento
+ * vigente, al día y con autorizaGrabacionVoz.
  */
 export interface ConsentimientoVigente {
+  /** true solo si el acudiente autorizó grabar la voz (ver arriba). */
   aceptaTratamiento: boolean;
   /** Versión de los términos aceptados (se guarda en cada grabación). */
   codigoVersion: string;

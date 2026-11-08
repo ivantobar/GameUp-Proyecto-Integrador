@@ -161,4 +161,36 @@ describe('VinculosService', () => {
       );
     });
   });
+
+  describe('con ASISCO UP conectado', () => {
+    beforeEach(() => {
+      servicio = new VinculosService(
+        escenario.estudiantes.talleristasRepo,
+        escenario.estudiantes.acudientesRepo,
+        escenario.usuarios,
+        new RelojFijo(AHORA),
+        new AccesoEstudianteService(escenario.estudiantes),
+        true,
+      );
+    });
+
+    it('vincular, cambiar o quitar acudientes → 409 (se hace en ASISCO UP)', async () => {
+      await expect(
+        servicio.vincularAcudiente(12n, 4n, 'Madre', false),
+      ).rejects.toBeInstanceOf(ConflictoError);
+      await expect(
+        servicio.actualizarAcudiente(10n, 4n, {
+          parentesco: 'Tía',
+          esPrincipal: null,
+        }),
+      ).rejects.toBeInstanceOf(ConflictoError);
+      await expect(
+        servicio.desvincularAcudiente(10n, 4n),
+      ).rejects.toBeInstanceOf(ConflictoError);
+    });
+
+    it('listar sigue funcionando (lee la copia)', async () => {
+      await expect(servicio.listarAcudientes(10n)).resolves.not.toHaveLength(0);
+    });
+  });
 });

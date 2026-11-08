@@ -1,4 +1,4 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
 import {
   RESOLUTOR_USUARIO,
   type ResolutorUsuario,
@@ -16,6 +16,10 @@ import {
   NoAutenticadoError,
 } from '../../../common/errors/dominio.errors.js';
 import { RELOJ, type Reloj } from '../../../common/reloj/reloj.js';
+import {
+  SINCRONIZADOR_VINCULOS,
+  type SincronizadorVinculos,
+} from '../../estudiantes/domain/vinculos-externos.js';
 import { copiaDesdeIdentidad } from '../../usuarios/domain/copia-externa.js';
 import type { Usuario } from '../../usuarios/domain/usuario.entity.js';
 import {
@@ -42,6 +46,8 @@ export interface SesionIniciada {
  *  - iniciarSesion: credenciales → API de seguridad → token → perfil →
  *    cuenta de GameUP (403 si no hay o el rol no coincide) → sincroniza la
  *    copia mínima (nombres, apellidos, correo, ultimo_acceso, sincronizado_en).
+ *    Si es ACUDIENTE y ASISCO UP está conectado, refresca también la copia
+ *    de sus vínculos con estudiantes (sin bloquear el login si falla).
  *  - sesionActual: la cuenta de quien hace la petición.
  *  - cerrarSesion: olvida el token de la caché.
  */
@@ -60,6 +66,9 @@ export class AuthService {
     @Inject(USUARIO_ESCRITURA_REPOSITORY)
     private readonly escritura: UsuarioEscrituraRepository,
     @Inject(RELOJ) private readonly reloj: Reloj,
+    @Optional()
+    @Inject(SINCRONIZADOR_VINCULOS)
+    private readonly vinculos: SincronizadorVinculos | null = null,
   ) {}
 
   async iniciarSesion(
@@ -82,6 +91,17 @@ export class AuthService {
       this.logger.warn(
         `No se pudo sincronizar la copia mínima (usuario ${autenticado.id})`,
       );
+    }
+
+    if (autenticado.rol === 'ACUDIENTE' && this.vinculos) {
+      try {
+        await this.vinculos.sincronizarAcudiente(autenticado, token);
+      } catch {
+        // Se conserva la copia anterior: ASISCO UP puede estar dormido.
+        this.logger.warn(
+          `No se pudieron actualizar los vínculos desde ASISCO UP (usuario ${autenticado.id})`,
+        );
+      }
     }
 
     const usuario = await this.lectura.buscarPorId(autenticado.id);
