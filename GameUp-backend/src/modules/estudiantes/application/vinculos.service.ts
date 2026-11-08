@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Optional } from '@nestjs/common';
 import {
   ConflictoError,
   RecursoNoEncontradoError,
@@ -20,6 +20,7 @@ import {
   type AcudienteEstudianteRepository,
   type TalleristaEstudianteRepository,
 } from '../domain/estudiante.repository.js';
+import { VINCULOS_EN_ASISCO } from '../domain/vinculos-externos.js';
 import { AccesoEstudianteService } from './acceso-estudiante.service.js';
 
 const NOMBRE_ROL: Record<'TALLERISTA' | 'ACUDIENTE', string> = {
@@ -43,6 +44,10 @@ export class VinculosService {
     private readonly usuarios: UsuarioLecturaRepository,
     @Inject(RELOJ) private readonly reloj: Reloj,
     private readonly acceso: AccesoEstudianteService,
+    /** true con ASISCO_API_URL: los vínculos de acudientes son de ASISCO UP. */
+    @Optional()
+    @Inject(VINCULOS_EN_ASISCO)
+    private readonly vinculosEnAsisco: boolean = false,
   ) {}
 
   // ─── Talleristas ──────────────────────────────────────────────────────────
@@ -95,6 +100,7 @@ export class VinculosService {
     parentesco: string,
     esPrincipal: boolean,
   ): Promise<VinculoAcudiente> {
+    this.exigirVinculosLocales();
     await this.acceso.existente(estudianteId);
     await this.exigirCuenta(acudienteId, 'ACUDIENTE');
     const texto = limpiarParentesco(parentesco);
@@ -117,6 +123,7 @@ export class VinculosService {
     acudienteId: bigint,
     cambios: { parentesco: string | null; esPrincipal: boolean | null },
   ): Promise<VinculoAcudiente> {
+    this.exigirVinculosLocales();
     await this.acceso.existente(estudianteId);
     if (!(await this.acudientes.buscar(acudienteId, estudianteId))) {
       throw new RecursoNoEncontradoError(
@@ -141,6 +148,7 @@ export class VinculosService {
     estudianteId: bigint,
     acudienteId: bigint,
   ): Promise<void> {
+    this.exigirVinculosLocales();
     await this.acceso.existente(estudianteId);
     if (!(await this.acudientes.eliminar(acudienteId, estudianteId))) {
       throw new RecursoNoEncontradoError(
@@ -150,6 +158,15 @@ export class VinculosService {
   }
 
   // ─── Apoyo ────────────────────────────────────────────────────────────────
+
+  /** Con ASISCO UP conectado, la copia solo se cambia desde allá (409). */
+  private exigirVinculosLocales(): void {
+    if (this.vinculosEnAsisco) {
+      throw new ConflictoError(
+        'Los acudientes se vinculan en ASISCO UP. GameUP los actualiza cuando el acudiente inicia sesión.',
+      );
+    }
+  }
 
   /** La cuenta existe, tiene ese rol y está activa; si no, 422. */
   private async exigirCuenta(

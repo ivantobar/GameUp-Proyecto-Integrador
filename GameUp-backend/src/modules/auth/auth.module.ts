@@ -8,6 +8,7 @@ import {
   INVALIDADOR_TOKEN,
   VERIFICADOR_TOKEN,
 } from '../../common/auth/verificador-token.js';
+import { EstudiantesModule } from '../estudiantes/estudiantes.module.js';
 import { UsuariosModule } from '../usuarios/usuarios.module.js';
 import { AuthService } from './application/auth.service.js';
 import { ResolutorUsuarioService } from './application/resolutor-usuario.service.js';
@@ -24,7 +25,7 @@ import { AuthController } from './presentation/auth.controller.js';
  * y las rutas /auth/login (pública), /auth/me y /auth/logout.
  */
 @Module({
-  imports: [UsuariosModule],
+  imports: [UsuariosModule, EstudiantesModule],
   controllers: [AuthController],
   providers: [
     AuthService,

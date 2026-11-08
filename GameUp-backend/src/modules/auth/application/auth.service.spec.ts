@@ -117,4 +117,69 @@ describe('AuthService', () => {
     servicio.cerrarSesion(TOKEN_TALLERISTA);
     expect(verificador.olvidados).toEqual([TOKEN_TALLERISTA]);
   });
+
+  describe('acudiente con ASISCO UP conectado', () => {
+    const TOKEN_ACUDIENTE = jwt(1_800_000_000) + 'a';
+    let llamadas: Array<[{ id: bigint; idUsuarioAuth: bigint }, string]>;
+    let fallar: boolean;
+    const sincronizador = {
+      sincronizarAcudiente(
+        acudiente: { id: bigint; idUsuarioAuth: bigint },
+        token: string,
+      ): Promise<void> {
+        llamadas.push([acudiente, token]);
+        return fallar
+          ? Promise.reject(new Error('dormido'))
+          : Promise.resolve();
+      },
+    };
+    const crear = () => {
+      const verif = new VerificadorTokenFalso({
+        [TOKEN_TALLERISTA]: identidad(200, ['TALLERISTA']),
+        [TOKEN_ACUDIENTE]: identidad(300, ['ACUDIENTE']),
+      });
+      const resolutor = new ResolutorUsuarioService(usuarios);
+      const s = new AuthService(
+        new AutenticadorFalso({
+          'ana@ejemplo.com': { contrasena: 'clave', token: TOKEN_TALLERISTA },
+          'acu@ejemplo.com': { contrasena: 'clave', token: TOKEN_ACUDIENTE },
+        }),
+        verif,
+        verif,
+        resolutor,
+        usuarios,
+        usuarios,
+        new RelojFijo(AHORA),
+        sincronizador,
+      );
+      vi.spyOn(s['logger'], 'warn').mockImplementation(() => undefined);
+      return s;
+    };
+    beforeEach(() => {
+      llamadas = [];
+      fallar = false;
+    });
+
+    it('al entrar refresca sus vínculos con su propio token', async () => {
+      await crear().iniciarSesion('acu@ejemplo.com', 'clave');
+      expect(llamadas).toEqual([
+        [
+          expect.objectContaining({ id: 3n, idUsuarioAuth: 300n }),
+          TOKEN_ACUDIENTE,
+        ],
+      ]);
+    });
+
+    it('si ASISCO UP falla, igual entra', async () => {
+      fallar = true;
+      await expect(
+        crear().iniciarSesion('acu@ejemplo.com', 'clave'),
+      ).resolves.toMatchObject({ usuario: { id: 3n } });
+    });
+
+    it('otros roles no consultan ASISCO UP', async () => {
+      await crear().iniciarSesion('ana@ejemplo.com', 'clave');
+      expect(llamadas).toEqual([]);
+    });
+  });
 });
