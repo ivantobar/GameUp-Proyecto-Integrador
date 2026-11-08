@@ -7,6 +7,7 @@ import {
   CONSULTA_CONSENTIMIENTO,
   type ConsultaConsentimiento,
 } from './domain/consulta-consentimiento.js';
+import { ConsultaConsentimientoAsiscoUpHttp } from './infrastructure/consentimiento-asiscoup-http.js';
 import {
   ConsultaConsentimientoNoDisponible,
   ConsultaConsentimientoSimulada,
@@ -14,8 +15,10 @@ import {
 import { ConsentimientoController } from './presentation/consentimiento.controller.js';
 
 /**
- * Consentimiento de grabación de voz. Exporta ConsentimientoService para las
- * grabaciones de Habla conmigo (fase 6).
+ * Consentimiento de grabación de voz: se lee de ASISCO UP (ASISCO_API_URL,
+ * campo autorizaGrabacionVoz). Sin ASISCO_API_URL no se graba (falla
+ * cerrado). Exporta ConsentimientoService para las grabaciones de Habla
+ * conmigo (fase 6).
  */
 @Module({
   imports: [EstudiantesModule],
@@ -34,7 +37,12 @@ import { ConsentimientoController } from './presentation/consentimiento.controll
           );
           return new ConsultaConsentimientoSimulada();
         }
-        return new ConsultaConsentimientoNoDisponible();
+        const url = config.get('ASISCO_API_URL', { infer: true });
+        if (!url) return new ConsultaConsentimientoNoDisponible();
+        return new ConsultaConsentimientoAsiscoUpHttp(
+          url,
+          config.get('ASISCO_API_TIMEOUT_MS', { infer: true }),
+        );
       },
     },
   ],

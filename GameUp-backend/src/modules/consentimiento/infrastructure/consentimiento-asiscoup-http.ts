@@ -9,16 +9,17 @@ import type {
  * Lee el consentimiento informado de ASISCO UP:
  *   GET <base>/api/estudiantes/{idEstudiante}/consentimiento
  *
- * Respuesta real observada el 2026-11-07:
- *   { idEstudiante, versionVigente: { idVersionTerminos, codigoVersion },
- *     tieneConsentimientoVigente, requiereAceptarTerminos, consentimientos[] }
+ * Respuesta de ASISCO UP con la versión v1.1-2026 (datos + voz), 2026-11-08:
+ *   { idEstudiante, versionVigente: { idVersionTerminos, codigoVersion, textoLegal },
+ *     tieneConsentimientoVigente, autorizaGrabacionVoz,
+ *     requiereAceptarTerminos, consentimientos[] }
  *   404 { error } si el estudiante no existe.
  *
- * OJO: es el consentimiento de TRATAMIENTO DE DATOS. El texto legal v1.0-2026
- * no menciona la grabación de voz, así que este adaptador todavía NO se
- * conecta a la verificación de voz (ConsentimientoModule sigue usando
- * ConsultaConsentimientoNoDisponible). Falta decidir dónde vive la
- * autorización específica de voz.
+ * Regla para grabar la voz (todas a la vez): tieneConsentimientoVigente,
+ * autorizaGrabacionVoz === true y requiereAceptarTerminos !== true. Si el
+ * acudiente aceptó los datos pero no la voz, el niño usa GameUP normalmente
+ * y solo no se guarda audio. Si falta autorizaGrabacionVoz (versión vieja de
+ * la API), se toma como "no autoriza".
  *
  * Nunca registra datos del estudiante: solo el código de estado.
  */
@@ -68,24 +69,36 @@ export class ConsultaConsentimientoAsiscoUpHttp implements ConsultaConsentimient
     } catch {
       cuerpo = null;
     }
-    return interpretarRespuesta(cuerpo, this.logger);
+    return interpretarRespuesta(cuerpo, idEstudianteExterno, this.logger);
   }
 }
 
 function interpretarRespuesta(
   cuerpo: unknown,
+  idPedido: bigint,
   logger: Logger,
 ): ConsentimientoVigente | null {
   if (typeof cuerpo !== 'object' || cuerpo === null) {
     return formatoInesperado(logger);
   }
   const c = cuerpo as {
+    idEstudiante?: unknown;
     tieneConsentimientoVigente?: unknown;
+    autorizaGrabacionVoz?: unknown;
     requiereAceptarTerminos?: unknown;
     versionVigente?: { codigoVersion?: unknown } | null;
   };
   if (typeof c.tieneConsentimientoVigente !== 'boolean') {
     return formatoInesperado(logger);
+  }
+  // ASISCO UP acepta en la ruta varios tipos de id (el suyo, el de la API de
+  // seguridad o el documento). Si responde por otro estudiante, no se usa:
+  // podría ser el permiso de otro niño.
+  if (!mismoEstudiante(c.idEstudiante, idPedido)) {
+    logger.warn('ASISCO UP respondió el consentimiento de otro estudiante');
+    throw new ServicioExternoNoDisponibleError(
+      'ASISCO UP respondió el consentimiento de otro estudiante.',
+    );
   }
   const codigo = c.versionVigente?.codigoVersion;
   if (!c.tieneConsentimientoVigente) {
@@ -96,11 +109,21 @@ function interpretarRespuesta(
   if (typeof codigo !== 'string' || codigo.trim() === '') {
     return formatoInesperado(logger);
   }
-  // Si hay términos nuevos sin aceptar, el consentimiento no está al día.
   return {
-    aceptaTratamiento: c.requiereAceptarTerminos !== true,
+    aceptaTratamiento:
+      c.autorizaGrabacionVoz === true && c.requiereAceptarTerminos !== true,
     codigoVersion: codigo,
   };
+}
+
+function mismoEstudiante(valor: unknown, idPedido: bigint): boolean {
+  if (typeof valor === 'number' && Number.isSafeInteger(valor)) {
+    return BigInt(valor) === idPedido;
+  }
+  if (typeof valor === 'string' && /^\d{1,19}$/.test(valor)) {
+    return BigInt(valor) === idPedido;
+  }
+  return false;
 }
 
 function formatoInesperado(logger: Logger): never {

@@ -5,15 +5,14 @@ import type {
 } from '../domain/consulta-consentimiento.js';
 
 /**
- * Adaptador mientras no exista el endpoint de lectura en la API del núcleo
- * familiar: siempre "no se puede verificar". Con la regla de fallar cerrado,
- * ninguna grabación se guarda.
+ * Adaptador cuando falta ASISCO_API_URL: siempre "no se puede verificar".
+ * Con la regla de fallar cerrado, ninguna grabación se guarda.
  */
 export class ConsultaConsentimientoNoDisponible implements ConsultaConsentimiento {
   vigente(): Promise<ConsentimientoVigente | null> {
     return Promise.reject(
       new ServicioExternoNoDisponibleError(
-        'No se puede consultar el consentimiento: la API del núcleo familiar aún no está conectada.',
+        'No se puede consultar el consentimiento: falta configurar ASISCO_API_URL.',
       ),
     );
   }

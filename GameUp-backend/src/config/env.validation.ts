@@ -105,6 +105,22 @@ export class EnvironmentVariables {
   AUTH_CACHE_TTL_SEG: number = 300;
 
   /**
+   * URL base de la API de ASISCO UP (núcleo familiar), sin /api al final.
+   * Ej.: https://proyecto-asiscoup-g1-jvaz.onrender.com
+   * Se usa para leer el consentimiento informado del estudiante.
+   */
+  @IsOptional()
+  @IsUrl({ require_tld: false, protocols: ['http', 'https'] })
+  ASISCO_API_URL?: string;
+
+  /** Tiempo máximo de espera de cada llamada a ASISCO UP. */
+  @IsInt()
+  @Min(500)
+  @Max(30000)
+  ASISCO_API_TIMEOUT_MS: number = 5000;
+
+
+  /**
    * SOLO DESARROLLO: si es "true", todos los estudiantes figuran con
    * consentimiento de voz aceptado (para probar Habla conmigo mientras no
    * exista la consulta en la API del núcleo familiar). Prohibido en producción.
