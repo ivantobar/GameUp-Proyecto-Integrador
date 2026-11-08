@@ -9,6 +9,7 @@ import {
   RecursoNoEncontradoError,
   ReglaNegocioError,
 } from '../../../common/errors/dominio.errors.js';
+import { CampoEnUsoError } from '../domain/campo-en-uso.error.js';
 import type { DatosNuevoUsuario } from '../domain/nuevo-usuario.js';
 import { UsuarioService } from './usuario.service.js';
 
@@ -91,10 +92,24 @@ describe('UsuarioService', () => {
         { rol: 'ACUDIENTE' as const, idAcudienteExterno: 40n },
         /id de acudiente/,
       ],
-    ])('%s repetido → 409', async (_campo, extra, mensaje) => {
+    ])('%s repetido → 409', async (campo, extra, mensaje) => {
       const promesa = servicio.crear(nuevo(extra));
       await expect(promesa).rejects.toThrow(ConflictoError);
       await expect(servicio.crear(nuevo(extra))).rejects.toThrow(mensaje);
+      const err: unknown = await servicio.crear(nuevo(extra)).catch((e) => e);
+      expect(err).toBeInstanceOf(CampoEnUsoError);
+      expect((err as CampoEnUsoError).campos).toContain(campo);
+    });
+
+    it('el error lleva todos los campos repetidos; el mensaje es el del primero', async () => {
+      const err: unknown = await servicio
+        .crear(nuevo({ idUsuarioAuth: 200n, correo: 'usado@ejemplo.com' }))
+        .catch((e) => e);
+      expect(err).toBeInstanceOf(CampoEnUsoError);
+      const e = err as CampoEnUsoError;
+      expect([...e.campos].sort()).toEqual(['correo', 'idUsuarioAuth']);
+      expect(e.incluye('correo')).toBe(true);
+      expect(e.message).toBe(new CampoEnUsoError([e.campos[0]!]).message);
     });
 
     it('las reglas del rol se validan antes de escribir (422)', async () => {

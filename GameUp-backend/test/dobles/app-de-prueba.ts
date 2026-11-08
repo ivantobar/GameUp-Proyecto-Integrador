@@ -30,6 +30,11 @@ import {
   CONTENIDO_REPOSITORY,
   MODULO_REPOSITORY,
 } from '../../src/modules/modulos/domain/modulo.repository.js';
+import { CONSULTA_ESTUDIANTE_EXTERNO } from '../../src/modules/estudiantes/domain/estudiante-externo.js';
+import {
+  SINCRONIZADOR_VINCULOS,
+  VINCULOS_EN_ASISCO,
+} from '../../src/modules/estudiantes/domain/vinculos-externos.js';
 import {
   ACUDIENTE_ESTUDIANTE_REPOSITORY,
   ESTUDIANTE_LECTURA_REPOSITORY,
@@ -209,6 +214,24 @@ export async function crearAppDePrueba(
     .useValue(practicas)
     .overrideProvider(NIVEL_JUEGO_REPOSITORY)
     .useValue(nivelesJuego);
+
+  // Sin ASISCO UP por defecto, aunque el .env de quien corre las pruebas
+  // tenga ASISCO_API_URL: ninguna prueba llama a la API real. Cada prueba
+  // puede dar su doble con `reemplazos`.
+  const reemplazados = new Set(
+    (opciones.reemplazos ?? []).map(({ provide }) => provide),
+  );
+  const sinAsisco: Array<[unknown, unknown]> = [
+    [VINCULOS_EN_ASISCO, false],
+    [SINCRONIZADOR_VINCULOS, null],
+    [CONSULTA_ESTUDIANTE_EXTERNO, null],
+  ];
+  for (const [provide, valor] of sinAsisco) {
+    if (reemplazados.has(provide)) continue;
+    builder = builder.overrideProvider(provide).useFactory({
+      factory: () => valor,
+    });
+  }
 
   for (const { provide, useValue } of opciones.reemplazos ?? []) {
     builder = builder.overrideProvider(provide).useValue(useValue);

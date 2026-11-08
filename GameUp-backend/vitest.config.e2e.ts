@@ -18,6 +18,9 @@ export default defineConfig({
       CONSENTIMIENTO_SIMULADO: 'false',
       // Sin limpieza periódica en las pruebas (se prueba llamándola a mano).
       LIMPIEZA_GRABACIONES_MIN: '0',
+      // Alta automática con los cuatro roles (el valor por defecto), aunque
+      // el .env local diga otra cosa. Las pruebas que la apagan lo hacen a mano.
+      ALTA_AUTOMATICA_ROLES: 'ESTUDIANTE,ACUDIENTE,TALLERISTA,DIRECTORA',
     },
   },
 });

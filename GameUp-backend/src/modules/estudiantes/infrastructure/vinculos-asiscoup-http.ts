@@ -5,6 +5,7 @@ import type {
   VinculoExterno,
   VinculosDeAcudiente,
 } from '../domain/vinculos-externos.js';
+import { esObjeto, idAsisco } from './asiscoup-ids.js';
 
 /**
  * Lee los estudiantes vinculados al acudiente que inició sesión:
@@ -63,33 +64,20 @@ export class ConsultaVinculosAsiscoUpHttp implements ConsultaVinculos {
   }
 }
 
-type Objeto = Record<string, unknown>;
-const esObjeto = (v: unknown): v is Objeto =>
-  typeof v === 'object' && v !== null && !Array.isArray(v);
-
-function id(valor: unknown): bigint | null {
-  if (typeof valor === 'number' && Number.isSafeInteger(valor) && valor > 0) {
-    return BigInt(valor);
-  }
-  if (typeof valor === 'string' && /^[1-9]\d{0,18}$/.test(valor)) {
-    return BigInt(valor);
-  }
-  return null;
-}
-
 function interpretar(cuerpo: unknown, logger: Logger): VinculosDeAcudiente {
   if (!esObjeto(cuerpo) || !esObjeto(cuerpo.acudiente)) {
     return formatoInesperado(logger);
   }
   const idUsuarioAuth =
-    id(cuerpo.acudiente.idUsuarioAuth) ?? id(cuerpo.acudiente.id_usuario);
+    idAsisco(cuerpo.acudiente.idUsuarioAuth) ??
+    idAsisco(cuerpo.acudiente.id_usuario);
   if (idUsuarioAuth === null || !Array.isArray(cuerpo.estudiantes)) {
     return formatoInesperado(logger);
   }
   const estudiantes: VinculoExterno[] = [];
   for (const e of cuerpo.estudiantes) {
     if (!esObjeto(e)) return formatoInesperado(logger);
-    const idEstudiante = id(e.idEstudiante);
+    const idEstudiante = idAsisco(e.idEstudiante);
     if (idEstudiante === null) return formatoInesperado(logger);
     const nombre = esObjeto(e.parentesco) ? e.parentesco.nombre : e.parentesco;
     estudiantes.push({

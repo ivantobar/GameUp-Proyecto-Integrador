@@ -1,6 +1,7 @@
 import { CuentaRepositoryEnMemoria } from '../../../../test/dobles/cuentas-en-memoria.js';
 import { identidad } from '../../../../test/dobles/verificador-token-falso.js';
 import { AccesoDenegadoError } from '../../../common/errors/dominio.errors.js';
+import { CuentaNoRegistradaError } from '../domain/cuenta-no-registrada.error.js';
 import { Cuenta } from '../domain/cuenta.entity.js';
 import { ResolutorUsuarioService } from './resolutor-usuario.service.js';
 
@@ -43,10 +44,23 @@ describe('ResolutorUsuarioService', () => {
     );
   });
 
-  it('autenticado afuera pero sin fila en GameUP → 403 con mensaje claro', async () => {
-    await expect(
-      servicio.resolver(identidad(999, ['TALLERISTA'])),
-    ).rejects.toThrow(/aún no está registrada en GameUP/);
+  it('autenticado afuera pero sin fila en GameUP → 403 CuentaNoRegistradaError', async () => {
+    const promesa = servicio.resolver(identidad(999, ['TALLERISTA']));
+    await expect(promesa).rejects.toThrow(CuentaNoRegistradaError);
+    await expect(promesa).rejects.toThrow(AccesoDenegadoError);
+    await expect(promesa).rejects.toThrow(/aún no está registrada en GameUP/);
+  });
+
+  it('los demás 403 NO son CuentaNoRegistradaError (no disparan el alta)', async () => {
+    for (const ident of [
+      identidad(300, ['ACUDIENTE']), // inactiva
+      identidad(200, ['ACUDIENTE']), // rol distinto
+      identidad(100, ['DONANTE']), // sin rol con acceso
+    ]) {
+      const err: unknown = await servicio.resolver(ident).catch((e) => e);
+      expect(err).toBeInstanceOf(AccesoDenegadoError);
+      expect(err).not.toBeInstanceOf(CuentaNoRegistradaError);
+    }
   });
 
   it('estudiante ACTIVO entra', async () => {

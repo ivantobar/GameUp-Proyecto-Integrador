@@ -13,12 +13,17 @@ import {
   TALLERISTA_ESTUDIANTE_REPOSITORY,
 } from './domain/estudiante.repository.js';
 import {
+  CONSULTA_ESTUDIANTE_EXTERNO,
+  type ConsultaEstudianteExterno,
+} from './domain/estudiante-externo.js';
+import {
   COPIA_VINCULOS_REPOSITORY,
   SINCRONIZADOR_VINCULOS,
   VINCULOS_EN_ASISCO,
   type CopiaVinculosRepository,
   type SincronizadorVinculos,
 } from './domain/vinculos-externos.js';
+import { ConsultaEstudianteAsiscoUpHttp } from './infrastructure/estudiante-asiscoup-http.js';
 import { PrismaCopiaVinculosRepository } from './infrastructure/prisma-copia-vinculos.repository.js';
 import {
   PrismaAcudienteEstudianteRepository,
@@ -56,10 +61,26 @@ export function crearSincronizadorVinculos(
 }
 
 /**
+ * Consulta del estudiante en ASISCO UP por su id_usuario de seguridad (la usa
+ * el alta automática del primer login), o null si falta ASISCO_API_URL.
+ */
+export function crearConsultaEstudianteExterno(
+  config: ConfigService<EnvironmentVariables, true>,
+): ConsultaEstudianteExterno | null {
+  const url = config.get('ASISCO_API_URL', { infer: true });
+  if (!url) return null;
+  return new ConsultaEstudianteAsiscoUpHttp(
+    url,
+    config.get('ASISCO_API_TIMEOUT_MS', { infer: true }),
+  );
+}
+
+/**
  * Estudiantes y sus vínculos. Exporta AccesoEstudianteService (regla de
  * relación), el puerto de lectura para los módulos de las fases siguientes y
  * el sincronizador de vínculos con ASISCO UP (lo usa el login del acudiente;
- * es null si falta ASISCO_API_URL).
+ * es null si falta ASISCO_API_URL) y la consulta del estudiante en ASISCO UP
+ * (alta automática; también null sin ASISCO_API_URL).
  */
 @Module({
   imports: [UsuariosModule],
@@ -99,11 +120,17 @@ export function crearSincronizadorVinculos(
       inject: [ConfigService, COPIA_VINCULOS_REPOSITORY],
       useFactory: crearSincronizadorVinculos,
     },
+    {
+      provide: CONSULTA_ESTUDIANTE_EXTERNO,
+      inject: [ConfigService],
+      useFactory: crearConsultaEstudianteExterno,
+    },
   ],
   exports: [
     AccesoEstudianteService,
     ESTUDIANTE_LECTURA_REPOSITORY,
     SINCRONIZADOR_VINCULOS,
+    CONSULTA_ESTUDIANTE_EXTERNO,
   ],
 })
 export class EstudiantesModule {}

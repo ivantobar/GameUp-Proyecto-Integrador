@@ -12,6 +12,10 @@ import {
   Min,
   validateSync,
 } from 'class-validator';
+import {
+  ALTA_AUTOMATICA_ROLES_POR_DEFECTO,
+  leerRolesAltaAutomatica,
+} from '../common/auth/roles-alta-automatica.js';
 
 export enum Environment {
   Development = 'development',
@@ -120,6 +124,15 @@ export class EnvironmentVariables {
   ASISCO_API_TIMEOUT_MS: number = 5000;
 
   /**
+   * Roles de GameUP que se dan de alta solos en el primer inicio de sesión,
+   * separados por comas (DIRECTORA, TALLERISTA, ACUDIENTE, ESTUDIANTE).
+   * Vacía = apagado: sin fila en `usuario` se responde 403 y la directora
+   * da de alta con POST /usuarios (como antes). Por defecto, los cuatro.
+   */
+  @IsString()
+  ALTA_AUTOMATICA_ROLES: string = ALTA_AUTOMATICA_ROLES_POR_DEFECTO;
+
+  /**
    * SOLO DESARROLLO: si es "true", todos los estudiantes figuran con
    * consentimiento de voz aceptado (para probar Habla conmigo mientras no
    * exista la consulta en la API del núcleo familiar). Prohibido en producción.
@@ -170,6 +183,14 @@ export function validateEnv(config: Record<string, unknown>) {
     env.CONSENTIMIENTO_SIMULADO === true
   ) {
     messages.push('CONSENTIMIENTO_SIMULADO no se puede activar en producción');
+  }
+  if (typeof env.ALTA_AUTOMATICA_ROLES === 'string') {
+    const lectura = leerRolesAltaAutomatica(env.ALTA_AUTOMATICA_ROLES);
+    if (!lectura.ok) {
+      messages.push(
+        `ALTA_AUTOMATICA_ROLES solo admite ${ALTA_AUTOMATICA_ROLES_POR_DEFECTO} separados por comas (o vacía para apagarla); no reconoce: ${lectura.invalidos.join(', ')}`,
+      );
+    }
   }
 
   if (messages.length > 0) {

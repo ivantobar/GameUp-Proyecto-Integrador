@@ -3,6 +3,7 @@ import type { ResolutorUsuario } from '../../../common/auth/resolutor-usuario.js
 import type { UsuarioAutenticado } from '../../../common/auth/usuario-autenticado.js';
 import type { IdentidadExterna } from '../../../common/auth/verificador-token.js';
 import { AccesoDenegadoError } from '../../../common/errors/dominio.errors.js';
+import { CuentaNoRegistradaError } from '../domain/cuenta-no-registrada.error.js';
 import {
   CUENTA_REPOSITORY,
   type CuentaRepository,
@@ -14,7 +15,9 @@ import { MapeadorRoles } from '../domain/mapeador-roles.js';
  *
  * Reglas (decididas en la fase 0):
  *  - Si ningún rol externo tiene acceso (DONANTE, desconocido) → 403.
- *  - Si no hay fila en `usuario` con ese id_usuario_auth → 403 (la directora la da de alta).
+ *  - Si no hay fila en `usuario` con ese id_usuario_auth → 403
+ *    CuentaNoRegistradaError. En el login, AltaAutomaticaService puede
+ *    crearla; en el guard (cada petición) NUNCA se crea nada.
  *  - Si la cuenta está inactiva → 403.
  *  - Si es un estudiante EGRESADO o RETIRADO → 403 (su historial se conserva).
  *  - Se queda con el rol externo que coincide con el rol local. Si ninguno
@@ -37,11 +40,7 @@ export class ResolutorUsuarioService implements ResolutorUsuario {
     const cuenta = await this.cuentas.buscarPorIdUsuarioAuth(
       identidad.idUsuarioAuth,
     );
-    if (!cuenta) {
-      throw new AccesoDenegadoError(
-        'Tu cuenta aún no está registrada en GameUP. Pide a la directora de la fundación que te dé de alta.',
-      );
-    }
+    if (!cuenta) throw new CuentaNoRegistradaError();
     if (!cuenta.activo) {
       throw new AccesoDenegadoError(
         'Tu cuenta de GameUP está desactivada. Habla con la directora de la fundación.',

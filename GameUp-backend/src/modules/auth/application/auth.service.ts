@@ -8,6 +8,7 @@ import type { UsuarioAutenticado } from '../../../common/auth/usuario-autenticad
 import {
   INVALIDADOR_TOKEN,
   VERIFICADOR_TOKEN,
+  type IdentidadExterna,
   type InvalidadorToken,
   type VerificadorToken,
 } from '../../../common/auth/verificador-token.js';
@@ -32,6 +33,8 @@ import {
   AUTENTICADOR_EXTERNO,
   type AutenticadorExterno,
 } from '../domain/autenticador-externo.js';
+import { CuentaNoRegistradaError } from '../domain/cuenta-no-registrada.error.js';
+import { AltaAutomaticaService } from './alta-automatica.service.js';
 
 /** Resultado de iniciar sesión. */
 export interface SesionIniciada {
@@ -44,7 +47,8 @@ export interface SesionIniciada {
 /**
  * Casos de uso de sesión:
  *  - iniciarSesion: credenciales → API de seguridad → token → perfil →
- *    cuenta de GameUP (403 si no hay o el rol no coincide) → sincroniza la
+ *    cuenta de GameUP (si no hay, alta automática con AltaAutomaticaService;
+ *    403 si está inactiva o el rol no coincide) → sincroniza la
  *    copia mínima (nombres, apellidos, correo, ultimo_acceso, sincronizado_en).
  *    Si es ACUDIENTE y ASISCO UP está conectado, refresca también la copia
  *    de sus vínculos con estudiantes (sin bloquear el login si falla).
@@ -69,6 +73,10 @@ export class AuthService {
     @Optional()
     @Inject(SINCRONIZADOR_VINCULOS)
     private readonly vinculos: SincronizadorVinculos | null = null,
+    // @Inject explícito: con el tipo unión, la metadata sería Object.
+    @Optional()
+    @Inject(AltaAutomaticaService)
+    private readonly alta: AltaAutomaticaService | null = null,
   ) {}
 
   async iniciarSesion(
@@ -78,7 +86,7 @@ export class AuthService {
     const token = await this.autenticador.iniciarSesion(correo, contrasena);
     // Verificar aquí también deja el token en la caché para las siguientes peticiones.
     const identidad = await this.verificador.verificar(token);
-    const autenticado = await this.resolutor.resolver(identidad);
+    const autenticado = await this.resolverOAltaAutomatica(identidad, token);
 
     try {
       await this.escritura.sincronizarCopia(
@@ -111,6 +119,22 @@ export class AuthService {
       );
     }
     return { token, expiraEn: leerExpiracionJwt(token), usuario };
+  }
+
+  /**
+   * Solo en el login: sin fila en `usuario`, se intenta el alta automática.
+   * Los demás 403 (inactiva, egresado, rol distinto) se quedan como están.
+   */
+  private async resolverOAltaAutomatica(
+    identidad: IdentidadExterna,
+    token: string,
+  ): Promise<UsuarioAutenticado> {
+    try {
+      return await this.resolutor.resolver(identidad);
+    } catch (err) {
+      if (!(err instanceof CuentaNoRegistradaError) || !this.alta) throw err;
+      return this.alta.darDeAlta(identidad, token, err);
+    }
   }
 
   async sesionActual(actual: UsuarioAutenticado): Promise<Usuario> {

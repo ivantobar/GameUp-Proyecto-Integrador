@@ -12,8 +12,9 @@ import {
 import { UsuarioController } from './presentation/usuario.controller.js';
 
 /**
- * Cuentas de GameUP (copia mínima de las personas). Exporta los puertos de
- * lectura y escritura (el login sincroniza la copia) y la consulta de niveles.
+ * Cuentas de GameUP (copia mínima de las personas). Exporta UsuarioService
+ * (el login da de alta con él), los puertos de lectura y escritura (el login
+ * sincroniza la copia) y la consulta de niveles.
  */
 @Module({
   controllers: [UsuarioController],
@@ -31,6 +32,8 @@ import { UsuarioController } from './presentation/usuario.controller.js';
     { provide: NIVEL_CONSULTA, useClass: PrismaNivelConsulta },
   ],
   exports: [
+    // El alta automática del primer login reutiliza UsuarioService.crear.
+    UsuarioService,
     USUARIO_LECTURA_REPOSITORY,
     USUARIO_ESCRITURA_REPOSITORY,
     NIVEL_CONSULTA,
