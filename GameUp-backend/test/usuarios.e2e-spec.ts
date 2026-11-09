@@ -2,6 +2,7 @@ import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import type { App } from 'supertest/types.js';
 import { crearAppDePrueba } from './dobles/app-de-prueba.js';
+import { DirectorioCentralFalso } from './dobles/directorio-central-falso.js';
 import {
   UsuariosEnMemoria,
   usuarioDePrueba,
@@ -13,6 +14,20 @@ import {
 
 describe('Usuarios (e2e)', () => {
   let app: INestApplication<App>;
+  /** GET /api/usuarios/{id} de la API central (datos ficticios). */
+  const directorio = new DirectorioCentralFalso([
+    identidad(900, ['TALLERISTA'], {
+      nombres: ' Nueva ',
+      apellidos: 'Tallerista',
+      correo: 'Nueva@Ejemplo.com',
+    }),
+    identidad(901, ['ESTUDIANTE'], { nombres: 'Niño', apellidos: 'De Prueba' }),
+    identidad(200, ['TALLERISTA']),
+    identidad(951, ['TALLERISTA'], { correo: 'USADA@ejemplo.com' }),
+    identidad(952, ['ESTUDIANTE']),
+    identidad(953, ['DONANTE', 'ACUDIENTE']),
+    identidad(954, ['ADMIN']),
+  ]);
 
   beforeAll(async () => {
     const usuarios = new UsuariosEnMemoria([
@@ -22,6 +37,7 @@ describe('Usuarios (e2e)', () => {
     ]);
     app = await crearAppDePrueba({
       usuarios,
+      directorio,
       verificador: new VerificadorTokenFalso({
         directora: identidad(100, ['ADMIN']),
         tallerista: identidad(200, ['TALLERISTA']),
@@ -47,16 +63,17 @@ describe('Usuarios (e2e)', () => {
     };
   };
 
+  /** La app vieja aún manda nombres, apellidos y correo: se ignoran. */
   const tallerista = {
     idUsuarioAuth: '900',
     rol: 'TALLERISTA',
-    nombres: ' Nueva ',
-    apellidos: 'Tallerista',
-    correo: 'Nueva@Ejemplo.com',
+    nombres: 'Inventado',
+    apellidos: 'A Mano',
+    correo: 'inventado@ejemplo.com',
   };
 
   describe('POST /usuarios', () => {
-    it('la directora da de alta una tallerista → 201', async () => {
+    it('toma nombres, apellidos y correo de la API central (ignora los del cuerpo) → 201', async () => {
       const res = await como('directora')
         .post('/usuarios', tallerista)
         .expect(201);
@@ -65,10 +82,26 @@ describe('Usuarios (e2e)', () => {
         idUsuarioAuth: '900',
         rol: 'TALLERISTA',
         nombres: 'Nueva',
+        apellidos: 'Tallerista',
         correo: 'nueva@ejemplo.com',
         activo: true,
         estudiante: null,
         sincronizadoEn: null,
+      });
+      // Con el token de la directora.
+      expect(directorio.consultas.at(-1)).toEqual({
+        idUsuarioAuth: 900n,
+        token: 'directora',
+      });
+    });
+
+    it('basta con idUsuarioAuth y rol (ADMIN central → DIRECTORA)', async () => {
+      const res = await como('directora')
+        .post('/usuarios', { idUsuarioAuth: '954', rol: 'DIRECTORA' })
+        .expect(201);
+      expect(res.body).toMatchObject({
+        idUsuarioAuth: '954',
+        rol: 'DIRECTORA',
       });
     });
 
@@ -77,11 +110,13 @@ describe('Usuarios (e2e)', () => {
         .post('/usuarios', {
           idUsuarioAuth: '901',
           rol: 'ESTUDIANTE',
-          nombres: 'Niño',
-          apellidos: 'De Prueba',
           idEstudianteExterno: '7001',
         })
         .expect(201);
+      expect(res.body).toMatchObject({
+        nombres: 'Niño',
+        apellidos: 'De Prueba',
+      });
       expect(res.body.estudiante).toEqual({
         idEstudianteExterno: '7001',
         nivelId: '1',
@@ -95,6 +130,7 @@ describe('Usuarios (e2e)', () => {
       [{ ...tallerista, correo: 'no-es-correo' }],
       [{ ...tallerista, nombres: '' }],
       [{ ...tallerista, documento: '123' }], // campo no permitido
+      [{ rol: 'TALLERISTA' }], // falta idUsuarioAuth
     ])('DTO inválido → 400 (%j)', async (cuerpo) => {
       await como('directora').post('/usuarios', cuerpo).expect(400);
     });
@@ -109,28 +145,49 @@ describe('Usuarios (e2e)', () => {
         .expect(403);
     });
 
-    it('id de la API de seguridad o correo repetidos → 409', async () => {
-      await como('directora')
-        .post('/usuarios', { ...tallerista, idUsuarioAuth: '200' })
-        .expect(409);
+    it('no existe en la API central → 422', async () => {
       const res = await como('directora')
-        .post('/usuarios', {
-          ...tallerista,
-          idUsuarioAuth: '951',
-          correo: 'USADA@ejemplo.com',
-        })
-        .expect(409);
-      expect(res.body.message).toBe('Ya existe una cuenta con ese correo.');
+        .post('/usuarios', { idUsuarioAuth: '999', rol: 'TALLERISTA' })
+        .expect(422);
+      expect(res.body.message).toMatch(/no existe en la API central/);
     });
 
-    it('estudiante sin idEstudianteExterno → 422', async () => {
+    it('rol pedido que no tiene en la API central → 422', async () => {
+      const res = await como('directora')
+        .post('/usuarios', { idUsuarioAuth: '953', rol: 'TALLERISTA' })
+        .expect(422);
+      expect(res.body.message).toBe(
+        'Esa persona no tiene el rol TALLERISTA en la API central.',
+      );
+    });
+
+    it('la API central no responde → 503', async () => {
+      directorio.caida = true;
+      try {
+        await como('directora')
+          .post('/usuarios', { idUsuarioAuth: '953', rol: 'ACUDIENTE' })
+          .expect(503);
+      } finally {
+        directorio.caida = false;
+      }
+    });
+
+    it('idUsuarioAuth que ya tiene cuenta → 409', async () => {
       await como('directora')
-        .post('/usuarios', {
-          ...tallerista,
-          idUsuarioAuth: '952',
-          correo: undefined,
-          rol: 'ESTUDIANTE',
-        })
+        .post('/usuarios', { idUsuarioAuth: '200', rol: 'TALLERISTA' })
+        .expect(409);
+    });
+
+    it('correo central que ya usa otra cuenta → se crea sin correo', async () => {
+      const res = await como('directora')
+        .post('/usuarios', { idUsuarioAuth: '951', rol: 'TALLERISTA' })
+        .expect(201);
+      expect(res.body).toMatchObject({ idUsuarioAuth: '951', correo: null });
+    });
+
+    it('estudiante sin idEstudianteExterno y sin ASISCO UP → 422', async () => {
+      await como('directora')
+        .post('/usuarios', { idUsuarioAuth: '952', rol: 'ESTUDIANTE' })
         .expect(422);
     });
   });

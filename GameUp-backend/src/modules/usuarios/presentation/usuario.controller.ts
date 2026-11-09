@@ -1,76 +1,34 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Param,
-  Patch,
-  Post,
-  Query,
-} from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Query } from '@nestjs/common';
 import {
   ApiBearerAuth,
-  ApiCreatedResponse,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
 import { Roles, UsuarioActual } from '../../../common/auth/decoradores.js';
 import type { UsuarioAutenticado } from '../../../common/auth/usuario-autenticado.js';
-import { aBigInt } from '../../../common/ids/ids.js';
 import { mapearPagina } from '../../../common/paginacion/paginacion.js';
 import { ParseBigIntPipe } from '../../../common/pipes/parse-bigint.pipe.js';
 import { ApiErrores } from '../../../docs/api-errores.js';
 import { BEARER_AUTH } from '../../../docs/swagger.js';
 import { UsuarioService } from '../application/usuario.service.js';
 import { UsuarioMapper } from '../infrastructure/usuario.mapper.js';
-import { CrearUsuarioDto } from './dto/crear-usuario.dto.js';
 import { PaginaUsuariosDto, UsuarioDto } from './dto/usuario.dto.js';
 import {
   CambiarEstadoUsuarioDto,
   ListarUsuariosQueryDto,
 } from './dto/usuarios-query.dto.js';
 
-/** Cuentas de GameUP. Solo la directora. */
+/**
+ * Cuentas de GameUP. Solo la directora. El alta (POST /usuarios) está en
+ * AuthModule (AltaUsuarioController): consulta la API central y ASISCO UP.
+ */
 @ApiTags('usuarios')
 @ApiBearerAuth(BEARER_AUTH)
 @Roles('DIRECTORA')
 @Controller('usuarios')
 export class UsuarioController {
   constructor(private readonly usuarios: UsuarioService) {}
-
-  @Post()
-  @ApiOperation({
-    summary: 'Dar de alta una cuenta (directora)',
-    description:
-      'Crea la copia mínima de una persona que ya existe en la API de seguridad. ' +
-      'Para ESTUDIANTE crea también su fila en estudiante (nivel inicial BAJO si no se indica).\n\n' +
-      '**Ya no es obligatorio:** con `ALTA_AUTOMATICA_ROLES`, la cuenta se crea sola en el ' +
-      'primer inicio de sesión (POST /auth/login). Esta ruta queda para casos especiales: ' +
-      'personas con varios roles en la fundación, un nivel inicial distinto, un ' +
-      '`idAcudienteExterno`, o un rol con el alta automática apagada.',
-  })
-  @ApiCreatedResponse({ type: UsuarioDto })
-  @ApiErrores(400, 401, 403, {
-    409: 'Ya existe una cuenta con ese id, correo o id externo',
-    422: 'Los datos no cumplen las reglas del rol (ej.: estudiante sin idEstudianteExterno)',
-  })
-  async crear(@Body() dto: CrearUsuarioDto): Promise<UsuarioDto> {
-    const usuario = await this.usuarios.crear({
-      idUsuarioAuth: aBigInt(dto.idUsuarioAuth),
-      rol: dto.rol,
-      nombres: dto.nombres,
-      apellidos: dto.apellidos,
-      correo: dto.correo ?? null,
-      idAcudienteExterno: dto.idAcudienteExterno
-        ? aBigInt(dto.idAcudienteExterno)
-        : null,
-      idEstudianteExterno: dto.idEstudianteExterno
-        ? aBigInt(dto.idEstudianteExterno)
-        : null,
-      nivelId: dto.nivelId ? aBigInt(dto.nivelId) : null,
-    });
-    return UsuarioMapper.aDto(usuario);
-  }
 
   @Get()
   @ApiOperation({

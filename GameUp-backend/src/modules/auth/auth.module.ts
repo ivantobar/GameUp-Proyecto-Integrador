@@ -21,12 +21,16 @@ import {
   AltaAutomaticaService,
   ROLES_ALTA_AUTOMATICA,
 } from './application/alta-automatica.service.js';
+import { AltaDirectoraService } from './application/alta-directora.service.js';
 import { AuthService } from './application/auth.service.js';
 import { ResolutorUsuarioService } from './application/resolutor-usuario.service.js';
 import { AUTENTICADOR_EXTERNO } from './domain/autenticador-externo.js';
 import { CUENTA_REPOSITORY } from './domain/cuenta.repository.js';
+import { DIRECTORIO_CENTRAL } from './domain/directorio-central.js';
 import { AutenticadorSeguridadHttp } from './infrastructure/autenticador-seguridad-http.js';
+import { DirectorioCentralHttp } from './infrastructure/directorio-central-http.js';
 import { PrismaCuentaRepository } from './infrastructure/prisma-cuenta.repository.js';
+import { AltaUsuarioController } from './presentation/alta-usuario.controller.js';
 import { AuthController } from './presentation/auth.controller.js';
 
 /**
@@ -48,14 +52,17 @@ export function crearRolesAltaAutomatica(
  * Autenticación. Registra los guards globales (en este orden):
  *   AuthGuard  → token válido + cuenta de GameUP (401/403/503)
  *   RolesGuard → @Roles(...) de la ruta (403)
- * y las rutas /auth/login (pública), /auth/me y /auth/logout.
+ * las rutas /auth/login (pública), /auth/me y /auth/logout, y el alta de la
+ * directora (POST /usuarios), que consulta la API central y ASISCO UP.
  */
 @Module({
   imports: [UsuariosModule, EstudiantesModule],
-  controllers: [AuthController],
+  controllers: [AuthController, AltaUsuarioController],
   providers: [
     AuthService,
     AltaAutomaticaService,
+    AltaDirectoraService,
+    { provide: DIRECTORIO_CENTRAL, useClass: DirectorioCentralHttp },
     {
       provide: ROLES_ALTA_AUTOMATICA,
       inject: [ConfigService],

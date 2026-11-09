@@ -13,6 +13,10 @@ import {
   type AutenticadorExterno,
 } from '../../src/modules/auth/domain/autenticador-externo.js';
 import {
+  DIRECTORIO_CENTRAL,
+  type DirectorioCentral,
+} from '../../src/modules/auth/domain/directorio-central.js';
+import {
   CUENTA_REPOSITORY,
   type CuentaRepository,
 } from '../../src/modules/auth/domain/cuenta.repository.js';
@@ -69,6 +73,7 @@ import {
 } from './acudiente-en-memoria.js';
 import { AsignacionesEnMemoria } from './asignaciones-en-memoria.js';
 import { AutenticadorFalso } from './autenticador-falso.js';
+import { DirectorioCentralFalso } from './directorio-central-falso.js';
 import { EstudiantesEnMemoria } from './estudiantes-en-memoria.js';
 import { IntentosEnMemoria } from './intentos-en-memoria.js';
 import { NivelesJuegoEnMemoria } from './niveles-juego-en-memoria.js';
@@ -84,6 +89,8 @@ import { VerificadorTokenFalso } from './verificador-token-falso.js';
 export interface OpcionesAppDePrueba {
   verificador?: VerificadorToken;
   autenticador?: AutenticadorExterno;
+  /** GET /api/usuarios/{id} de la API central (por defecto, nadie: 404). */
+  directorio?: DirectorioCentral;
   /** Usuarios en memoria: también responden como CuentaRepository. */
   usuarios?: UsuariosEnMemoria;
   /** Estudiantes y vínculos en memoria (por defecto, sobre `usuarios`). */
@@ -166,6 +173,8 @@ export async function crearAppDePrueba(
     .useValue(opciones.verificador ?? new VerificadorTokenFalso({}))
     .overrideProvider(AUTENTICADOR_EXTERNO)
     .useValue(opciones.autenticador ?? new AutenticadorFalso({}))
+    .overrideProvider(DIRECTORIO_CENTRAL)
+    .useValue(opciones.directorio ?? new DirectorioCentralFalso())
     .overrideProvider(CUENTA_REPOSITORY)
     .useValue(opciones.cuentas ?? usuarios)
     .overrideProvider(USUARIO_LECTURA_REPOSITORY)
