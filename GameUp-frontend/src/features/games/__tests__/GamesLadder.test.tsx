@@ -1,6 +1,6 @@
 import { act, render, screen, userEvent } from '@testing-library/react-native';
 import { router } from 'expo-router';
-import GamesScreen from '@/app/student/(tabs)/games';
+import GamesScreen from '@/app/student/levels';
 import { createMockRepositories } from '@/data/mock/createMockRepositories';
 import { RepositoryProvider } from '@/data/RepositoryProvider';
 import type { Repositories } from '@/data/repositories';
@@ -89,7 +89,7 @@ describe('Juegos con la escalera de niveles', () => {
     });
   });
 
-  it('una tarea de ese juego va en «Tareas de tu profe»; el juego abre su nivel', async () => {
+  it('aunque haya una tarea de ese juego, la tarjeta abre su nivel', async () => {
     const repos = createMockRepositories({ delayMs: 0 });
     jest.spyOn(repos.assignments, 'listPendingForStudent').mockResolvedValue([
       {
@@ -109,12 +109,8 @@ describe('Juegos con la escalera de niveles', () => {
       pathname: '/student/memory',
       params: { escalera: '1' },
     });
-
-    await userEvent.press(screen.getByRole('button', { name: /Los colores/ }));
-    expect(router.push).toHaveBeenLastCalledWith({
-      pathname: '/student/module/[moduleId]',
-      params: { moduleId: '3' },
-    });
+    // Las tareas no salen en «Jugar por niveles».
+    expect(screen.queryByText('Los colores')).toBeNull();
   });
 
   it('si los niveles no cargan, los juegos se muestran igual (sin estrellas)', async () => {

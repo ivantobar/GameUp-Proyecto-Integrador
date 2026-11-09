@@ -1,0 +1,1453 @@
+diff --git a/GameUp-frontend/src/app/student/(tabs)/games.tsx b/GameUp-frontend/src/app/student/(tabs)/games.tsx
+index d8e1ee9..b1dd1a9 100644
+--- a/GameUp-frontend/src/app/student/(tabs)/games.tsx
++++ b/GameUp-frontend/src/app/student/(tabs)/games.tsx
+@@ -5,46 +5,41 @@ import {
+   HeaderBackButton,
+   Screen,
+   ScreenHeader,
+-  StateView,
+ } from '@/components/ui';
+ import { GameCard, NarrationButton } from '@/components/gameup';
+-import { isLadderGame } from '@/data/types';
+-import { LevelUpCelebration } from '@/features/games/components/LevelUpCelebration';
+-import { assignmentHref, gameHref, ladderHref } from '@/features/games/catalog';
+-import { useGameList, type GameListItem } from '@/features/games/useGameList';
+-import { useLevelCelebration } from '@/features/games/useLevelCelebration';
+ import { useRefreshOnFocus } from '@/data/useRefreshOnFocus';
++import { moduleBadge, type ModuleTasks } from '@/features/games/moduleTasks';
++import { useModuleTasks } from '@/features/games/useModuleTasks';
+ import { spacing } from '@/theme';
+ 
+-const QUESTION = '¿A qué quieres jugar?';
++const QUESTION = '¿Qué quieres hacer?';
++const TASKS = 'Tareas de mi profe';
++const LEVELS = 'Jugar por niveles';
+ 
+-/** Agrupa las tarjetas de dos en dos (cuadrícula del mockup). */
+-function pairs(items: GameListItem[]): GameListItem[][] {
+-  const rows: GameListItem[][] = [];
+-  for (let i = 0; i < items.length; i += 2) rows.push(items.slice(i, i + 2));
+-  return rows;
++/** «2 temas» / «1 tema» / «Hoy no hay»; mientras carga, nada. */
++function tasksSubtitle(modules: ModuleTasks[] | null): string {
++  if (!modules) return 'Lo que te dejó tu profe';
++  if (modules.length === 0) return 'Hoy no hay';
++  return modules.length === 1 ? '1 tema' : `${modules.length} temas`;
+ }
+ 
+-/**
+- * A dónde lleva una tarjeta: su tarea (si tiene «Tarea»), si no el nivel
+- * actual de su escalera y, si no, el juego libre.
+- */
+-function cardHref({ game, assignment, level }: GameListItem) {
+-  if (assignment) return assignmentHref(assignment);
+-  if (level && isLadderGame(game.id)) return ladderHref(game.id);
+-  return gameHref(game);
++/** «Nuevo» si algún tema trae algo sin abrir; si no, «Otra vez». */
++function tasksBadge(modules: ModuleTasks[] | null): string | undefined {
++  const badges = (modules ?? []).map(moduleBadge);
++  if (badges.includes('Nuevo')) return 'Nuevo';
++  if (badges.includes('Otra vez')) return 'Otra vez';
++  return undefined;
+ }
+ 
+-/** Pantalla 2 · Juegos. Las secciones y tarjetas salen del catálogo. */
++/**
++ * Pantalla 2 · Juegos. El niño elige entre las tareas de su profe (por
++ * módulo) y los juegos por niveles; las dos cosas no se mezclan.
++ */
+ export default function GamesScreen() {
+-  const { resource, reload, refresh } = useGameList();
+-  // Al volver de un juego, la insignia «Tarea» y las estrellas se actualizan.
++  const { resource, refresh } = useModuleTasks();
++  // Al volver, la cuenta de temas y la insignia se actualizan.
+   useRefreshOnFocus(refresh);
+-  const list = resource.status === 'ready' ? resource.data : null;
+-  const celebration = useLevelCelebration(
+-    list?.studentId ?? null,
+-    list?.levels ?? null,
+-  );
++  const modules = resource.status === 'ready' ? resource.data : null;
+ 
+   return (
+     <Screen
+@@ -55,79 +50,42 @@ export default function GamesScreen() {
+             <HeaderBackButton onPress={() => router.navigate('/student')} />
+           }
+           title="Juegos"
+-          right={<NarrationButton text={`${QUESTION} Toca un juego.`} />}
++          right={
++            <NarrationButton text={`${QUESTION} ${TASKS}, o ${LEVELS}.`} />
++          }
+         />
+       }
+     >
+       <AppText variant="display" accessibilityRole="header">
+         {QUESTION}
+       </AppText>
+-
+-      {resource.status === 'loading' ? (
+-        <StateView kind="loading" title="Buscando tus juegos…" />
+-      ) : null}
+-      {resource.status === 'error' ? (
+-        <StateView
+-          kind="error"
+-          title="Vamos a intentarlo otra vez"
+-          action={{ label: 'Intentar de nuevo', onPress: reload }}
++      <View style={styles.choices}>
++        <GameCard
++          tone="brand"
++          icon="book"
++          title={TASKS}
++          subtitle={tasksSubtitle(modules)}
++          badge={tasksBadge(modules)}
++          accessibilityHint="Abre los temas que te dejó tu profe."
++          onPress={() => router.push('/student/tasks')}
+         />
+-      ) : null}
+-
+-      <LevelUpCelebration
+-        levelUp={celebration.levelUp}
+-        onClose={celebration.close}
+-      />
+-
+-      {resource.status === 'ready'
+-        ? resource.data.sections.map((section) => (
+-            <View key={section.id} style={styles.section}>
+-              <AppText
+-                variant="label"
+-                tone="secundario"
+-                accessibilityRole="header"
+-              >
+-                {section.title}
+-              </AppText>
+-              {pairs(section.items).map((row) => (
+-                <View
+-                  key={row.map((item) => item.game.id).join('-')}
+-                  style={styles.row}
+-                >
+-                  {row.map((item) => (
+-                    <GameCard
+-                      key={item.game.id}
+-                      title={item.game.title}
+-                      subtitle={item.game.subtitle}
+-                      icon={item.game.icon}
+-                      tone={item.game.tone}
+-                      badge={item.badge}
+-                      level={item.level?.level}
+-                      // Con «Tarea», abre esa actividad; si no, su nivel
+-                      // actual (ambos llegan al docente) o el juego libre.
+-                      onPress={() => router.push(cardHref(item))}
+-                    />
+-                  ))}
+-                  {/* Si la fila queda impar, un hueco mantiene el ancho. */}
+-                  {row.length === 1 ? <View style={styles.spacer} /> : null}
+-                </View>
+-              ))}
+-            </View>
+-          ))
+-        : null}
++        <GameCard
++          tone="warm"
++          icon="starOutline"
++          title={LEVELS}
++          subtitle="Juega y gana estrellas"
++          accessibilityHint="Abre los juegos que suben de nivel."
++          onPress={() => router.push('/student/levels')}
++        />
++      </View>
+     </Screen>
+   );
+ }
+ 
+ const styles = StyleSheet.create({
+-  section: {
+-    gap: spacing.md,
+-  },
+-  row: {
++  // En fila, como las tarjetas de Inicio (GameCard ocupa el ancho con flex).
++  choices: {
+     flexDirection: 'row',
+     gap: spacing.md,
+   },
+-  spacer: {
+-    flex: 1,
+-  },
+ });
+diff --git a/GameUp-frontend/src/app/student/levels.tsx b/GameUp-frontend/src/app/student/levels.tsx
+new file mode 100644
+index 0000000..603c9f3
+--- /dev/null
++++ b/GameUp-frontend/src/app/student/levels.tsx
+@@ -0,0 +1,133 @@
++import { router } from 'expo-router';
++import { StyleSheet, View } from 'react-native';
++import {
++  AppText,
++  HeaderBackButton,
++  Screen,
++  ScreenHeader,
++  StateView,
++} from '@/components/ui';
++import { GameCard, NarrationButton } from '@/components/gameup';
++import { isLadderGame } from '@/data/types';
++import { LevelUpCelebration } from '@/features/games/components/LevelUpCelebration';
++import { gameHref, ladderHref } from '@/features/games/catalog';
++import { useGameList, type GameListItem } from '@/features/games/useGameList';
++import { useLevelCelebration } from '@/features/games/useLevelCelebration';
++import { useRefreshOnFocus } from '@/data/useRefreshOnFocus';
++import { spacing } from '@/theme';
++
++const TITLE = 'Jugar por niveles';
++const QUESTION = '¿A qué quieres jugar?';
++
++/** Agrupa las tarjetas de dos en dos (cuadrícula del mockup). */
++function pairs(items: GameListItem[]): GameListItem[][] {
++  const rows: GameListItem[][] = [];
++  for (let i = 0; i < items.length; i += 2) rows.push(items.slice(i, i + 2));
++  return rows;
++}
++
++/**
++ * A dónde lleva la tarjeta de un juego: el nivel actual de su escalera (los
++ * de pensar) o el juego libre (los de sonidos, o si los niveles no cargan).
++ * Nunca abre una tarea: las tareas están en «Tareas de tu profe».
++ */
++function cardHref({ game, level }: GameListItem) {
++  if (level && isLadderGame(game.id)) return ladderHref(game.id);
++  return gameHref(game);
++}
++
++/**
++ * Jugar por niveles: los juegos de pensar abren su nivel de la escalera y
++ * los de sonidos, el juego libre. Las tareas de la profe no salen aquí.
++ */
++export default function LevelsScreen() {
++  const { resource, reload, refresh } = useGameList();
++  // Al volver de un juego, las estrellas se actualizan.
++  useRefreshOnFocus(refresh);
++  const list = resource.status === 'ready' ? resource.data : null;
++  const celebration = useLevelCelebration(
++    list?.studentId ?? null,
++    list?.levels ?? null,
++  );
++
++  return (
++    <Screen
++      header={
++        <ScreenHeader
++          left={<HeaderBackButton onPress={() => router.back()} />}
++          title={TITLE}
++          right={<NarrationButton text={`${QUESTION} Toca un juego.`} />}
++        />
++      }
++    >
++      <AppText variant="display" accessibilityRole="header">
++        {QUESTION}
++      </AppText>
++
++      {resource.status === 'loading' ? (
++        <StateView kind="loading" title="Buscando tus juegos…" />
++      ) : null}
++      {resource.status === 'error' ? (
++        <StateView
++          kind="error"
++          title="Vamos a intentarlo otra vez"
++          action={{ label: 'Intentar de nuevo', onPress: reload }}
++        />
++      ) : null}
++
++      <LevelUpCelebration
++        levelUp={celebration.levelUp}
++        onClose={celebration.close}
++      />
++
++      {resource.status === 'ready'
++        ? resource.data.sections.map((section) => (
++            <View key={section.id} style={styles.section}>
++              <AppText
++                variant="label"
++                tone="secundario"
++                accessibilityRole="header"
++              >
++                {section.title}
++              </AppText>
++              {pairs(section.items).map((row) => (
++                <View
++                  key={row.map((item) => item.game.id).join('-')}
++                  style={styles.row}
++                >
++                  {row.map((item) => (
++                    <GameCard
++                      key={item.game.id}
++                      title={item.game.title}
++                      subtitle={item.game.subtitle}
++                      icon={item.game.icon}
++                      tone={item.game.tone}
++                      badge={item.badge}
++                      level={item.level?.level}
++                      // Su nivel actual (llega a la profe) o el juego libre.
++                      onPress={() => router.push(cardHref(item))}
++                    />
++                  ))}
++                  {/* Si la fila queda impar, un hueco mantiene el ancho. */}
++                  {row.length === 1 ? <View style={styles.spacer} /> : null}
++                </View>
++              ))}
++            </View>
++          ))
++        : null}
++    </Screen>
++  );
++}
++
++const styles = StyleSheet.create({
++  section: {
++    gap: spacing.md,
++  },
++  row: {
++    flexDirection: 'row',
++    gap: spacing.md,
++  },
++  spacer: {
++    flex: 1,
++  },
++});
+diff --git a/GameUp-frontend/src/app/student/module/[moduleId].tsx b/GameUp-frontend/src/app/student/module/[moduleId].tsx
+new file mode 100644
+index 0000000..e8a7a9c
+--- /dev/null
++++ b/GameUp-frontend/src/app/student/module/[moduleId].tsx
+@@ -0,0 +1,127 @@
++import { router, useLocalSearchParams } from 'expo-router';
++import { useCallback } from 'react';
++import { StyleSheet, View } from 'react-native';
++import {
++  AppText,
++  Button,
++  HeaderBackButton,
++  Screen,
++  ScreenHeader,
++  StateView,
++} from '@/components/ui';
++import { Character, NarrationButton } from '@/components/gameup';
++import { useRepositories } from '@/data/RepositoryProvider';
++import { useResource } from '@/data/useResource';
++import { useRefreshOnFocus } from '@/data/useRefreshOnFocus';
++import { assignmentHref, findGame } from '@/features/games/catalog';
++import { TaskCard } from '@/features/games/components/TaskCard';
++import {
++  groupByModule,
++  taskBadge,
++  taskTitle,
++  type ModuleTasks,
++} from '@/features/games/moduleTasks';
++import { spacing } from '@/theme';
++
++const DONE_TITLE = '¡Terminaste este tema!';
++
++/**
++ * Tareas de la profe de un módulo (tema). Cada tarjeta abre esa actividad;
++ * su resultado va a la profe y cuenta para el módulo, no para los niveles.
++ */
++export default function ModuleTasksScreen() {
++  const params = useLocalSearchParams<{ moduleId: string }>();
++  const moduleId = String(params.moduleId ?? '');
++  const { students, assignments } = useRepositories();
++
++  const load = useCallback(async (): Promise<ModuleTasks | null> => {
++    const student = await students.getCurrentStudent();
++    const pending = await assignments.listPendingForStudent(student.id);
++    return groupByModule(pending).find((g) => g.moduleId === moduleId) ?? null;
++  }, [students, assignments, moduleId]);
++
++  const { resource, reload, refresh } = useResource(load);
++  // Al volver de una actividad, la lista se actualiza.
++  useRefreshOnFocus(refresh);
++
++  const group = resource.status === 'ready' ? resource.data : null;
++  const title = group?.title ?? 'Tareas de tu profe';
++  const narration = group
++    ? `${group.title}. Toca una actividad para jugarla.`
++    : DONE_TITLE;
++
++  return (
++    <Screen
++      header={
++        <ScreenHeader
++          left={<HeaderBackButton onPress={() => router.back()} />}
++          title={title}
++          right={<NarrationButton text={narration} />}
++        />
++      }
++    >
++      {resource.status === 'loading' ? (
++        <StateView kind="loading" title="Buscando tus actividades…" />
++      ) : null}
++      {resource.status === 'error' ? (
++        <StateView
++          kind="error"
++          title="Vamos a intentarlo otra vez"
++          action={{ label: 'Intentar de nuevo', onPress: reload }}
++        />
++      ) : null}
++
++      {resource.status === 'ready' && !group ? (
++        <View style={styles.center}>
++          <Character mouth="smile" size="lg" />
++          <AppText variant="title" style={styles.text}>
++            {DONE_TITLE}
++          </AppText>
++          <AppText tone="secundario" style={styles.text}>
++            Tu profe va a revisar lo que hiciste.
++          </AppText>
++          <Button
++            label="Volver a los juegos"
++            size="large"
++            onPress={() => router.back()}
++          />
++        </View>
++      ) : null}
++
++      {group ? (
++        <View style={styles.list}>
++          <AppText variant="display" accessibilityRole="header">
++            {group.title}
++          </AppText>
++          {group.tasks.map((task) => {
++            const game = findGame(task.gameId);
++            return (
++              <TaskCard
++                key={task.id}
++                caption={game.title}
++                title={taskTitle(task)}
++                icon={game.icon}
++                badge={taskBadge(task)}
++                accessibilityHint="Abre esta actividad de tu profe."
++                onPress={() => router.push(assignmentHref(task))}
++              />
++            );
++          })}
++        </View>
++      ) : null}
++    </Screen>
++  );
++}
++
++const styles = StyleSheet.create({
++  list: {
++    gap: spacing.md,
++  },
++  center: {
++    alignItems: 'center',
++    gap: spacing.md,
++  },
++  text: {
++    textAlign: 'center',
++  },
++});
+diff --git a/GameUp-frontend/src/app/student/tasks.tsx b/GameUp-frontend/src/app/student/tasks.tsx
+new file mode 100644
+index 0000000..2cb3320
+--- /dev/null
++++ b/GameUp-frontend/src/app/student/tasks.tsx
+@@ -0,0 +1,115 @@
++import { router } from 'expo-router';
++import { StyleSheet, View } from 'react-native';
++import {
++  AppText,
++  Button,
++  HeaderBackButton,
++  Screen,
++  ScreenHeader,
++  StateView,
++} from '@/components/ui';
++import { Character, NarrationButton } from '@/components/gameup';
++import { useRefreshOnFocus } from '@/data/useRefreshOnFocus';
++import { TaskCard } from '@/features/games/components/TaskCard';
++import { moduleBadge, tasksCountText } from '@/features/games/moduleTasks';
++import { useModuleTasks } from '@/features/games/useModuleTasks';
++import { spacing } from '@/theme';
++
++const TITLE = 'Tareas de mi profe';
++const EMPTY_TITLE = 'Hoy no tienes tareas';
++
++/**
++ * Tareas de la profe, una tarjeta por módulo (tema). Cuentan para el
++ * progreso de su módulo; no suben los niveles.
++ */
++export default function TasksScreen() {
++  const { resource, reload, refresh } = useModuleTasks();
++  // Al volver de un módulo, la lista se actualiza.
++  useRefreshOnFocus(refresh);
++  const modules = resource.status === 'ready' ? resource.data : null;
++
++  return (
++    <Screen
++      header={
++        <ScreenHeader
++          left={<HeaderBackButton onPress={() => router.back()} />}
++          title={TITLE}
++          right={
++            <NarrationButton
++              text={
++                modules && modules.length === 0
++                  ? EMPTY_TITLE
++                  : `${TITLE}. Toca un tema.`
++              }
++            />
++          }
++        />
++      }
++    >
++      {resource.status === 'loading' ? (
++        <StateView kind="loading" title="Buscando tus tareas…" />
++      ) : null}
++      {resource.status === 'error' ? (
++        <StateView
++          kind="error"
++          title="Vamos a intentarlo otra vez"
++          action={{ label: 'Intentar de nuevo', onPress: reload }}
++        />
++      ) : null}
++
++      {modules && modules.length === 0 ? (
++        <View style={styles.center}>
++          <Character mouth="smile" size="lg" />
++          <AppText variant="title" style={styles.text}>
++            {EMPTY_TITLE}
++          </AppText>
++          <AppText tone="secundario" style={styles.text}>
++            Puedes jugar por niveles mientras tanto.
++          </AppText>
++          <Button
++            label="Jugar por niveles"
++            size="large"
++            onPress={() => router.replace('/student/levels')}
++          />
++        </View>
++      ) : null}
++
++      {modules && modules.length > 0 ? (
++        <View style={styles.list}>
++          <AppText variant="display" accessibilityRole="header">
++            ¿Qué tema quieres hacer?
++          </AppText>
++          {modules.map((group) => (
++            <TaskCard
++              key={group.moduleId}
++              caption={tasksCountText(group.tasks.length)}
++              title={group.title}
++              icon="book"
++              badge={moduleBadge(group)}
++              accessibilityHint="Abre las actividades de este tema."
++              onPress={() =>
++                router.push({
++                  pathname: '/student/module/[moduleId]',
++                  params: { moduleId: group.moduleId },
++                })
++              }
++            />
++          ))}
++        </View>
++      ) : null}
++    </Screen>
++  );
++}
++
++const styles = StyleSheet.create({
++  list: {
++    gap: spacing.md,
++  },
++  center: {
++    alignItems: 'center',
++    gap: spacing.md,
++  },
++  text: {
++    textAlign: 'center',
++  },
++});
+diff --git a/GameUp-frontend/src/data/http/mappers/__tests__/studentFlowMappers.test.ts b/GameUp-frontend/src/data/http/mappers/__tests__/studentFlowMappers.test.ts
+index 5bb8aba..60b4957 100644
+--- a/GameUp-frontend/src/data/http/mappers/__tests__/studentFlowMappers.test.ts
++++ b/GameUp-frontend/src/data/http/mappers/__tests__/studentFlowMappers.test.ts
+@@ -68,9 +68,22 @@ describe('actividad pendiente → tarea', () => {
+       vowel: 'a',
+       status: 'assigned',
+       isNew: true,
++      title: 'Di la a',
++      moduleId: '1',
++      moduleTitle: 'Vocales de prueba',
++      order: 0,
+     });
+   });
+ 
++  it('sin módulo ni título (respuesta vieja) la tarea se muestra igual', () => {
++    const viejo = { ...pendiente, titulo: '', modulo: null, orden: 'x' };
++    const tarea = toAssignment(viejo as unknown as typeof pendiente);
++    expect(tarea.moduleId).toBeUndefined();
++    expect(tarea.title).toBeUndefined();
++    expect(tarea.order).toBeUndefined();
++    expect(tarea.activityId).toBe('8');
++  });
++
+   it('una actividad rechazada no es nueva y no lleva vocal si no es de habla', () => {
+     expect(
+       toAssignment({
+@@ -87,6 +100,10 @@ describe('actividad pendiente → tarea', () => {
+       gameId: 'findMouth',
+       status: 'rejected',
+       isNew: false,
++      title: 'Di la a',
++      moduleId: '1',
++      moduleTitle: 'Vocales de prueba',
++      order: 0,
+     });
+   });
+ });
+diff --git a/GameUp-frontend/src/data/http/mappers/assignmentMapper.ts b/GameUp-frontend/src/data/http/mappers/assignmentMapper.ts
+index 9b4a7ad..bbd11c2 100644
+--- a/GameUp-frontend/src/data/http/mappers/assignmentMapper.ts
++++ b/GameUp-frontend/src/data/http/mappers/assignmentMapper.ts
+@@ -20,5 +20,20 @@ export function toAssignment(dto: ActividadPendienteDto): Assignment {
+   if (typeof dto.vocal === 'string' && isVowel(dto.vocal)) {
+     assignment.vowel = dto.vocal;
+   }
++  // Datos para agrupar por módulo: si faltan, la tarea se muestra igual.
++  if (typeof dto.titulo === 'string' && dto.titulo.trim() !== '') {
++    assignment.title = dto.titulo;
++  }
++  const modulo: unknown = dto.modulo;
++  if (typeof modulo === 'object' && modulo !== null) {
++    const { id, nombre } = modulo as { id?: unknown; nombre?: unknown };
++    if (typeof id === 'string' && id !== '') assignment.moduleId = id;
++    if (typeof nombre === 'string' && nombre.trim() !== '') {
++      assignment.moduleTitle = nombre;
++    }
++  }
++  if (typeof dto.orden === 'number' && Number.isFinite(dto.orden)) {
++    assignment.order = dto.orden;
++  }
+   return assignment;
+ }
+diff --git a/GameUp-frontend/src/data/types.ts b/GameUp-frontend/src/data/types.ts
+index 29740dd..e99c4d7 100644
+--- a/GameUp-frontend/src/data/types.ts
++++ b/GameUp-frontend/src/data/types.ts
+@@ -58,6 +58,14 @@ export interface Assignment {
+   status: ActivityStatus;
+   /** El estudiante todavía no la ha abierto. */
+   isNew: boolean;
++  /** Nombre de la actividad («¿Cuál empieza con A?»), si se conoce. */
++  title?: string;
++  /** Módulo (tema) al que pertenece: agrupa las tareas en «Juegos». */
++  moduleId?: ModuleId;
++  /** Nombre del módulo («La A»). */
++  moduleTitle?: string;
++  /** Orden de la actividad dentro de su módulo. */
++  order?: number;
+ }
+ 
+ /**
+diff --git a/GameUp-frontend/src/features/games/__tests__/GamesChooser.test.tsx b/GameUp-frontend/src/features/games/__tests__/GamesChooser.test.tsx
+new file mode 100644
+index 0000000..2f0e302
+--- /dev/null
++++ b/GameUp-frontend/src/features/games/__tests__/GamesChooser.test.tsx
+@@ -0,0 +1,118 @@
++import { act, render, screen, userEvent } from '@testing-library/react-native';
++import { router } from 'expo-router';
++import GamesScreen from '@/app/student/(tabs)/games';
++import TasksScreen from '@/app/student/tasks';
++import { createMockRepositories } from '@/data/mock/createMockRepositories';
++import { RepositoryProvider } from '@/data/RepositoryProvider';
++import type { Repositories } from '@/data/repositories';
++import type { Assignment } from '@/data/types';
++
++jest.mock('expo-router', () => ({
++  router: {
++    push: jest.fn(),
++    navigate: jest.fn(),
++    back: jest.fn(),
++    replace: jest.fn(),
++  },
++}));
++
++jest.mock('@/data/useRefreshOnFocus', () => ({
++  useRefreshOnFocus: jest.fn(),
++}));
++
++const settle = () =>
++  act(async () => {
++    await jest.runAllTimersAsync();
++  });
++
++async function renderWith(element: React.ReactElement, repos: Repositories) {
++  await render(
++    <RepositoryProvider repositories={repos}>{element}</RepositoryProvider>,
++  );
++  await settle();
++}
++
++const tareas: Assignment[] = [
++  {
++    id: '7:11',
++    activityId: '11',
++    gameId: 'match',
++    status: 'rejected',
++    isNew: false,
++    moduleId: '3',
++    moduleTitle: 'Los colores',
++  },
++  {
++    id: '8:20',
++    activityId: '20',
++    gameId: 'classify',
++    status: 'assigned',
++    isNew: true,
++    moduleId: '4',
++    moduleTitle: 'Los animales',
++  },
++];
++
++function reposWith(pending: Assignment[]) {
++  const repos = createMockRepositories({ delayMs: 0 });
++  jest
++    .spyOn(repos.assignments, 'listPendingForStudent')
++    .mockResolvedValue(pending);
++  return repos;
++}
++
++describe('Juegos: elegir entre tareas y niveles', () => {
++  beforeEach(() => jest.mocked(router.push).mockClear());
++
++  it('dos botones grandes: tareas (con sus temas) y niveles', async () => {
++    await renderWith(<GamesScreen />, reposWith(tareas));
++
++    expect(screen.getByText('2 temas')).toBeOnTheScreen();
++    expect(screen.getByText('Nuevo')).toBeOnTheScreen();
++    // Aquí no se mezclan los juegos ni los módulos.
++    expect(screen.queryByText('Memoria')).toBeNull();
++    expect(screen.queryByText('Los colores')).toBeNull();
++
++    await userEvent.press(
++      screen.getByRole('button', { name: /^Tareas de mi profe/ }),
++    );
++    expect(router.push).toHaveBeenLastCalledWith('/student/tasks');
++    await userEvent.press(
++      screen.getByRole('button', { name: /^Jugar por niveles/ }),
++    );
++    expect(router.push).toHaveBeenLastCalledWith('/student/levels');
++  });
++
++  it('sin tareas: «Hoy no hay» y sin insignia', async () => {
++    await renderWith(<GamesScreen />, reposWith([]));
++    expect(screen.getByText('Hoy no hay')).toBeOnTheScreen();
++    expect(screen.queryByText('Nuevo')).toBeNull();
++  });
++});
++
++describe('Tareas de mi profe', () => {
++  beforeEach(() => jest.mocked(router.push).mockClear());
++
++  it('una tarjeta por módulo que abre su pantalla', async () => {
++    await renderWith(<TasksScreen />, reposWith(tareas));
++
++    expect(screen.getByText('Los colores')).toBeOnTheScreen();
++    expect(screen.getByText('Los animales')).toBeOnTheScreen();
++    expect(screen.getByText('Otra vez')).toBeOnTheScreen();
++
++    await userEvent.press(screen.getByRole('button', { name: /Los animales/ }));
++    expect(router.push).toHaveBeenCalledWith({
++      pathname: '/student/module/[moduleId]',
++      params: { moduleId: '4' },
++    });
++  });
++
++  it('sin tareas: lo invita a jugar por niveles', async () => {
++    await renderWith(<TasksScreen />, reposWith([]));
++    expect(screen.getByText('Hoy no tienes tareas')).toBeOnTheScreen();
++    await userEvent.press(
++      screen.getByRole('button', { name: /Jugar por niveles/ }),
++    );
++    expect(router.replace).toHaveBeenCalledWith('/student/levels');
++  });
++});
+diff --git a/GameUp-frontend/src/features/games/__tests__/GamesLadder.test.tsx b/GameUp-frontend/src/features/games/__tests__/GamesLadder.test.tsx
+index 71fa8df..ba8e1ef 100644
+--- a/GameUp-frontend/src/features/games/__tests__/GamesLadder.test.tsx
++++ b/GameUp-frontend/src/features/games/__tests__/GamesLadder.test.tsx
+@@ -1,6 +1,6 @@
+ import { act, render, screen, userEvent } from '@testing-library/react-native';
+ import { router } from 'expo-router';
+-import GamesScreen from '@/app/student/(tabs)/games';
++import GamesScreen from '@/app/student/levels';
+ import { createMockRepositories } from '@/data/mock/createMockRepositories';
+ import { RepositoryProvider } from '@/data/RepositoryProvider';
+ import type { Repositories } from '@/data/repositories';
+@@ -89,7 +89,7 @@ describe('Juegos con la escalera de niveles', () => {
+     });
+   });
+ 
+-  it('con una tarea de ese juego, la tarea va primero', async () => {
++  it('aunque haya una tarea de ese juego, la tarjeta abre su nivel', async () => {
+     const repos = createMockRepositories({ delayMs: 0 });
+     jest.spyOn(repos.assignments, 'listPendingForStudent').mockResolvedValue([
+       {
+@@ -98,15 +98,19 @@ describe('Juegos con la escalera de niveles', () => {
+         gameId: 'memory',
+         status: 'assigned',
+         isNew: true,
++        moduleId: '3',
++        moduleTitle: 'Los colores',
+       },
+     ]);
+     await renderGames(repos);
+ 
+     await userEvent.press(screen.getByRole('button', { name: /^Memoria\./ }));
+-    expect(router.push).toHaveBeenCalledWith({
++    expect(router.push).toHaveBeenLastCalledWith({
+       pathname: '/student/memory',
+-      params: { actividadId: '6' },
++      params: { escalera: '1' },
+     });
++    // Las tareas no salen en «Jugar por niveles».
++    expect(screen.queryByText('Los colores')).toBeNull();
+   });
+ 
+   it('si los niveles no cargan, los juegos se muestran igual (sin estrellas)', async () => {
+diff --git a/GameUp-frontend/src/features/games/__tests__/GamesTabRefresh.test.tsx b/GameUp-frontend/src/features/games/__tests__/GamesTabRefresh.test.tsx
+index d5b2614..2ddc0da 100644
+--- a/GameUp-frontend/src/features/games/__tests__/GamesTabRefresh.test.tsx
++++ b/GameUp-frontend/src/features/games/__tests__/GamesTabRefresh.test.tsx
+@@ -44,7 +44,7 @@ describe('las pestañas se actualizan al volver a ellas', () => {
+     jest.mocked(useRefreshOnFocus).mockClear();
+   });
+ 
+-  it('Juegos: después de hacer la tarea, ya no muestra «Tarea»', async () => {
++  it('Juegos: después de hacer la tarea, «Tareas de mi profe» se actualiza', async () => {
+     const repositories = createMockRepositories({ delayMs: 0 });
+     const pending = jest
+       .spyOn(repositories.assignments, 'listPendingForStudent')
+@@ -55,13 +55,16 @@ describe('las pestañas se actualizan al volver a ellas', () => {
+           gameId: 'match',
+           status: 'assigned',
+           isNew: true,
++          moduleId: '2',
++          moduleTitle: 'Los animales',
+         },
+       ])
+       // La tarea ya se hizo: queda pendiente de validación, no pendiente.
+       .mockResolvedValue([]);
+ 
+     await renderWith(<GamesScreen />, repositories);
+-    expect(screen.getByText('Tarea')).toBeOnTheScreen();
++    expect(screen.getByText('1 tema')).toBeOnTheScreen();
++    expect(screen.getByText('Nuevo')).toBeOnTheScreen();
+ 
+     await act(async () => {
+       lastRegisteredRefresh()();
+@@ -69,7 +72,8 @@ describe('las pestañas se actualizan al volver a ellas', () => {
+     await settle();
+ 
+     expect(pending).toHaveBeenCalledTimes(2);
+-    expect(screen.queryByText('Tarea')).toBeNull();
++    expect(screen.getByText('Hoy no hay')).toBeOnTheScreen();
++    expect(screen.queryByText('Nuevo')).toBeNull();
+   });
+ 
+   it('Mi progreso: vuelve a pedir el progreso', async () => {
+diff --git a/GameUp-frontend/src/features/games/__tests__/ModuleTasksScreen.test.tsx b/GameUp-frontend/src/features/games/__tests__/ModuleTasksScreen.test.tsx
+new file mode 100644
+index 0000000..819b101
+--- /dev/null
++++ b/GameUp-frontend/src/features/games/__tests__/ModuleTasksScreen.test.tsx
+@@ -0,0 +1,104 @@
++import { act, render, screen, userEvent } from '@testing-library/react-native';
++import { router } from 'expo-router';
++import ModuleTasksScreen from '@/app/student/module/[moduleId]';
++import { createMockRepositories } from '@/data/mock/createMockRepositories';
++import { RepositoryProvider } from '@/data/RepositoryProvider';
++import type { Repositories } from '@/data/repositories';
++import type { Assignment } from '@/data/types';
++
++jest.mock('expo-router', () => ({
++  router: { push: jest.fn(), navigate: jest.fn(), back: jest.fn() },
++  useLocalSearchParams: () => ({ moduleId: '3' }),
++}));
++
++jest.mock('@/data/useRefreshOnFocus', () => ({
++  useRefreshOnFocus: jest.fn(),
++}));
++
++const settle = () =>
++  act(async () => {
++    await jest.runAllTimersAsync();
++  });
++
++async function renderModule(repos: Repositories) {
++  await render(
++    <RepositoryProvider repositories={repos}>
++      <ModuleTasksScreen />
++    </RepositoryProvider>,
++  );
++  await settle();
++}
++
++const colores: Assignment[] = [
++  {
++    id: '7:12',
++    activityId: '12',
++    gameId: 'memory',
++    status: 'assigned',
++    isNew: true,
++    title: 'Parejas de colores',
++    moduleId: '3',
++    moduleTitle: 'Los colores',
++    order: 2,
++  },
++  {
++    id: '7:11',
++    activityId: '11',
++    gameId: 'match',
++    status: 'rejected',
++    isNew: false,
++    title: 'Une cada color',
++    moduleId: '3',
++    moduleTitle: 'Los colores',
++    order: 1,
++  },
++  {
++    id: '8:20',
++    activityId: '20',
++    gameId: 'classify',
++    status: 'assigned',
++    isNew: true,
++    moduleId: '4',
++    moduleTitle: 'Los animales',
++  },
++];
++
++describe('pantalla de un módulo (tareas de la profe)', () => {
++  beforeEach(() => jest.mocked(router.push).mockClear());
++
++  it('muestra solo las tareas de ese módulo, en orden, y abre la actividad', async () => {
++    const repos = createMockRepositories({ delayMs: 0 });
++    jest
++      .spyOn(repos.assignments, 'listPendingForStudent')
++      .mockResolvedValue(colores);
++    await renderModule(repos);
++
++    expect(screen.getAllByText('Los colores').length).toBeGreaterThan(0);
++    expect(screen.queryByText('Los animales')).toBeNull();
++    const cards = screen.getAllByRole('button', {
++      name: /Une cada color|Parejas de colores/,
++    });
++    expect(cards).toHaveLength(2);
++    expect(screen.getByText('Otra vez')).toBeOnTheScreen();
++    expect(screen.getByText('Nueva')).toBeOnTheScreen();
++
++    await userEvent.press(
++      screen.getByRole('button', { name: /Parejas de colores/ }),
++    );
++    // La actividad de la tarea, nunca el nivel de la escalera.
++    expect(router.push).toHaveBeenCalledWith({
++      pathname: '/student/memory',
++      params: { actividadId: '12' },
++    });
++  });
++
++  it('sin tareas en ese módulo: «¡Terminaste este tema!»', async () => {
++    const repos = createMockRepositories({ delayMs: 0 });
++    jest
++      .spyOn(repos.assignments, 'listPendingForStudent')
++      .mockResolvedValue([]);
++    await renderModule(repos);
++
++    expect(screen.getByText('¡Terminaste este tema!')).toBeOnTheScreen();
++  });
++});
+diff --git a/GameUp-frontend/src/features/games/__tests__/assignmentRoutes.test.ts b/GameUp-frontend/src/features/games/__tests__/assignmentRoutes.test.ts
+index 8ba0022..d447dfe 100644
+--- a/GameUp-frontend/src/features/games/__tests__/assignmentRoutes.test.ts
++++ b/GameUp-frontend/src/features/games/__tests__/assignmentRoutes.test.ts
+@@ -1,10 +1,5 @@
+ import type { Assignment } from '@/data/types';
+-import {
+-  assignmentHref,
+-  findGame,
+-  gameBadge,
+-  nextAssignment,
+-} from '../catalog';
++import { assignmentHref, nextAssignment } from '../catalog';
+ import { parseActivityId, parseDelivery } from '../delivery';
+ 
+ const task = (overrides: Partial<Assignment>): Assignment => ({
+@@ -34,14 +29,6 @@ describe('próxima tarea para abrir', () => {
+     expect(nextAssignment(tasks, 'memory')?.id).toBe('m');
+     expect(nextAssignment(tasks, 'speak')).toBeNull();
+   });
+-
+-  it('una tarea para repetir también lleva la insignia «Tarea»', () => {
+-    expect(
+-      gameBadge(findGame('match'), [
+-        task({ gameId: 'match', status: 'rejected', isNew: false }),
+-      ]),
+-    ).toBe('Tarea');
+-  });
+ });
+ 
+ describe('ruta de una tarea (con actividadId)', () => {
+diff --git a/GameUp-frontend/src/features/games/__tests__/catalog.test.ts b/GameUp-frontend/src/features/games/__tests__/catalog.test.ts
+index fd9a75d..b115879 100644
+--- a/GameUp-frontend/src/features/games/__tests__/catalog.test.ts
++++ b/GameUp-frontend/src/features/games/__tests__/catalog.test.ts
+@@ -1,4 +1,3 @@
+-import type { Assignment } from '@/data/types';
+ import {
+   findGame,
+   gameBadge,
+@@ -7,13 +6,6 @@ import {
+   gameSections,
+ } from '../catalog';
+ 
+-const newTask: Assignment = {
+-  id: 't1',
+-  gameId: 'findMouth',
+-  status: 'assigned',
+-  isNew: true,
+-};
+-
+ describe('catálogo de juegos', () => {
+   it('tiene los 6 juegos del MVP, cada uno en una sección existente', () => {
+     expect(gameCatalog).toHaveLength(6);
+@@ -39,17 +31,11 @@ describe('catálogo de juegos', () => {
+     });
+   });
+ 
+-  it('«Tarea» tiene prioridad sobre «Nuevo»', () => {
+-    expect(gameBadge(findGame('findMouth'), [newTask])).toBe('Tarea');
+-  });
+-
+-  it('una tarea ya abierta no muestra «Tarea»', () => {
+-    expect(
+-      gameBadge(findGame('findMouth'), [{ ...newTask, isNew: false }]),
+-    ).toBe('Nuevo');
++  it('las tareas ya no marcan los juegos: un juego nuevo dice «Nuevo»', () => {
++    expect(gameBadge(findGame('findMouth'))).toBe('Nuevo');
+   });
+ 
+-  it('un juego que no es nuevo y sin tarea no lleva insignia', () => {
+-    expect(gameBadge(findGame('match'), [])).toBeUndefined();
++  it('un juego que no es nuevo no lleva insignia', () => {
++    expect(gameBadge(findGame('match'))).toBeUndefined();
+   });
+ });
+diff --git a/GameUp-frontend/src/features/games/__tests__/moduleTasks.test.ts b/GameUp-frontend/src/features/games/__tests__/moduleTasks.test.ts
+new file mode 100644
+index 0000000..b901232
+--- /dev/null
++++ b/GameUp-frontend/src/features/games/__tests__/moduleTasks.test.ts
+@@ -0,0 +1,61 @@
++import type { Assignment } from '@/data/types';
++import {
++  groupByModule,
++  moduleBadge,
++  NO_MODULE_ID,
++  taskBadge,
++  taskTitle,
++  tasksCountText,
++} from '../moduleTasks';
++
++const task = (overrides: Partial<Assignment>): Assignment => ({
++  id: 't',
++  activityId: '1',
++  gameId: 'match',
++  status: 'assigned',
++  isNew: false,
++  ...overrides,
++});
++
++describe('tareas de la profe por módulo', () => {
++  it('agrupa por módulo en el orden en que llegan y ordena por «orden»', () => {
++    const groups = groupByModule([
++      task({ id: 'a2', moduleId: '1', moduleTitle: 'La A', order: 2 }),
++      task({ id: 'c1', moduleId: '2', moduleTitle: 'Colores', order: 1 }),
++      task({ id: 'a1', moduleId: '1', moduleTitle: 'La A', order: 1 }),
++    ]);
++    expect(groups.map((g) => g.title)).toEqual(['La A', 'Colores']);
++    expect(groups[0]?.tasks.map((t) => t.id)).toEqual(['a1', 'a2']);
++  });
++
++  it('sin módulo, todas van juntas en «Tareas de tu profe»', () => {
++    const [group] = groupByModule([task({ id: 'x' }), task({ id: 'y' })]);
++    expect(group?.moduleId).toBe(NO_MODULE_ID);
++    expect(group?.title).toBe('Tareas de tu profe');
++    expect(group?.tasks).toHaveLength(2);
++  });
++
++  it('cuenta nuevas y para repetir; la insignia del módulo prefiere «Nuevo»', () => {
++    const [group] = groupByModule([
++      task({ moduleId: '1', isNew: true }),
++      task({ moduleId: '1', status: 'rejected' }),
++    ]);
++    expect(group?.newCount).toBe(1);
++    expect(group?.againCount).toBe(1);
++    expect(group && moduleBadge(group)).toBe('Nuevo');
++  });
++
++  it('insignias y textos de una tarea', () => {
++    expect(taskBadge(task({ status: 'rejected', isNew: true }))).toBe(
++      'Otra vez',
++    );
++    expect(taskBadge(task({ isNew: true }))).toBe('Nueva');
++    expect(taskBadge(task({}))).toBeUndefined();
++    expect(taskTitle(task({ title: 'Une los colores' }))).toBe(
++      'Une los colores',
++    );
++    expect(taskTitle(task({ gameId: 'memory' }))).toBe('Memoria');
++    expect(tasksCountText(1)).toBe('1 juego');
++    expect(tasksCountText(3)).toBe('3 juegos');
++  });
++});
+diff --git a/GameUp-frontend/src/features/games/catalog.ts b/GameUp-frontend/src/features/games/catalog.ts
+index cf4aaf4..7e3717c 100644
+--- a/GameUp-frontend/src/features/games/catalog.ts
++++ b/GameUp-frontend/src/features/games/catalog.ts
+@@ -18,9 +18,13 @@ export interface GameDefinition {
+   href: Href | null;
+ }
+ 
++/**
++ * Secciones de juegos libres. Las tareas de la profe van aparte, agrupadas
++ * por módulo («Tareas de tu profe»): un juego de aquí nunca abre una tarea.
++ */
+ export const gameSections: readonly { id: GameSectionId; title: string }[] = [
++  { id: 'thinking', title: 'Juega y sube de nivel' },
+   { id: 'sounds', title: 'Sonidos y palabras' },
+-  { id: 'thinking', title: 'Pensar y recordar' },
+ ];
+ 
+ /**
+@@ -151,17 +155,11 @@ export function nextAssignment(
+ }
+ 
+ /**
+- * Insignia de un juego:
+- * - «Tarea» si tiene una tarea para abrir (nueva o para repetir);
+- * - si no, «Nuevo» si el juego es nuevo en la app.
++ * Insignia de un juego libre: «Nuevo» si el juego es nuevo en la app. Las
++ * tareas no se marcan aquí: tienen su propia sección por módulo.
+  */
+-export function gameBadge(
+-  game: GameDefinition,
+-  pendingAssignments: readonly Assignment[],
+-): string | undefined {
+-  if (nextAssignment(pendingAssignments, game.id)) return 'Tarea';
+-  if (game.isNewGame) return 'Nuevo';
+-  return undefined;
++export function gameBadge(game: GameDefinition): string | undefined {
++  return game.isNewGame ? 'Nuevo' : undefined;
+ }
+ 
+ /**
+diff --git a/GameUp-frontend/src/features/games/components/TaskCard.tsx b/GameUp-frontend/src/features/games/components/TaskCard.tsx
+new file mode 100644
+index 0000000..7d883e0
+--- /dev/null
++++ b/GameUp-frontend/src/features/games/components/TaskCard.tsx
+@@ -0,0 +1,72 @@
++import { StyleSheet, View } from 'react-native';
++import {
++  AppText,
++  Badge,
++  Icon,
++  PressableCard,
++  type IconName,
++} from '@/components/ui';
++import { colors, radii, sizes, spacing } from '@/theme';
++
++interface TaskCardProps {
++  /** Texto pequeño de arriba («Tarea de tu profe», «Emparejar»). */
++  caption: string;
++  title: string;
++  icon: IconName;
++  badge?: string;
++  onPress: () => void;
++  accessibilityHint?: string;
++}
++
++/**
++ * Tarjeta ancha de una tarea de la profe (un módulo o una de sus
++ * actividades). Mismo estilo que el aviso «Tu profe te dejó…» de Inicio.
++ */
++export function TaskCard({
++  caption,
++  title,
++  icon,
++  badge,
++  onPress,
++  accessibilityHint,
++}: TaskCardProps) {
++  return (
++    <PressableCard
++      onPress={onPress}
++      accessibilityLabel={[caption, title, badge].filter(Boolean).join('. ')}
++      accessibilityHint={accessibilityHint}
++    >
++      <View style={styles.row}>
++        <View style={styles.iconBox}>
++          <Icon name={icon} size="lg" color={colors.verde.oscuro} />
++        </View>
++        <View style={styles.texts}>
++          <AppText variant="support" tone="secundario">
++            {caption}
++          </AppText>
++          <AppText variant="subtitle">{title}</AppText>
++        </View>
++        {badge ? <Badge label={badge} /> : null}
++      </View>
++    </PressableCard>
++  );
++}
++
++const styles = StyleSheet.create({
++  row: {
++    flexDirection: 'row',
++    alignItems: 'center',
++    gap: spacing.sm,
++  },
++  iconBox: {
++    width: sizes.iconBox,
++    height: sizes.iconBox,
++    borderRadius: radii.lg,
++    backgroundColor: colors.verde.suave,
++    alignItems: 'center',
++    justifyContent: 'center',
++  },
++  texts: {
++    flex: 1,
++  },
++});
+diff --git a/GameUp-frontend/src/features/games/moduleTasks.ts b/GameUp-frontend/src/features/games/moduleTasks.ts
+new file mode 100644
+index 0000000..514b05b
+--- /dev/null
++++ b/GameUp-frontend/src/features/games/moduleTasks.ts
+@@ -0,0 +1,76 @@
++import type { Assignment, ModuleId } from '@/data/types';
++import { findGame } from './catalog';
++
++/**
++ * Tareas de la profe agrupadas por módulo (tema). Son distintas de los
++ * juegos por niveles: una tarea cuenta para el progreso de su módulo y no
++ * sube el nivel de la escalera.
++ */
++export interface ModuleTasks {
++  moduleId: ModuleId;
++  title: string;
++  /** Actividades que faltan, en el orden del módulo. */
++  tasks: Assignment[];
++  /** Cuántas aún no ha abierto el niño. */
++  newCount: number;
++  /** Cuántas pidió la profe practicar otra vez. */
++  againCount: number;
++}
++
++/** Sin módulo (datos viejos o simulados): todas juntas en un grupo. */
++export const NO_MODULE_ID = 'sin-modulo';
++const NO_MODULE_TITLE = 'Tareas de tu profe';
++
++/** Agrupa las tareas pendientes por módulo, en el orden en que llegan. */
++export function groupByModule(pending: readonly Assignment[]): ModuleTasks[] {
++  const groups = new Map<ModuleId, ModuleTasks>();
++  for (const task of pending) {
++    const moduleId = task.moduleId ?? NO_MODULE_ID;
++    let group = groups.get(moduleId);
++    if (!group) {
++      group = {
++        moduleId,
++        title: task.moduleTitle ?? NO_MODULE_TITLE,
++        tasks: [],
++        newCount: 0,
++        againCount: 0,
++      };
++      groups.set(moduleId, group);
++    }
++    group.tasks.push(task);
++    if (task.isNew) group.newCount += 1;
++    if (task.status === 'rejected') group.againCount += 1;
++  }
++  for (const group of groups.values()) {
++    group.tasks.sort(
++      (a, b) =>
++        (a.order ?? Number.MAX_SAFE_INTEGER) -
++        (b.order ?? Number.MAX_SAFE_INTEGER),
++    );
++  }
++  return [...groups.values()];
++}
++
++/** «2 juegos» / «1 juego». */
++export function tasksCountText(count: number): string {
++  return count === 1 ? '1 juego' : `${count} juegos`;
++}
++
++/** Insignia de un módulo: «Nuevo» si trae algo sin abrir, «Otra vez» si la profe pidió repetir. */
++export function moduleBadge(group: ModuleTasks): string | undefined {
++  if (group.newCount > 0) return 'Nuevo';
++  if (group.againCount > 0) return 'Otra vez';
++  return undefined;
++}
++
++/** Insignia de una tarea dentro de su módulo. */
++export function taskBadge(task: Assignment): string | undefined {
++  if (task.status === 'rejected') return 'Otra vez';
++  if (task.isNew) return 'Nueva';
++  return undefined;
++}
++
++/** Nombre que se ve: el de la actividad o, si no llegó, el del juego. */
++export function taskTitle(task: Assignment): string {
++  return task.title ?? findGame(task.gameId).title;
++}
+diff --git a/GameUp-frontend/src/features/games/useGameList.ts b/GameUp-frontend/src/features/games/useGameList.ts
+index 2adb6c9..403c6ca 100644
+--- a/GameUp-frontend/src/features/games/useGameList.ts
++++ b/GameUp-frontend/src/features/games/useGameList.ts
+@@ -1,12 +1,11 @@
+ import { useCallback } from 'react';
+ import { useRepositories } from '@/data/RepositoryProvider';
+ import { useResource } from '@/data/useResource';
+-import type { Assignment, GameLevel } from '@/data/types';
++import type { GameLevel } from '@/data/types';
+ import {
+   gameBadge,
+   gameCatalog,
+   gameSections,
+-  nextAssignment,
+   type GameDefinition,
+   type GameSectionId,
+ } from './catalog';
+@@ -14,11 +13,6 @@ import {
+ export interface GameListItem {
+   game: GameDefinition;
+   badge: string | undefined;
+-  /**
+-   * Tarea que abre la tarjeta (la de la insignia «Tarea»), o `null`: el
+-   * juego se abre en su nivel (si tiene escalera) o libre.
+-   */
+-  assignment: Assignment | null;
+   /** Nivel en la escalera; `null` si el juego no tiene o no se pudo leer. */
+   level: GameLevel | null;
+ }
+@@ -31,43 +25,46 @@ export interface GameListSection {
+ 
+ export interface GameList {
+   studentId: string;
++  /** Juegos libres: los de pensar abren su nivel; los de sonidos, libres. */
+   sections: GameListSection[];
+   /** Niveles de la escalera (vacío si no se pudieron leer). */
+   levels: GameLevel[];
+ }
+ 
+ /**
+- * Juegos agrupados por sección, con su insignia (Tarea o Nuevo) y su nivel.
+- * Si los niveles no cargan, los juegos se muestran igual (sin estrellas).
++ * Pantalla «Jugar por niveles»: los juegos de pensar (abren su nivel; la
++ * escalera sube con la profe) y los de sonidos. Las tareas de la profe van
++ * aparte, en «Tareas de mi profe». Si los niveles no cargan, los juegos se
++ * muestran igual (sin estrellas).
+  */
+ export function useGameList() {
+-  const { students, assignments, levels } = useRepositories();
++  const { students, levels } = useRepositories();
+ 
+   const load = useCallback(async (): Promise<GameList> => {
+     const student = await students.getCurrentStudent();
+-    const [pending, myLevels] = await Promise.all([
+-      assignments.listPendingForStudent(student.id),
+-      levels.getMyLevels().catch((error: unknown) => {
+-        console.warn(
+-          '[GameUP] No se pudieron cargar los niveles',
+-          error instanceof Error ? error.name : 'Error',
+-        );
+-        return [] as GameLevel[];
+-      }),
+-    ]);
++    const myLevels = await levels.getMyLevels().catch((error: unknown) => {
++      console.warn(
++        '[GameUP] No se pudieron cargar los niveles',
++        error instanceof Error ? error.name : 'Error',
++      );
++      return [] as GameLevel[];
++    });
+     const sections = gameSections.map((section) => ({
+       ...section,
+       items: gameCatalog
+         .filter((game) => game.section === section.id)
+         .map((game) => ({
+           game,
+-          badge: gameBadge(game, pending),
+-          assignment: nextAssignment(pending, game.id),
++          badge: gameBadge(game),
+           level: myLevels.find((l) => l.gameId === game.id) ?? null,
+         })),
+     }));
+-    return { studentId: student.id, sections, levels: myLevels };
+-  }, [students, assignments, levels]);
++    return {
++      studentId: student.id,
++      sections,
++      levels: myLevels,
++    };
++  }, [students, levels]);
+ 
+   return useResource(load);
+ }
+diff --git a/GameUp-frontend/src/features/games/useModuleTasks.ts b/GameUp-frontend/src/features/games/useModuleTasks.ts
+new file mode 100644
+index 0000000..ec23ee4
+--- /dev/null
++++ b/GameUp-frontend/src/features/games/useModuleTasks.ts
+@@ -0,0 +1,14 @@
++import { useCallback } from 'react';
++import { useRepositories } from '@/data/RepositoryProvider';
++import { useResource } from '@/data/useResource';
++import { groupByModule, type ModuleTasks } from './moduleTasks';
++
++/** Tareas pendientes de la profe, agrupadas por módulo. */
++export function useModuleTasks() {
++  const { students, assignments } = useRepositories();
++  const load = useCallback(async (): Promise<ModuleTasks[]> => {
++    const student = await students.getCurrentStudent();
++    return groupByModule(await assignments.listPendingForStudent(student.id));
++  }, [students, assignments]);
++  return useResource(load);
++}
+diff --git a/GameUp-frontend/src/features/home/__tests__/studentData.test.tsx b/GameUp-frontend/src/features/home/__tests__/studentData.test.tsx
+index d6005f8..3e4359e 100644
+--- a/GameUp-frontend/src/features/home/__tests__/studentData.test.tsx
++++ b/GameUp-frontend/src/features/home/__tests__/studentData.test.tsx
+@@ -39,15 +39,17 @@ describe('datos del estudiante con los repositorios simulados', () => {
+     expect(data.modulesCount).toBe(4);
+   });
+ 
+-  it('Juegos: Habla conmigo «Nuevo» y Busca la boca «Tarea»', async () => {
++  it('Juegos: las tareas van aparte (por módulo) y los juegos sin «Tarea»', async () => {
+     const { result } = await renderHook(() => useGameList(), { wrapper });
+     await waitFor(() => expect(result.current.resource.status).toBe('ready'));
+     if (result.current.resource.status !== 'ready') return;
+ 
+-    const [sounds, thinking] = result.current.resource.data.sections;
++    const { sections } = result.current.resource.data;
++    const [thinking, sounds] = sections;
++    expect(thinking?.id).toBe('thinking');
+     expect(sounds?.items.map((i) => [i.game.id, i.badge])).toEqual([
+       ['speak', 'Nuevo'],
+-      ['findMouth', 'Tarea'],
++      ['findMouth', 'Nuevo'],
+     ]);
+     expect(thinking?.items).toHaveLength(4);
+     // Escalera: los juegos de pensar traen su nivel; los de habla, no.

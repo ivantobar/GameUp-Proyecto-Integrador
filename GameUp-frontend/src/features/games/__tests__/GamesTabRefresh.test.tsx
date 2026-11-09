@@ -44,7 +44,7 @@ describe('las pestañas se actualizan al volver a ellas', () => {
     jest.mocked(useRefreshOnFocus).mockClear();
   });
 
-  it('Juegos: después de hacer la tarea, su módulo ya no aparece', async () => {
+  it('Juegos: después de hacer la tarea, «Tareas de mi profe» se actualiza', async () => {
     const repositories = createMockRepositories({ delayMs: 0 });
     const pending = jest
       .spyOn(repositories.assignments, 'listPendingForStudent')
@@ -63,7 +63,8 @@ describe('las pestañas se actualizan al volver a ellas', () => {
       .mockResolvedValue([]);
 
     await renderWith(<GamesScreen />, repositories);
-    expect(screen.getByText('Los animales')).toBeOnTheScreen();
+    expect(screen.getByText('1 tema')).toBeOnTheScreen();
+    expect(screen.getByText('Nuevo')).toBeOnTheScreen();
 
     await act(async () => {
       lastRegisteredRefresh()();
@@ -71,7 +72,8 @@ describe('las pestañas se actualizan al volver a ellas', () => {
     await settle();
 
     expect(pending).toHaveBeenCalledTimes(2);
-    expect(screen.queryByText('Los animales')).toBeNull();
+    expect(screen.getByText('Hoy no hay')).toBeOnTheScreen();
+    expect(screen.queryByText('Nuevo')).toBeNull();
   });
 
   it('Mi progreso: vuelve a pedir el progreso', async () => {

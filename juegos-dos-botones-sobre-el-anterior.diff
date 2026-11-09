@@ -1,0 +1,766 @@
+diff --git a/GameUp-frontend/src/app/student/(tabs)/games.tsx b/GameUp-frontend/src/app/student/(tabs)/games.tsx
+index 7070e68..b1dd1a9 100644
+--- a/GameUp-frontend/src/app/student/(tabs)/games.tsx
++++ b/GameUp-frontend/src/app/student/(tabs)/games.tsx
+@@ -5,50 +5,41 @@ import {
+   HeaderBackButton,
+   Screen,
+   ScreenHeader,
+-  StateView,
+ } from '@/components/ui';
+ import { GameCard, NarrationButton } from '@/components/gameup';
+-import { isLadderGame } from '@/data/types';
+-import { LevelUpCelebration } from '@/features/games/components/LevelUpCelebration';
+-import { gameHref, ladderHref } from '@/features/games/catalog';
+-import { TaskCard } from '@/features/games/components/TaskCard';
+-import { moduleBadge, tasksCountText } from '@/features/games/moduleTasks';
+-import { useGameList, type GameListItem } from '@/features/games/useGameList';
+-import { useLevelCelebration } from '@/features/games/useLevelCelebration';
+ import { useRefreshOnFocus } from '@/data/useRefreshOnFocus';
++import { moduleBadge, type ModuleTasks } from '@/features/games/moduleTasks';
++import { useModuleTasks } from '@/features/games/useModuleTasks';
+ import { spacing } from '@/theme';
+ 
+-const QUESTION = '¿A qué quieres jugar?';
++const QUESTION = '¿Qué quieres hacer?';
++const TASKS = 'Tareas de mi profe';
++const LEVELS = 'Jugar por niveles';
+ 
+-/** Agrupa las tarjetas de dos en dos (cuadrícula del mockup). */
+-function pairs(items: GameListItem[]): GameListItem[][] {
+-  const rows: GameListItem[][] = [];
+-  for (let i = 0; i < items.length; i += 2) rows.push(items.slice(i, i + 2));
+-  return rows;
++/** «2 temas» / «1 tema» / «Hoy no hay»; mientras carga, nada. */
++function tasksSubtitle(modules: ModuleTasks[] | null): string {
++  if (!modules) return 'Lo que te dejó tu profe';
++  if (modules.length === 0) return 'Hoy no hay';
++  return modules.length === 1 ? '1 tema' : `${modules.length} temas`;
+ }
+ 
+-/**
+- * A dónde lleva la tarjeta de un juego: el nivel actual de su escalera (los
+- * de pensar) o el juego libre (los de sonidos, o si los niveles no cargan).
+- * Nunca abre una tarea: las tareas están en «Tareas de tu profe».
+- */
+-function cardHref({ game, level }: GameListItem) {
+-  if (level && isLadderGame(game.id)) return ladderHref(game.id);
+-  return gameHref(game);
++/** «Nuevo» si algún tema trae algo sin abrir; si no, «Otra vez». */
++function tasksBadge(modules: ModuleTasks[] | null): string | undefined {
++  const badges = (modules ?? []).map(moduleBadge);
++  if (badges.includes('Nuevo')) return 'Nuevo';
++  if (badges.includes('Otra vez')) return 'Otra vez';
++  return undefined;
+ }
+ 
+-const TASKS_TITLE = 'Tareas de tu profe';
+-
+-/** Pantalla 2 · Juegos. Las secciones y tarjetas salen del catálogo. */
++/**
++ * Pantalla 2 · Juegos. El niño elige entre las tareas de su profe (por
++ * módulo) y los juegos por niveles; las dos cosas no se mezclan.
++ */
+ export default function GamesScreen() {
+-  const { resource, reload, refresh } = useGameList();
+-  // Al volver de un juego, las tareas y las estrellas se actualizan.
++  const { resource, refresh } = useModuleTasks();
++  // Al volver, la cuenta de temas y la insignia se actualizan.
+   useRefreshOnFocus(refresh);
+-  const list = resource.status === 'ready' ? resource.data : null;
+-  const celebration = useLevelCelebration(
+-    list?.studentId ?? null,
+-    list?.levels ?? null,
+-  );
++  const modules = resource.status === 'ready' ? resource.data : null;
+ 
+   return (
+     <Screen
+@@ -59,102 +50,42 @@ export default function GamesScreen() {
+             <HeaderBackButton onPress={() => router.navigate('/student')} />
+           }
+           title="Juegos"
+-          right={<NarrationButton text={`${QUESTION} Toca un juego.`} />}
++          right={
++            <NarrationButton text={`${QUESTION} ${TASKS}, o ${LEVELS}.`} />
++          }
+         />
+       }
+     >
+       <AppText variant="display" accessibilityRole="header">
+         {QUESTION}
+       </AppText>
+-
+-      {resource.status === 'loading' ? (
+-        <StateView kind="loading" title="Buscando tus juegos…" />
+-      ) : null}
+-      {resource.status === 'error' ? (
+-        <StateView
+-          kind="error"
+-          title="Vamos a intentarlo otra vez"
+-          action={{ label: 'Intentar de nuevo', onPress: reload }}
++      <View style={styles.choices}>
++        <GameCard
++          tone="brand"
++          icon="book"
++          title={TASKS}
++          subtitle={tasksSubtitle(modules)}
++          badge={tasksBadge(modules)}
++          accessibilityHint="Abre los temas que te dejó tu profe."
++          onPress={() => router.push('/student/tasks')}
+         />
+-      ) : null}
+-
+-      <LevelUpCelebration
+-        levelUp={celebration.levelUp}
+-        onClose={celebration.close}
+-      />
+-
+-      {resource.status === 'ready' && resource.data.modules.length > 0 ? (
+-        <View style={styles.section}>
+-          <AppText variant="label" tone="secundario" accessibilityRole="header">
+-            {TASKS_TITLE}
+-          </AppText>
+-          {resource.data.modules.map((group) => (
+-            <TaskCard
+-              key={group.moduleId}
+-              caption={`${TASKS_TITLE} · ${tasksCountText(group.tasks.length)}`}
+-              title={group.title}
+-              icon="book"
+-              badge={moduleBadge(group)}
+-              accessibilityHint="Abre las actividades de este tema."
+-              onPress={() =>
+-                router.push({
+-                  pathname: '/student/module/[moduleId]',
+-                  params: { moduleId: group.moduleId },
+-                })
+-              }
+-            />
+-          ))}
+-        </View>
+-      ) : null}
+-
+-      {resource.status === 'ready'
+-        ? resource.data.sections.map((section) => (
+-            <View key={section.id} style={styles.section}>
+-              <AppText
+-                variant="label"
+-                tone="secundario"
+-                accessibilityRole="header"
+-              >
+-                {section.title}
+-              </AppText>
+-              {pairs(section.items).map((row) => (
+-                <View
+-                  key={row.map((item) => item.game.id).join('-')}
+-                  style={styles.row}
+-                >
+-                  {row.map((item) => (
+-                    <GameCard
+-                      key={item.game.id}
+-                      title={item.game.title}
+-                      subtitle={item.game.subtitle}
+-                      icon={item.game.icon}
+-                      tone={item.game.tone}
+-                      badge={item.badge}
+-                      level={item.level?.level}
+-                      // Su nivel actual (llega a la profe) o el juego libre.
+-                      onPress={() => router.push(cardHref(item))}
+-                    />
+-                  ))}
+-                  {/* Si la fila queda impar, un hueco mantiene el ancho. */}
+-                  {row.length === 1 ? <View style={styles.spacer} /> : null}
+-                </View>
+-              ))}
+-            </View>
+-          ))
+-        : null}
++        <GameCard
++          tone="warm"
++          icon="starOutline"
++          title={LEVELS}
++          subtitle="Juega y gana estrellas"
++          accessibilityHint="Abre los juegos que suben de nivel."
++          onPress={() => router.push('/student/levels')}
++        />
++      </View>
+     </Screen>
+   );
+ }
+ 
+ const styles = StyleSheet.create({
+-  section: {
+-    gap: spacing.md,
+-  },
+-  row: {
++  // En fila, como las tarjetas de Inicio (GameCard ocupa el ancho con flex).
++  choices: {
+     flexDirection: 'row',
+     gap: spacing.md,
+   },
+-  spacer: {
+-    flex: 1,
+-  },
+ });
+diff --git a/GameUp-frontend/src/app/student/levels.tsx b/GameUp-frontend/src/app/student/levels.tsx
+new file mode 100644
+index 0000000..603c9f3
+--- /dev/null
++++ b/GameUp-frontend/src/app/student/levels.tsx
+@@ -0,0 +1,133 @@
++import { router } from 'expo-router';
++import { StyleSheet, View } from 'react-native';
++import {
++  AppText,
++  HeaderBackButton,
++  Screen,
++  ScreenHeader,
++  StateView,
++} from '@/components/ui';
++import { GameCard, NarrationButton } from '@/components/gameup';
++import { isLadderGame } from '@/data/types';
++import { LevelUpCelebration } from '@/features/games/components/LevelUpCelebration';
++import { gameHref, ladderHref } from '@/features/games/catalog';
++import { useGameList, type GameListItem } from '@/features/games/useGameList';
++import { useLevelCelebration } from '@/features/games/useLevelCelebration';
++import { useRefreshOnFocus } from '@/data/useRefreshOnFocus';
++import { spacing } from '@/theme';
++
++const TITLE = 'Jugar por niveles';
++const QUESTION = '¿A qué quieres jugar?';
++
++/** Agrupa las tarjetas de dos en dos (cuadrícula del mockup). */
++function pairs(items: GameListItem[]): GameListItem[][] {
++  const rows: GameListItem[][] = [];
++  for (let i = 0; i < items.length; i += 2) rows.push(items.slice(i, i + 2));
++  return rows;
++}
++
++/**
++ * A dónde lleva la tarjeta de un juego: el nivel actual de su escalera (los
++ * de pensar) o el juego libre (los de sonidos, o si los niveles no cargan).
++ * Nunca abre una tarea: las tareas están en «Tareas de tu profe».
++ */
++function cardHref({ game, level }: GameListItem) {
++  if (level && isLadderGame(game.id)) return ladderHref(game.id);
++  return gameHref(game);
++}
++
++/**
++ * Jugar por niveles: los juegos de pensar abren su nivel de la escalera y
++ * los de sonidos, el juego libre. Las tareas de la profe no salen aquí.
++ */
++export default function LevelsScreen() {
++  const { resource, reload, refresh } = useGameList();
++  // Al volver de un juego, las estrellas se actualizan.
++  useRefreshOnFocus(refresh);
++  const list = resource.status === 'ready' ? resource.data : null;
++  const celebration = useLevelCelebration(
++    list?.studentId ?? null,
++    list?.levels ?? null,
++  );
++
++  return (
++    <Screen
++      header={
++        <ScreenHeader
++          left={<HeaderBackButton onPress={() => router.back()} />}
++          title={TITLE}
++          right={<NarrationButton text={`${QUESTION} Toca un juego.`} />}
++        />
++      }
++    >
++      <AppText variant="display" accessibilityRole="header">
++        {QUESTION}
++      </AppText>
++
++      {resource.status === 'loading' ? (
++        <StateView kind="loading" title="Buscando tus juegos…" />
++      ) : null}
++      {resource.status === 'error' ? (
++        <StateView
++          kind="error"
++          title="Vamos a intentarlo otra vez"
++          action={{ label: 'Intentar de nuevo', onPress: reload }}
++        />
++      ) : null}
++
++      <LevelUpCelebration
++        levelUp={celebration.levelUp}
++        onClose={celebration.close}
++      />
++
++      {resource.status === 'ready'
++        ? resource.data.sections.map((section) => (
++            <View key={section.id} style={styles.section}>
++              <AppText
++                variant="label"
++                tone="secundario"
++                accessibilityRole="header"
++              >
++                {section.title}
++              </AppText>
++              {pairs(section.items).map((row) => (
++                <View
++                  key={row.map((item) => item.game.id).join('-')}
++                  style={styles.row}
++                >
++                  {row.map((item) => (
++                    <GameCard
++                      key={item.game.id}
++                      title={item.game.title}
++                      subtitle={item.game.subtitle}
++                      icon={item.game.icon}
++                      tone={item.game.tone}
++                      badge={item.badge}
++                      level={item.level?.level}
++                      // Su nivel actual (llega a la profe) o el juego libre.
++                      onPress={() => router.push(cardHref(item))}
++                    />
++                  ))}
++                  {/* Si la fila queda impar, un hueco mantiene el ancho. */}
++                  {row.length === 1 ? <View style={styles.spacer} /> : null}
++                </View>
++              ))}
++            </View>
++          ))
++        : null}
++    </Screen>
++  );
++}
++
++const styles = StyleSheet.create({
++  section: {
++    gap: spacing.md,
++  },
++  row: {
++    flexDirection: 'row',
++    gap: spacing.md,
++  },
++  spacer: {
++    flex: 1,
++  },
++});
+diff --git a/GameUp-frontend/src/app/student/tasks.tsx b/GameUp-frontend/src/app/student/tasks.tsx
+new file mode 100644
+index 0000000..2cb3320
+--- /dev/null
++++ b/GameUp-frontend/src/app/student/tasks.tsx
+@@ -0,0 +1,115 @@
++import { router } from 'expo-router';
++import { StyleSheet, View } from 'react-native';
++import {
++  AppText,
++  Button,
++  HeaderBackButton,
++  Screen,
++  ScreenHeader,
++  StateView,
++} from '@/components/ui';
++import { Character, NarrationButton } from '@/components/gameup';
++import { useRefreshOnFocus } from '@/data/useRefreshOnFocus';
++import { TaskCard } from '@/features/games/components/TaskCard';
++import { moduleBadge, tasksCountText } from '@/features/games/moduleTasks';
++import { useModuleTasks } from '@/features/games/useModuleTasks';
++import { spacing } from '@/theme';
++
++const TITLE = 'Tareas de mi profe';
++const EMPTY_TITLE = 'Hoy no tienes tareas';
++
++/**
++ * Tareas de la profe, una tarjeta por módulo (tema). Cuentan para el
++ * progreso de su módulo; no suben los niveles.
++ */
++export default function TasksScreen() {
++  const { resource, reload, refresh } = useModuleTasks();
++  // Al volver de un módulo, la lista se actualiza.
++  useRefreshOnFocus(refresh);
++  const modules = resource.status === 'ready' ? resource.data : null;
++
++  return (
++    <Screen
++      header={
++        <ScreenHeader
++          left={<HeaderBackButton onPress={() => router.back()} />}
++          title={TITLE}
++          right={
++            <NarrationButton
++              text={
++                modules && modules.length === 0
++                  ? EMPTY_TITLE
++                  : `${TITLE}. Toca un tema.`
++              }
++            />
++          }
++        />
++      }
++    >
++      {resource.status === 'loading' ? (
++        <StateView kind="loading" title="Buscando tus tareas…" />
++      ) : null}
++      {resource.status === 'error' ? (
++        <StateView
++          kind="error"
++          title="Vamos a intentarlo otra vez"
++          action={{ label: 'Intentar de nuevo', onPress: reload }}
++        />
++      ) : null}
++
++      {modules && modules.length === 0 ? (
++        <View style={styles.center}>
++          <Character mouth="smile" size="lg" />
++          <AppText variant="title" style={styles.text}>
++            {EMPTY_TITLE}
++          </AppText>
++          <AppText tone="secundario" style={styles.text}>
++            Puedes jugar por niveles mientras tanto.
++          </AppText>
++          <Button
++            label="Jugar por niveles"
++            size="large"
++            onPress={() => router.replace('/student/levels')}
++          />
++        </View>
++      ) : null}
++
++      {modules && modules.length > 0 ? (
++        <View style={styles.list}>
++          <AppText variant="display" accessibilityRole="header">
++            ¿Qué tema quieres hacer?
++          </AppText>
++          {modules.map((group) => (
++            <TaskCard
++              key={group.moduleId}
++              caption={tasksCountText(group.tasks.length)}
++              title={group.title}
++              icon="book"
++              badge={moduleBadge(group)}
++              accessibilityHint="Abre las actividades de este tema."
++              onPress={() =>
++                router.push({
++                  pathname: '/student/module/[moduleId]',
++                  params: { moduleId: group.moduleId },
++                })
++              }
++            />
++          ))}
++        </View>
++      ) : null}
++    </Screen>
++  );
++}
++
++const styles = StyleSheet.create({
++  list: {
++    gap: spacing.md,
++  },
++  center: {
++    alignItems: 'center',
++    gap: spacing.md,
++  },
++  text: {
++    textAlign: 'center',
++  },
++});
+diff --git a/GameUp-frontend/src/features/games/__tests__/GamesChooser.test.tsx b/GameUp-frontend/src/features/games/__tests__/GamesChooser.test.tsx
+new file mode 100644
+index 0000000..2f0e302
+--- /dev/null
++++ b/GameUp-frontend/src/features/games/__tests__/GamesChooser.test.tsx
+@@ -0,0 +1,118 @@
++import { act, render, screen, userEvent } from '@testing-library/react-native';
++import { router } from 'expo-router';
++import GamesScreen from '@/app/student/(tabs)/games';
++import TasksScreen from '@/app/student/tasks';
++import { createMockRepositories } from '@/data/mock/createMockRepositories';
++import { RepositoryProvider } from '@/data/RepositoryProvider';
++import type { Repositories } from '@/data/repositories';
++import type { Assignment } from '@/data/types';
++
++jest.mock('expo-router', () => ({
++  router: {
++    push: jest.fn(),
++    navigate: jest.fn(),
++    back: jest.fn(),
++    replace: jest.fn(),
++  },
++}));
++
++jest.mock('@/data/useRefreshOnFocus', () => ({
++  useRefreshOnFocus: jest.fn(),
++}));
++
++const settle = () =>
++  act(async () => {
++    await jest.runAllTimersAsync();
++  });
++
++async function renderWith(element: React.ReactElement, repos: Repositories) {
++  await render(
++    <RepositoryProvider repositories={repos}>{element}</RepositoryProvider>,
++  );
++  await settle();
++}
++
++const tareas: Assignment[] = [
++  {
++    id: '7:11',
++    activityId: '11',
++    gameId: 'match',
++    status: 'rejected',
++    isNew: false,
++    moduleId: '3',
++    moduleTitle: 'Los colores',
++  },
++  {
++    id: '8:20',
++    activityId: '20',
++    gameId: 'classify',
++    status: 'assigned',
++    isNew: true,
++    moduleId: '4',
++    moduleTitle: 'Los animales',
++  },
++];
++
++function reposWith(pending: Assignment[]) {
++  const repos = createMockRepositories({ delayMs: 0 });
++  jest
++    .spyOn(repos.assignments, 'listPendingForStudent')
++    .mockResolvedValue(pending);
++  return repos;
++}
++
++describe('Juegos: elegir entre tareas y niveles', () => {
++  beforeEach(() => jest.mocked(router.push).mockClear());
++
++  it('dos botones grandes: tareas (con sus temas) y niveles', async () => {
++    await renderWith(<GamesScreen />, reposWith(tareas));
++
++    expect(screen.getByText('2 temas')).toBeOnTheScreen();
++    expect(screen.getByText('Nuevo')).toBeOnTheScreen();
++    // Aquí no se mezclan los juegos ni los módulos.
++    expect(screen.queryByText('Memoria')).toBeNull();
++    expect(screen.queryByText('Los colores')).toBeNull();
++
++    await userEvent.press(
++      screen.getByRole('button', { name: /^Tareas de mi profe/ }),
++    );
++    expect(router.push).toHaveBeenLastCalledWith('/student/tasks');
++    await userEvent.press(
++      screen.getByRole('button', { name: /^Jugar por niveles/ }),
++    );
++    expect(router.push).toHaveBeenLastCalledWith('/student/levels');
++  });
++
++  it('sin tareas: «Hoy no hay» y sin insignia', async () => {
++    await renderWith(<GamesScreen />, reposWith([]));
++    expect(screen.getByText('Hoy no hay')).toBeOnTheScreen();
++    expect(screen.queryByText('Nuevo')).toBeNull();
++  });
++});
++
++describe('Tareas de mi profe', () => {
++  beforeEach(() => jest.mocked(router.push).mockClear());
++
++  it('una tarjeta por módulo que abre su pantalla', async () => {
++    await renderWith(<TasksScreen />, reposWith(tareas));
++
++    expect(screen.getByText('Los colores')).toBeOnTheScreen();
++    expect(screen.getByText('Los animales')).toBeOnTheScreen();
++    expect(screen.getByText('Otra vez')).toBeOnTheScreen();
++
++    await userEvent.press(screen.getByRole('button', { name: /Los animales/ }));
++    expect(router.push).toHaveBeenCalledWith({
++      pathname: '/student/module/[moduleId]',
++      params: { moduleId: '4' },
++    });
++  });
++
++  it('sin tareas: lo invita a jugar por niveles', async () => {
++    await renderWith(<TasksScreen />, reposWith([]));
++    expect(screen.getByText('Hoy no tienes tareas')).toBeOnTheScreen();
++    await userEvent.press(
++      screen.getByRole('button', { name: /Jugar por niveles/ }),
++    );
++    expect(router.replace).toHaveBeenCalledWith('/student/levels');
++  });
++});
+diff --git a/GameUp-frontend/src/features/games/__tests__/GamesLadder.test.tsx b/GameUp-frontend/src/features/games/__tests__/GamesLadder.test.tsx
+index 4e468fb..ba8e1ef 100644
+--- a/GameUp-frontend/src/features/games/__tests__/GamesLadder.test.tsx
++++ b/GameUp-frontend/src/features/games/__tests__/GamesLadder.test.tsx
+@@ -1,6 +1,6 @@
+ import { act, render, screen, userEvent } from '@testing-library/react-native';
+ import { router } from 'expo-router';
+-import GamesScreen from '@/app/student/(tabs)/games';
++import GamesScreen from '@/app/student/levels';
+ import { createMockRepositories } from '@/data/mock/createMockRepositories';
+ import { RepositoryProvider } from '@/data/RepositoryProvider';
+ import type { Repositories } from '@/data/repositories';
+@@ -89,7 +89,7 @@ describe('Juegos con la escalera de niveles', () => {
+     });
+   });
+ 
+-  it('una tarea de ese juego va en «Tareas de tu profe»; el juego abre su nivel', async () => {
++  it('aunque haya una tarea de ese juego, la tarjeta abre su nivel', async () => {
+     const repos = createMockRepositories({ delayMs: 0 });
+     jest.spyOn(repos.assignments, 'listPendingForStudent').mockResolvedValue([
+       {
+@@ -109,12 +109,8 @@ describe('Juegos con la escalera de niveles', () => {
+       pathname: '/student/memory',
+       params: { escalera: '1' },
+     });
+-
+-    await userEvent.press(screen.getByRole('button', { name: /Los colores/ }));
+-    expect(router.push).toHaveBeenLastCalledWith({
+-      pathname: '/student/module/[moduleId]',
+-      params: { moduleId: '3' },
+-    });
++    // Las tareas no salen en «Jugar por niveles».
++    expect(screen.queryByText('Los colores')).toBeNull();
+   });
+ 
+   it('si los niveles no cargan, los juegos se muestran igual (sin estrellas)', async () => {
+diff --git a/GameUp-frontend/src/features/games/__tests__/GamesTabRefresh.test.tsx b/GameUp-frontend/src/features/games/__tests__/GamesTabRefresh.test.tsx
+index e4c6f7a..2ddc0da 100644
+--- a/GameUp-frontend/src/features/games/__tests__/GamesTabRefresh.test.tsx
++++ b/GameUp-frontend/src/features/games/__tests__/GamesTabRefresh.test.tsx
+@@ -44,7 +44,7 @@ describe('las pestañas se actualizan al volver a ellas', () => {
+     jest.mocked(useRefreshOnFocus).mockClear();
+   });
+ 
+-  it('Juegos: después de hacer la tarea, su módulo ya no aparece', async () => {
++  it('Juegos: después de hacer la tarea, «Tareas de mi profe» se actualiza', async () => {
+     const repositories = createMockRepositories({ delayMs: 0 });
+     const pending = jest
+       .spyOn(repositories.assignments, 'listPendingForStudent')
+@@ -63,7 +63,8 @@ describe('las pestañas se actualizan al volver a ellas', () => {
+       .mockResolvedValue([]);
+ 
+     await renderWith(<GamesScreen />, repositories);
+-    expect(screen.getByText('Los animales')).toBeOnTheScreen();
++    expect(screen.getByText('1 tema')).toBeOnTheScreen();
++    expect(screen.getByText('Nuevo')).toBeOnTheScreen();
+ 
+     await act(async () => {
+       lastRegisteredRefresh()();
+@@ -71,7 +72,8 @@ describe('las pestañas se actualizan al volver a ellas', () => {
+     await settle();
+ 
+     expect(pending).toHaveBeenCalledTimes(2);
+-    expect(screen.queryByText('Los animales')).toBeNull();
++    expect(screen.getByText('Hoy no hay')).toBeOnTheScreen();
++    expect(screen.queryByText('Nuevo')).toBeNull();
+   });
+ 
+   it('Mi progreso: vuelve a pedir el progreso', async () => {
+diff --git a/GameUp-frontend/src/features/games/useGameList.ts b/GameUp-frontend/src/features/games/useGameList.ts
+index 62fa9fc..403c6ca 100644
+--- a/GameUp-frontend/src/features/games/useGameList.ts
++++ b/GameUp-frontend/src/features/games/useGameList.ts
+@@ -9,7 +9,6 @@ import {
+   type GameDefinition,
+   type GameSectionId,
+ } from './catalog';
+-import { groupByModule, type ModuleTasks } from './moduleTasks';
+ 
+ export interface GameListItem {
+   game: GameDefinition;
+@@ -26,8 +25,6 @@ export interface GameListSection {
+ 
+ export interface GameList {
+   studentId: string;
+-  /** Tareas de la profe, una tarjeta por módulo (vacío si no hay). */
+-  modules: ModuleTasks[];
+   /** Juegos libres: los de pensar abren su nivel; los de sonidos, libres. */
+   sections: GameListSection[];
+   /** Niveles de la escalera (vacío si no se pudieron leer). */
+@@ -35,26 +32,23 @@ export interface GameList {
+ }
+ 
+ /**
+- * Pantalla Juegos, en dos partes que no se mezclan:
+- * - las tareas de la profe, agrupadas por módulo (cuentan para su módulo);
+- * - los juegos por niveles y de sonidos (la escalera sube con la profe).
+- * Si los niveles no cargan, los juegos se muestran igual (sin estrellas).
++ * Pantalla «Jugar por niveles»: los juegos de pensar (abren su nivel; la
++ * escalera sube con la profe) y los de sonidos. Las tareas de la profe van
++ * aparte, en «Tareas de mi profe». Si los niveles no cargan, los juegos se
++ * muestran igual (sin estrellas).
+  */
+ export function useGameList() {
+-  const { students, assignments, levels } = useRepositories();
++  const { students, levels } = useRepositories();
+ 
+   const load = useCallback(async (): Promise<GameList> => {
+     const student = await students.getCurrentStudent();
+-    const [pending, myLevels] = await Promise.all([
+-      assignments.listPendingForStudent(student.id),
+-      levels.getMyLevels().catch((error: unknown) => {
+-        console.warn(
+-          '[GameUP] No se pudieron cargar los niveles',
+-          error instanceof Error ? error.name : 'Error',
+-        );
+-        return [] as GameLevel[];
+-      }),
+-    ]);
++    const myLevels = await levels.getMyLevels().catch((error: unknown) => {
++      console.warn(
++        '[GameUP] No se pudieron cargar los niveles',
++        error instanceof Error ? error.name : 'Error',
++      );
++      return [] as GameLevel[];
++    });
+     const sections = gameSections.map((section) => ({
+       ...section,
+       items: gameCatalog
+@@ -67,11 +61,10 @@ export function useGameList() {
+     }));
+     return {
+       studentId: student.id,
+-      modules: groupByModule(pending),
+       sections,
+       levels: myLevels,
+     };
+-  }, [students, assignments, levels]);
++  }, [students, levels]);
+ 
+   return useResource(load);
+ }
+diff --git a/GameUp-frontend/src/features/games/useModuleTasks.ts b/GameUp-frontend/src/features/games/useModuleTasks.ts
+new file mode 100644
+index 0000000..ec23ee4
+--- /dev/null
++++ b/GameUp-frontend/src/features/games/useModuleTasks.ts
+@@ -0,0 +1,14 @@
++import { useCallback } from 'react';
++import { useRepositories } from '@/data/RepositoryProvider';
++import { useResource } from '@/data/useResource';
++import { groupByModule, type ModuleTasks } from './moduleTasks';
++
++/** Tareas pendientes de la profe, agrupadas por módulo. */
++export function useModuleTasks() {
++  const { students, assignments } = useRepositories();
++  const load = useCallback(async (): Promise<ModuleTasks[]> => {
++    const student = await students.getCurrentStudent();
++    return groupByModule(await assignments.listPendingForStudent(student.id));
++  }, [students, assignments]);
++  return useResource(load);
++}
+diff --git a/GameUp-frontend/src/features/home/__tests__/studentData.test.tsx b/GameUp-frontend/src/features/home/__tests__/studentData.test.tsx
+index a4b0585..3e4359e 100644
+--- a/GameUp-frontend/src/features/home/__tests__/studentData.test.tsx
++++ b/GameUp-frontend/src/features/home/__tests__/studentData.test.tsx
+@@ -44,10 +44,7 @@ describe('datos del estudiante con los repositorios simulados', () => {
+     await waitFor(() => expect(result.current.resource.status).toBe('ready'));
+     if (result.current.resource.status !== 'ready') return;
+ 
+-    const { modules, sections } = result.current.resource.data;
+-    expect(modules.flatMap((m) => m.tasks).map((t) => t.gameId)).toContain(
+-      'findMouth',
+-    );
++    const { sections } = result.current.resource.data;
+     const [thinking, sounds] = sections;
+     expect(thinking?.id).toBe('thinking');
+     expect(sounds?.items.map((i) => [i.game.id, i.badge])).toEqual([

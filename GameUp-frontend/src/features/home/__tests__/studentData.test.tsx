@@ -44,10 +44,7 @@ describe('datos del estudiante con los repositorios simulados', () => {
     await waitFor(() => expect(result.current.resource.status).toBe('ready'));
     if (result.current.resource.status !== 'ready') return;
 
-    const { modules, sections } = result.current.resource.data;
-    expect(modules.flatMap((m) => m.tasks).map((t) => t.gameId)).toContain(
-      'findMouth',
-    );
+    const { sections } = result.current.resource.data;
     const [thinking, sounds] = sections;
     expect(thinking?.id).toBe('thinking');
     expect(sounds?.items.map((i) => [i.game.id, i.badge])).toEqual([
