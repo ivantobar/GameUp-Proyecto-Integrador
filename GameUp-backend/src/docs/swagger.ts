@@ -32,7 +32,15 @@ export function setupSwagger(app: INestApplication, publicUrl?: string): void {
         'los datos personales de estudiantes y acudientes, los vínculos ' +
         'familiares y el consentimiento informado son de ASISCO UP. GameUP ' +
         'guarda solo el perfil de aprendizaje y lo relaciona con ASISCO UP ' +
-        'mediante idEstudianteExterno.',
+        'mediante idEstudianteExterno.\n\n' +
+        '**Autenticación:** el Bearer de todas las rutas es el JWT de la API ' +
+        'central (POST /api/auth/login). GameUP no firma tokens: cada petición ' +
+        'se verifica con GET /api/auth/perfil de la API central.\n\n' +
+        '**Glosario de ids:**\n' +
+        '- `idUsuarioAuth` = `id_usuario` de la API central (columna ' +
+        '`usuario.id_usuario_auth`).\n' +
+        '- `idEstudianteExterno` = `idEstudiante` local de Método Consuelo / ASISCO UP.\n' +
+        '- `id` / `userId` = id interno de GameUP.',
     )
     .setVersion('1.0.0')
     // "/" = el mismo servidor desde donde se abre /api-docs (local o Render),
@@ -57,14 +65,21 @@ export function setupSwagger(app: INestApplication, publicUrl?: string): void {
     .addTag('health', 'Estado del backend y de sus conexiones')
     .addTag(
       'auth',
-      'Inicio y cierre de sesión: reenvía a la API de seguridad y usa su JWT (GameUP no emite tokens)',
+      'Inicio y cierre de sesión: reenvía a la API central (POST /api/auth/login, ' +
+        'GET /api/auth/perfil) y usa su JWT (GameUP no emite tokens)',
     )
-    .addTag('usuarios', 'Cuentas de GameUP (solo la directora)')
+    .addTag(
+      'usuarios',
+      'Cuentas de GameUP (solo la directora). El alta toma los datos de ' +
+        'GET /api/usuarios/{idUsuarioAuth} de la API central.',
+    )
     .addTag(
       'estudiantes',
       'Perfil de aprendizaje del estudiante en GameUP (nivel, avatar, ' +
         'talleristas, acudientes y verificación del consentimiento de voz). ' +
-        'Los datos personales los administra ASISCO UP.',
+        'Los datos personales los administra ASISCO UP. El `id` de las rutas es ' +
+        'el id interno de GameUP; idUsuarioAuth e idEstudianteExterno nunca salen ' +
+        'en estas respuestas.',
     )
     .addTag(
       'catalogo',

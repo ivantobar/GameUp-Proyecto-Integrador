@@ -39,7 +39,11 @@ export class EstudianteController {
   @ApiOperation({
     summary: 'Estudiantes que puedo ver',
     description:
-      'Directora: todos. Tallerista: los que tiene a cargo. Acudiente: los suyos.',
+      'Directora: todos. Tallerista: los que tiene a cargo. Acudiente: los suyos.\n\n' +
+      'Lee la base de GameUP (no consulta la API central ni ASISCO UP). El Bearer es ' +
+      'el JWT de la API central. Cada `id` es el id interno de GameUP del estudiante; ' +
+      'su `idUsuarioAuth` (id_usuario central) y su `idEstudianteExterno` (ASISCO UP) ' +
+      'no se exponen.',
   })
   @ApiOkResponse({ type: PaginaEstudiantesDto })
   @ApiErrores(400, 401, 403)
@@ -76,7 +80,10 @@ export class EstudianteController {
   @Roles('DIRECTORA', 'TALLERISTA', 'ACUDIENTE')
   @ApiOperation({
     summary: 'Ficha de un estudiante',
-    description: 'Si el estudiante no te corresponde, la respuesta es 404.',
+    description:
+      '`{id}` es el id interno de GameUP del estudiante. Si el estudiante no te ' +
+      'corresponde, la respuesta es 404. Lee la base de GameUP; el Bearer es el JWT ' +
+      'de la API central.',
   })
   @ApiOkResponse({ type: EstudianteDetalleDto })
   @ApiErrores(400, 401, 403, 404)
