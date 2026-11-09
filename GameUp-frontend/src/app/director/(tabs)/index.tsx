@@ -2,7 +2,10 @@ import { SignOutButton } from '@/features/auth/components/SignOutButton';
 import { StudentRosterView } from '@/features/students/components/StudentRosterView';
 import { directorRoutes } from '@/features/students/staffRoutes';
 
-/** Directora · «Estudiantes»: todos (lo decide el backend), con búsqueda. */
+/**
+ * Directora · «Estudiantes»: todos (lo decide el backend), con búsqueda y la
+ * etiqueta «Sin tallerista».
+ */
 export default function DirectorStudentsScreen() {
   return (
     <StudentRosterView
@@ -12,6 +15,7 @@ export default function DirectorStudentsScreen() {
       emptyMessage="Cuando la fundación registre estudiantes, aparecerán aquí."
       headerRight={<SignOutButton />}
       searchable
+      showTeacherStatus
     />
   );
 }

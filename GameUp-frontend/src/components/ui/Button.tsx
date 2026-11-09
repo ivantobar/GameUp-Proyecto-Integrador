@@ -107,6 +107,11 @@ interface ButtonProps extends PressableBaseProps {
   size?: ButtonSize;
   icon?: IconName;
   loading?: boolean;
+  /**
+   * Nombre para el lector de pantalla, si el texto visible no basta (por
+   * ejemplo, «Quitar a Ana Gómez» en un botón que dice «Quitar»).
+   */
+  accessibilityLabel?: string;
 }
 
 export function Button({
@@ -118,6 +123,7 @@ export function Button({
   loading = false,
   disabled = false,
   accessibilityHint,
+  accessibilityLabel,
   testID,
 }: ButtonProps) {
   const { progress, onPressIn, onPressOut } = usePressFeedback();
@@ -144,7 +150,7 @@ export function Button({
       onPressOut={onPressOut}
       disabled={isDisabled}
       accessibilityRole="button"
-      accessibilityLabel={label}
+      accessibilityLabel={accessibilityLabel ?? label}
       accessibilityHint={accessibilityHint}
       accessibilityState={{ disabled: isDisabled, busy: loading }}
       testID={testID}

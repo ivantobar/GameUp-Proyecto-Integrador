@@ -17,6 +17,19 @@ export interface RosterRow {
    * cargar («Progreso no disponible»); `undefined` mientras se pide.
    */
   percent: number | null | undefined;
+  /**
+   * `true` si se sabe que no tiene ninguna tallerista activa (etiqueta «Sin
+   * tallerista»). Mientras se pide, si falla o si no se pidió: `false`.
+   */
+  withoutTeacher: boolean;
+}
+
+interface RosterOptions {
+  /**
+   * Pide también quién tiene a cargo a cada fila visible (solo la
+   * directora: el backend no deja al docente).
+   */
+  withTeacherStatus?: boolean;
 }
 
 /** Sin mayúsculas ni tildes: «maria» encuentra a «María». */
@@ -34,16 +47,22 @@ export function normalizeName(text: string): string {
  * La lista completa es barata; el progreso, no: se pide solo para las filas
  * visibles, de a `ROSTER_PAGE_SIZE`, con a lo sumo `PROGRESS_CONCURRENCY`
  * pedidos a la vez en total. Si falla el de un estudiante, solo esa fila
- * queda sin progreso.
+ * queda sin progreso. Con `withTeacherStatus`, cada fila visible pide
+ * también sus talleristas (en la misma cola) para la etiqueta «Sin
+ * tallerista».
  */
-export function useStudentRoster() {
-  const { directory } = useRepositories();
+export function useStudentRoster({
+  withTeacherStatus = false,
+}: RosterOptions = {}) {
+  const { directory, teacherLinks } = useRepositories();
   const load = useCallback(() => directory.listStudents(), [directory]);
   const { resource, reload, refresh: refreshList } = useResource(load);
 
   const [query, setQueryValue] = useState('');
   const [limit, setLimit] = useState(ROSTER_PAGE_SIZE);
   const [progress, setProgress] = useState<Record<string, number | null>>({});
+  /** ¿Tiene alguna tallerista activa? Solo se guarda si se pudo saber. */
+  const [hasTeacher, setHasTeacher] = useState<Record<string, boolean>>({});
   /** Sube con cada «refresh»: las filas visibles vuelven a pedir su progreso. */
   const [version, setVersion] = useState(0);
   /** Versión ya pedida (o en curso) de cada estudiante. */
@@ -90,8 +109,21 @@ export function useStudentRoster() {
             }
           },
         );
+        if (!withTeacherStatus) return;
+        limiter(() => teacherLinks.listStudentTeachers(student.id)).then(
+          (teachers) => {
+            if (mounted.current) {
+              setHasTeacher((prev) => ({
+                ...prev,
+                [student.id]: teachers.some((t) => t.active),
+              }));
+            }
+          },
+          // Si falla, simplemente no se muestra la etiqueta.
+          () => {},
+        );
       });
-  }, [visible, version, directory, limiter]);
+  }, [visible, version, directory, teacherLinks, limiter, withTeacherStatus]);
 
   const setQuery = useCallback((text: string) => {
     setQueryValue(text);
@@ -112,6 +144,7 @@ export function useStudentRoster() {
   const rows: RosterRow[] = visible.map((student) => ({
     student,
     percent: progress[student.id],
+    withoutTeacher: hasTeacher[student.id] === false,
   }));
 
   return {

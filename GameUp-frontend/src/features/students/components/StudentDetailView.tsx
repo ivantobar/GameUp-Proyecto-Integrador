@@ -1,4 +1,4 @@
-import { useCallback, type ReactNode } from 'react';
+import { useCallback } from 'react';
 import { router } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 import {
@@ -20,7 +20,7 @@ import { StudentLevels } from '@/features/levels/components/StudentLevels';
 import { ModuleProgressCard } from '@/features/progress/components/ModuleProgressCard';
 import { moduleDefinitionFor } from '@/features/progress/modules';
 import { spacing } from '@/theme';
-import { takeAssignedNotice } from '../assignmentNotice';
+import { takeAssignedNotice, takeTeacherNotice } from '../assignmentNotice';
 import {
   assignmentStateLabels,
   assignmentSummary,
@@ -28,28 +28,52 @@ import {
 } from '../assignmentText';
 import type { StaffRoutes } from '../staffRoutes';
 import { useStudentDetail } from '../useStudentDetail';
+import { useStudentTeachers } from '../useStudentTeachers';
+import { Section } from './Section';
+import { StudentTeachersSection } from './StudentTeachersSection';
 
 interface StudentDetailViewProps {
   studentId: string;
   routes: StaffRoutes;
+  /**
+   * Muestra «Tallerista a cargo» (asignar y quitar). Solo la directora: el
+   * backend no deja al docente.
+   */
+  manageTeachers?: boolean;
 }
 
 /**
  * Detalle de un estudiante (docente y directora): progreso oficial por
- * módulo, niveles por juego, asignaciones y «Asignar actividad».
+ * módulo, niveles por juego, asignaciones y «Asignar actividad». La
+ * directora ve además «Tallerista a cargo».
  */
 export function StudentDetailView({
   studentId,
   routes,
+  manageTeachers = false,
 }: StudentDetailViewProps) {
   const detail = useStudentDetail(studentId);
   const { resource, reload, refresh, message, showAssignedNotice } = detail;
+  const teachers = useStudentTeachers(studentId, manageTeachers);
+  const { refresh: refreshTeachers, showAssignedNotice: showTeacherNotice } =
+    teachers;
 
   // Al volver de «Asignar»: aviso y datos nuevos, sin ocultar los de ahora.
   const onFocus = useCallback(() => {
     if (takeAssignedNotice(studentId)) showAssignedNotice();
     refresh();
-  }, [studentId, refresh, showAssignedNotice]);
+    if (manageTeachers) {
+      if (takeTeacherNotice(studentId)) showTeacherNotice();
+      refreshTeachers();
+    }
+  }, [
+    studentId,
+    refresh,
+    showAssignedNotice,
+    manageTeachers,
+    refreshTeachers,
+    showTeacherNotice,
+  ]);
   useRefreshOnFocus(onFocus);
 
   return (
@@ -110,6 +134,10 @@ export function StudentDetailView({
             </View>
           ) : null}
 
+          {manageTeachers ? (
+            <StudentTeachersSection studentId={studentId} teachers={teachers} />
+          ) : null}
+
           <Section title="Progreso oficial">
             {resource.data.progress.modules.length === 0 ? (
               <AppText tone="secundario">
@@ -166,17 +194,6 @@ export function StudentDetailView({
         </>
       ) : null}
     </Screen>
-  );
-}
-
-function Section({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <View style={styles.section}>
-      <AppText variant="label" tone="secundario" accessibilityRole="header">
-        {title}
-      </AppText>
-      {children}
-    </View>
   );
 }
 
@@ -259,9 +276,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-  },
-  section: {
-    gap: spacing.sm,
   },
   assignment: {
     gap: spacing.xs,

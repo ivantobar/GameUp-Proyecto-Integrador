@@ -2,7 +2,11 @@ import { InvalidCredentialsError } from '../authErrors';
 import { bogotaToday } from '../bogotaDate';
 import { NoLinkedStudentsError } from '../guardianErrors';
 import type { Repositories } from '../repositories';
-import { AssignmentError, StudentAccessError } from '../studentErrors';
+import {
+  AssignmentError,
+  StudentAccessError,
+  TeacherLinkError,
+} from '../studentErrors';
 import {
   LADDER_GAMES,
   LADDER_LEVELS,
@@ -21,6 +25,7 @@ import {
   type StarCount,
   type StudentAssignment,
   type StudentSummary,
+  type StudentTeacher,
   type TeacherNote,
   type VoiceConsentStatus,
   type VowelPractice,
@@ -42,9 +47,11 @@ import {
   mockStudentAssignments,
   mockStudentSummaries,
   mockTeacher,
+  mockTeacherLinks,
   mockTeacherNote,
-  mockTeacherStudents,
+  mockTeachers,
   mockVowelPractice,
+  type MockTeacherLink,
 } from './fixtures';
 
 interface MockOptions {
@@ -148,6 +155,8 @@ export function createMockRepositories({
       mockStudentAssignments,
     ),
     nextAssignment: 100,
+    /** Quién tiene a cargo a cada estudiante (la directora lo cambia). */
+    teacherLinks: clone<MockTeacherLink[]>(mockTeacherLinks),
     /** Nivel de cada estudiante en cada juego (todos empiezan en el 1). */
     levels: {} as Record<
       string,
@@ -242,6 +251,25 @@ export function createMockRepositories({
       });
   };
 
+  /** Estudiantes que la tallerista tiene a cargo hoy. */
+  const studentsOfTeacher = (teacherId: string): string[] =>
+    state.teacherLinks
+      .filter((l) => l.teacherId === teacherId && l.active)
+      .map((l) => l.studentId);
+
+  const isDirector = () => state.session?.role === 'director';
+  /** Como el backend: solo la directora, y con un estudiante que existe. */
+  const canManageTeachers = (studentId: string) =>
+    isDirector() && studentId in mockStudentSummaries;
+  const toStudentTeacher = (link: MockTeacherLink): StudentTeacher => ({
+    teacherId: link.teacherId,
+    displayName:
+      mockTeachers.find((t) => t.id === link.teacherId)?.displayName ??
+      'Tallerista',
+    since: link.since,
+    active: link.active,
+  });
+
   /**
    * Como el backend: la directora ve a todos; el acudiente, al suyo; la
    * docente (o el «Modo desarrollo», sin sesión), a sus estudiantes.
@@ -256,7 +284,7 @@ export function createMockRepositories({
       return own ? [own] : [];
     }
     if (session?.role === 'student') return [];
-    return mockTeacherStudents[mockTeacher.id] ?? [];
+    return studentsOfTeacher(mockTeacher.id);
   };
   const canSee = (studentId: string) => visibleStudents().includes(studentId);
   const canAssign = () =>
@@ -513,7 +541,7 @@ export function createMockRepositories({
         const mine =
           state.session?.role === 'director'
             ? Object.keys(mockStudentSummaries)
-            : (mockTeacherStudents[teacherId] ?? []);
+            : studentsOfTeacher(teacherId);
         return respond(
           state.reviews.filter(
             (r) =>
@@ -665,6 +693,62 @@ export function createMockRepositories({
           );
         }
         return respond(undefined);
+      },
+    },
+    teacherLinks: {
+      listStudentTeachers: (studentId) =>
+        canManageTeachers(studentId)
+          ? respond(
+              state.teacherLinks
+                .filter((l) => l.studentId === studentId)
+                .map(toStudentTeacher),
+            )
+          : rejectWith(new StudentAccessError()),
+      listActiveTeachers: () =>
+        isDirector()
+          ? respond(
+              mockTeachers
+                .filter((t) => t.active)
+                .map(({ id, displayName }) => ({ id, displayName })),
+            )
+          : rejectWith(new StudentAccessError()),
+      assignTeacher: (studentId, teacherId) => {
+        if (!canManageTeachers(studentId)) {
+          return rejectWith(new StudentAccessError());
+        }
+        if (!mockTeachers.some((t) => t.id === teacherId && t.active)) {
+          return rejectWith(new TeacherLinkError('notActiveTeacher'));
+        }
+        const link = state.teacherLinks.find(
+          (l) => l.studentId === studentId && l.teacherId === teacherId,
+        );
+        if (link?.active) {
+          return rejectWith(new TeacherLinkError('alreadyInCharge'));
+        }
+        // Como el backend: si ya lo tuvo antes, el vínculo vuelve desde hoy.
+        const current: MockTeacherLink = link ?? {
+          studentId,
+          teacherId,
+          since: bogotaToday(),
+          active: true,
+        };
+        current.since = bogotaToday();
+        current.active = true;
+        if (!link) state.teacherLinks.push(current);
+        return respond(toStudentTeacher(current));
+      },
+      removeTeacher: (studentId, teacherId) => {
+        if (!canManageTeachers(studentId)) {
+          return rejectWith(new StudentAccessError());
+        }
+        const link = state.teacherLinks.find(
+          (l) =>
+            l.studentId === studentId && l.teacherId === teacherId && l.active,
+        );
+        if (!link) return respond('notInCharge' as const);
+        // Pierde el acceso al instante; el vínculo queda en el historial.
+        link.active = false;
+        return respond('removed' as const);
       },
     },
     overview: {

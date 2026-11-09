@@ -38,3 +38,17 @@ export class AssignmentError extends Error {
     this.name = 'AssignmentError';
   }
 }
+
+/**
+ * Por qué no se pudo poner a un estudiante a cargo de una tallerista:
+ * - `alreadyInCharge`: POST 409, esa tallerista ya lo tiene a cargo;
+ * - `notActiveTeacher`: POST 422, la cuenta no es de una tallerista activa.
+ */
+export type TeacherLinkProblem = 'alreadyInCharge' | 'notActiveTeacher';
+
+export class TeacherLinkError extends Error {
+  constructor(readonly problem: TeacherLinkProblem) {
+    super(`No se pudo asignar la tallerista (${problem}).`);
+    this.name = 'TeacherLinkError';
+  }
+}

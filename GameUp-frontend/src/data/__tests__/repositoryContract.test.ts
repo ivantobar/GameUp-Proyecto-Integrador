@@ -4,9 +4,13 @@ import { InvalidCredentialsError } from '../authErrors';
 import { createHttpRepositories } from '../http/createHttpRepositories';
 import { createMemoryTokenStore } from '../http/tokenStore';
 import { createMockRepositories } from '../mock/createMockRepositories';
-import { MOCK_PASSWORD } from '../mock/fixtures';
+import { MOCK_PASSWORD, mockStudent } from '../mock/fixtures';
 import type { Repositories } from '../repositories';
-import { AssignmentError, StudentAccessError } from '../studentErrors';
+import {
+  AssignmentError,
+  StudentAccessError,
+  TeacherLinkError,
+} from '../studentErrors';
 
 /**
  * Sustitución de Liskov: la versión simulada y la HTTP cumplen el mismo
@@ -482,6 +486,127 @@ describe.each(implementations)('contrato de la versión %s', (_name, create) => 
         }),
       );
       expect(created.state).toBe('assigned');
+    });
+  });
+
+  describe('talleristas a cargo (directora)', () => {
+    beforeEach(async () => {
+      await signInAs('directora@gameup.test');
+    });
+
+    it('cada tallerista del estudiante es un StudentTeacher', async () => {
+      const teachers = await settle(
+        repos.teacherLinks.listStudentTeachers(mockStudent.id),
+      );
+      expect(teachers.length).toBeGreaterThan(0);
+      teachers.forEach((t) => {
+        expect(Object.keys(t).sort()).toEqual([
+          'active',
+          'displayName',
+          'since',
+          'teacherId',
+        ]);
+        expect(t.since).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      });
+    });
+
+    it('las activas para elegir son StaffProfile (sin Rosa, inactiva)', async () => {
+      const teachers = await settle(repos.teacherLinks.listActiveTeachers());
+      expect(teachers.map((t) => t.id)).toEqual([
+        'doc-demo-001',
+        'doc-demo-002',
+        'doc-demo-003',
+      ]);
+      teachers.forEach((t) => {
+        expect(Object.keys(t).sort()).toEqual(['displayName', 'id']);
+      });
+    });
+
+    it('asignar, repetir (alreadyInCharge) y quitar (queda en el historial)', async () => {
+      const created = await settle(
+        repos.teacherLinks.assignTeacher('est-demo-004', 'doc-demo-002'),
+      );
+      expect(created).toMatchObject({
+        teacherId: 'doc-demo-002',
+        active: true,
+      });
+
+      const again = await settle(
+        repos.teacherLinks
+          .assignTeacher('est-demo-004', 'doc-demo-002')
+          .catch((e: unknown) => e),
+      );
+      expect(again).toBeInstanceOf(TeacherLinkError);
+      expect((again as TeacherLinkError).problem).toBe('alreadyInCharge');
+
+      expect(
+        await settle(
+          repos.teacherLinks.removeTeacher('est-demo-004', 'doc-demo-002'),
+        ),
+      ).toBe('removed');
+      const list = await settle(
+        repos.teacherLinks.listStudentTeachers('est-demo-004'),
+      );
+      expect(list.filter((t) => t.active)).toEqual([]);
+      expect(list.map((t) => t.teacherId).sort()).toEqual([
+        'doc-demo-002',
+        'doc-demo-003',
+      ]);
+    });
+
+    it('reasignar a quien lo tuvo antes lo reactiva (sin duplicarlo)', async () => {
+      await settle(
+        repos.teacherLinks.assignTeacher('est-demo-004', 'doc-demo-003'),
+      );
+      const list = await settle(
+        repos.teacherLinks.listStudentTeachers('est-demo-004'),
+      );
+      expect(list).toEqual([
+        expect.objectContaining({ teacherId: 'doc-demo-003', active: true }),
+      ]);
+    });
+
+    it('una cuenta que no es de tallerista activa → notActiveTeacher', async () => {
+      const error = await settle(
+        repos.teacherLinks
+          .assignTeacher('est-demo-004', 'doc-demo-009')
+          .catch((e: unknown) => e),
+      );
+      expect(error).toBeInstanceOf(TeacherLinkError);
+      expect((error as TeacherLinkError).problem).toBe('notActiveTeacher');
+    });
+
+    it('quitar a quien ya no lo tenía a cargo → notInCharge (sin error)', async () => {
+      expect(
+        await settle(
+          repos.teacherLinks.removeTeacher('est-demo-004', 'doc-demo-003'),
+        ),
+      ).toBe('notInCharge');
+    });
+
+    it('al quitarla, la tallerista deja de ver al estudiante', async () => {
+      await settle(
+        repos.teacherLinks.removeTeacher('est-demo-002', 'doc-demo-001'),
+      );
+
+      await signInAs('docente@gameup.test');
+      await expect(
+        settle(repos.directory.getStudent('est-demo-002')),
+      ).rejects.toBeInstanceOf(StudentAccessError);
+      const students = await settle(repos.directory.listStudents());
+      expect(students.map((s) => s.id)).not.toContain('est-demo-002');
+    });
+
+    it('el docente no puede: StudentAccessError', async () => {
+      await signInAs('docente@gameup.test');
+      await expect(
+        settle(repos.teacherLinks.listStudentTeachers(mockStudent.id)),
+      ).rejects.toBeInstanceOf(StudentAccessError);
+      await expect(
+        settle(
+          repos.teacherLinks.assignTeacher(mockStudent.id, 'doc-demo-002'),
+        ),
+      ).rejects.toBeInstanceOf(StudentAccessError);
     });
   });
 

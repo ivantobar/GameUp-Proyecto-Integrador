@@ -3,6 +3,7 @@ import { router } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 import {
   AppText,
+  Badge,
   Button,
   InitialsAvatar,
   PressableCard,
@@ -26,6 +27,8 @@ interface StudentRosterViewProps {
   headerRight?: ReactNode;
   /** Muestra «Buscar por nombre» (la directora ve a todos). */
   searchable?: boolean;
+  /** Etiqueta «Sin tallerista» en cada fila (solo la directora). */
+  showTeacherStatus?: boolean;
 }
 
 /**
@@ -40,8 +43,9 @@ export function StudentRosterView({
   emptyMessage,
   headerRight,
   searchable = false,
+  showTeacherStatus = false,
 }: StudentRosterViewProps) {
-  const roster = useStudentRoster();
+  const roster = useStudentRoster({ withTeacherStatus: showTeacherStatus });
   const { resource, reload, refresh, rows } = roster;
   useRefreshOnFocus(refresh);
 
@@ -108,7 +112,7 @@ export function StudentRosterView({
 }
 
 function StudentRow({ row, onPress }: { row: RosterRow; onPress: () => void }) {
-  const { student, percent } = row;
+  const { student, percent, withoutTeacher } = row;
   const progressText =
     percent === undefined
       ? 'Buscando su progreso…'
@@ -118,13 +122,26 @@ function StudentRow({ row, onPress }: { row: RosterRow; onPress: () => void }) {
   return (
     <PressableCard
       onPress={onPress}
-      accessibilityLabel={`${student.displayName}. ${progressText}`}
+      accessibilityLabel={[
+        student.displayName,
+        withoutTeacher ? 'Sin tallerista' : null,
+        progressText,
+      ]
+        .filter(Boolean)
+        .join('. ')}
       accessibilityHint="Abre su detalle"
     >
       <View style={styles.row}>
         <InitialsAvatar initials={student.initials} />
         <View style={styles.texts}>
-          <AppText variant="bodyStrong">{student.displayName}</AppText>
+          <View style={styles.nameRow}>
+            <AppText variant="bodyStrong" style={styles.name}>
+              {student.displayName}
+            </AppText>
+            {withoutTeacher ? (
+              <Badge label="Sin tallerista" tone="accent" />
+            ) : null}
+          </View>
           {percent === null || percent === undefined ? (
             <AppText variant="support" tone="secundario">
               {progressText}
@@ -155,5 +172,14 @@ const styles = StyleSheet.create({
   texts: {
     flex: 1,
     gap: spacing.xxs,
+  },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+  },
+  name: {
+    flexShrink: 1,
   },
 });

@@ -24,6 +24,8 @@ import type {
   StudentAssignment,
   StudentProfile,
   StudentSummary,
+  StudentTeacher,
+  TeacherRemoval,
   VoiceConsentStatus,
   Vowel,
   VowelPractice,
@@ -251,6 +253,31 @@ export interface AssignmentManagementRepository {
 }
 
 /**
+ * Talleristas a cargo de cada estudiante. Solo la directora: con otra
+ * cuenta (403) o con un estudiante que no existe (404), rechaza con
+ * `StudentAccessError`. Es aparte de `StudentDirectoryRepository` para que
+ * el docente no dependa de operaciones que no puede usar.
+ */
+export interface TeacherLinkRepository {
+  /** Talleristas del estudiante: las actuales y el historial (`active: false`). */
+  listStudentTeachers(studentId: string): Promise<StudentTeacher[]>;
+  /** Todas las talleristas con la cuenta activa (para elegir una). */
+  listActiveTeachers(): Promise<StaffProfile[]>;
+  /**
+   * Pone al estudiante a cargo de la tallerista. Si ya lo tuvo antes, el
+   * vínculo vuelve desde hoy. Rechaza con `TeacherLinkError` si ya lo tiene
+   * a cargo (`alreadyInCharge`) o si no es una tallerista activa
+   * (`notActiveTeacher`).
+   */
+  assignTeacher(studentId: string, teacherId: string): Promise<StudentTeacher>;
+  /**
+   * La tallerista deja de tenerlo a cargo (pierde el acceso; el historial
+   * se conserva). Si ya no lo tenía a cargo, responde `notInCharge`.
+   */
+  removeTeacher(studentId: string, teacherId: string): Promise<TeacherRemoval>;
+}
+
+/**
  * Cifras del «Resumen» de la directora. Cada una es una consulta aparte:
  * si una falla, las demás se siguen mostrando.
  */
@@ -280,5 +307,6 @@ export interface Repositories {
   guardians: GuardianRepository;
   directory: StudentDirectoryRepository;
   assignmentManagement: AssignmentManagementRepository;
+  teacherLinks: TeacherLinkRepository;
   overview: OverviewRepository;
 }

@@ -25,3 +25,9 @@ export const directorRoutes: StaffRoutes = {
     params: { id },
   }),
 };
+
+/** Directora · elegir la tallerista a cargo de un estudiante. */
+export const assignTeacherRoute = (id: string): Href => ({
+  pathname: '/director/student/[id]/teacher',
+  params: { id },
+});

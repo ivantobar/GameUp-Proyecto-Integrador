@@ -502,3 +502,23 @@ export interface NewAssignment {
   /** AAAA-MM-DD, no antes de hoy (hora de Bogotá). Opcional. */
   suggestedDate?: string;
 }
+
+/**
+ * Una tallerista que tiene (o tuvo) a cargo a un estudiante. Solo lo ve la
+ * directora.
+ */
+export interface StudentTeacher {
+  teacherId: string;
+  /** Nombre y primer apellido («Ana Gómez»). */
+  displayName: string;
+  /** Desde cuándo lo tiene a cargo (AAAA-MM-DD). */
+  since: string;
+  /** `false`: ya no lo tiene a cargo (historial). */
+  active: boolean;
+}
+
+/**
+ * Resultado de quitar una tallerista. `notInCharge`: ya no lo tenía a cargo
+ * (por ejemplo, otra persona la quitó antes). No es un error.
+ */
+export type TeacherRemoval = 'removed' | 'notInCharge';

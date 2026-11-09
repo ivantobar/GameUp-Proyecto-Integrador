@@ -152,6 +152,42 @@ export const mockTeacherStudents: Record<string, string[]> = {
   [mockTeacher.id]: [mockStudent.id, 'est-demo-002', 'est-demo-003'],
 };
 
+/** Talleristas de la fundación (ficticias). Rosa tiene la cuenta inactiva. */
+export const mockTeachers: (StaffProfile & { active: boolean })[] = [
+  { ...mockTeacher, active: true },
+  { id: 'doc-demo-002', displayName: 'Ana Gómez', active: true },
+  { id: 'doc-demo-003', displayName: 'Carlos Pérez', active: true },
+  { id: 'doc-demo-009', displayName: 'Rosa Mejía', active: false },
+];
+
+/** Quién tiene (o tuvo) a cargo a cada estudiante. */
+export interface MockTeacherLink {
+  studentId: string;
+  teacherId: string;
+  /** AAAA-MM-DD. */
+  since: string;
+  active: boolean;
+}
+
+/**
+ * La Profe Laura tiene a sus tres estudiantes. Lucía estuvo con Carlos y
+ * hoy no tiene tallerista: sale con «Sin tallerista».
+ */
+export const mockTeacherLinks: MockTeacherLink[] = [
+  ...(mockTeacherStudents[mockTeacher.id] ?? []).map((studentId) => ({
+    studentId,
+    teacherId: mockTeacher.id,
+    since: '2026-02-03',
+    active: true,
+  })),
+  {
+    studentId: 'est-demo-004',
+    teacherId: 'doc-demo-003',
+    since: '2026-03-10',
+    active: false,
+  },
+];
+
 /**
  * Módulos de la fundación (ficticios). Solo los publicados se pueden
  * asignar; «Borrador: sílabas» está para comprobar que no se ofrece.

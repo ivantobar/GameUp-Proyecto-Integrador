@@ -12,3 +12,15 @@ export function leaveAssignedNotice(studentId: string): void {
 export function takeAssignedNotice(studentId: string): boolean {
   return pending.delete(studentId);
 }
+
+/** Aviso «Tallerista asignada» al volver de elegir una tallerista. */
+const teacherPending = new Set<string>();
+
+export function leaveTeacherNotice(studentId: string): void {
+  teacherPending.add(studentId);
+}
+
+/** `true` (una sola vez) si acaban de asignarle una tallerista. */
+export function takeTeacherNotice(studentId: string): boolean {
+  return teacherPending.delete(studentId);
+}

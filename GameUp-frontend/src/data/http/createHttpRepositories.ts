@@ -20,6 +20,7 @@ import {
   createHttpRecordingRepository,
   createHttpResultRepository,
 } from './httpSubmissionRepositories';
+import { createHttpTeacherLinkRepository } from './httpTeacherLinkRepository';
 import type { TokenStore } from './tokenStore';
 
 /** Repositorios que hablan con la API NestJS. Cumplen las mismas interfaces que los simulados. */
@@ -43,6 +44,7 @@ export function createHttpRepositories(
     guardians: createHttpGuardianRepository(api),
     directory: createHttpStudentDirectoryRepository(api),
     assignmentManagement: createHttpAssignmentManagementRepository(api),
+    teacherLinks: createHttpTeacherLinkRepository(api),
     overview: createHttpOverviewRepository(api),
   };
 }

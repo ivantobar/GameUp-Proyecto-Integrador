@@ -9,8 +9,9 @@ import {
   mockStudent,
   mockStudentAssignments,
   mockStudentSummaries,
-  mockTeacherStudents,
   mockTeacher,
+  mockTeacherLinks,
+  mockTeachers,
   mockVowelPractice,
 } from '@/data/mock/fixtures';
 import { bogotaToday } from '@/data/bogotaDate';
@@ -196,6 +197,15 @@ export function createFakeBackend() {
     JSON.stringify(mockStudentAssignments),
   ) as Record<string, StudentAssignment[]>;
   let siguienteAsignacion = 500;
+  // Quién tiene a cargo a cada estudiante (la directora lo cambia).
+  const vinculos = mockTeacherLinks.map((l) => ({ ...l }));
+  const talleristaDto = (l: (typeof vinculos)[number]) => ({
+    talleristaId: l.teacherId,
+    displayName:
+      mockTeachers.find((t) => t.id === l.teacherId)?.displayName ?? '',
+    fechaInicio: l.since,
+    activo: l.active,
+  });
 
   return createFakeFetch(({ url, method, headers, body }) => {
     const path = url.replace(FAKE_API_URL, '');
@@ -274,7 +284,9 @@ export function createFakeBackend() {
     const visibles =
       session.role === 'director'
         ? Object.keys(mockStudentSummaries)
-        : (mockTeacherStudents[mockTeacher.id] ?? []);
+        : vinculos
+            .filter((l) => l.teacherId === mockTeacher.id && l.active)
+            .map((l) => l.studentId);
     const [ruta, consulta = ''] = path.split('?');
     const params = new URLSearchParams(consulta);
 
@@ -295,6 +307,86 @@ export function createFakeBackend() {
         limit,
       });
     }
+    // ─── Talleristas de un estudiante y lista de usuarios: solo DIRECTORA ───
+    const aCargo = /^\/estudiantes\/([\w-]+)\/talleristas(?:\/([\w-]+))?$/.exec(
+      ruta ?? '',
+    );
+    if (aCargo || ruta === '/usuarios') {
+      if (session.role !== 'director') return errorResponse(403, 'Sin permiso');
+    }
+    if (method === 'GET' && ruta === '/usuarios') {
+      const rol = params.get('rol');
+      const activo = params.get('activo');
+      const page = Number(params.get('page') ?? '1');
+      const limit = Number(params.get('limit') ?? '20');
+      const todos = mockTeachers
+        .filter(() => rol === null || rol === 'TALLERISTA')
+        .filter((t) => activo === null || String(t.active) === activo);
+      return jsonResponse(200, {
+        items: todos.slice((page - 1) * limit, page * limit).map((t) => {
+          const [nombres = '', ...apellidos] = t.displayName.split(' ');
+          return {
+            id: t.id,
+            idUsuarioAuth: `auth-${t.id}`,
+            rol: 'TALLERISTA',
+            nombres,
+            apellidos: apellidos.join(' '),
+            correo: null,
+            activo: t.active,
+            idAcudienteExterno: null,
+            estudiante: null,
+            creadoEn: '2026-01-15T12:00:00.000Z',
+            ultimoAcceso: null,
+            sincronizadoEn: null,
+          };
+        }),
+        total: todos.length,
+        page,
+        limit,
+      });
+    }
+    if (aCargo) {
+      const estudianteId = aCargo[1] ?? '';
+      const talleristaId = aCargo[2];
+      if (!(estudianteId in mockStudentSummaries)) {
+        return errorResponse(404, 'El estudiante no existe');
+      }
+      const delEstudiante = vinculos.filter(
+        (l) => l.studentId === estudianteId,
+      );
+      if (method === 'GET' && !talleristaId) {
+        return jsonResponse(200, delEstudiante.map(talleristaDto));
+      }
+      if (method === 'POST' && !talleristaId) {
+        const id = (body as { talleristaId: string }).talleristaId;
+        if (!mockTeachers.some((t) => t.id === id && t.active)) {
+          return errorResponse(422, 'La cuenta no es de una tallerista activa');
+        }
+        const antes = delEstudiante.find((l) => l.teacherId === id);
+        if (antes?.active) {
+          return errorResponse(409, 'La tallerista ya lo tiene a cargo');
+        }
+        const vinculo = antes ?? {
+          studentId: estudianteId,
+          teacherId: id,
+          since: bogotaToday(),
+          active: true,
+        };
+        vinculo.since = bogotaToday();
+        vinculo.active = true;
+        if (!antes) vinculos.push(vinculo);
+        return jsonResponse(201, talleristaDto(vinculo));
+      }
+      if (method === 'DELETE' && talleristaId) {
+        const vinculo = delEstudiante.find(
+          (l) => l.teacherId === talleristaId && l.active,
+        );
+        if (!vinculo) return errorResponse(404, 'No lo tiene a cargo');
+        vinculo.active = false;
+        return jsonResponse(204);
+      }
+    }
+
     const ficha = /^\/estudiantes\/([\w-]+)(\/progreso)?$/.exec(ruta ?? '');
     if (esPersonal && method === 'GET' && ficha && ficha[1] !== 'me') {
       const id = ficha[1] ?? '';
