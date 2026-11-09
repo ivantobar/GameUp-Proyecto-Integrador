@@ -5,13 +5,14 @@ import {
   AppText,
   Card,
   HeaderBackButton,
-  ProgressBar,
   Screen,
   ScreenHeader,
   SegmentedTabs,
   StateView,
 } from '@/components/ui';
 import { Character, NarrationButton, SoundTile } from '@/components/gameup';
+import { VowelsDoneMeter } from '@/features/speak/components/VowelsDoneMeter';
+import { speakSelectionNarration } from '@/features/speak/practice';
 import { useVowelSelection } from '@/features/speak/useVowelSelection';
 import { spacing } from '@/theme';
 import { useRefreshOnFocus } from '@/data/useRefreshOnFocus';
@@ -36,6 +37,14 @@ export default function SpeakSelectionScreen() {
   // Al volver de una práctica, la ficha muestra la estrella nueva.
   useRefreshOnFocus(refresh);
   const [group, setGroup] = useState<SoundGroup>('vowels');
+  // Con los datos, la narración dice cuándo se termina una vocal y cuántas van.
+  const narration =
+    resource.status === 'ready'
+      ? speakSelectionNarration(
+          resource.data.practicedCount,
+          resource.data.total,
+        )
+      : INSTRUCTION;
 
   return (
     <Screen
@@ -44,18 +53,13 @@ export default function SpeakSelectionScreen() {
         <ScreenHeader
           left={<HeaderBackButton onPress={() => router.back()} />}
           title="Habla conmigo"
-          right={<NarrationButton text={INSTRUCTION} />}
+          right={<NarrationButton text={narration} />}
         />
       }
       footer={
         resource.status === 'ready' ? (
           <Card>
-            <ProgressBar
-              tone="practice"
-              value={resource.data.practicedCount}
-              max={resource.data.total}
-              label={`Llevas ${resource.data.practicedCount} de ${resource.data.total} vocales`}
-            />
+            <VowelsDoneMeter vowels={resource.data.vowels} />
           </Card>
         ) : undefined
       }

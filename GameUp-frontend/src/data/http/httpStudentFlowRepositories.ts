@@ -11,6 +11,7 @@ import type {
   ActividadPendienteDto,
   ProgresoOficialDto,
 } from './dto/asignaciones';
+import type { VoiceConsentStatus } from '../types';
 import type { ConsentimientoVozDto } from './dto/estudiantes';
 import type { PracticaVocalDto, PuntoRetornoDto } from './dto/intentos';
 import {
@@ -120,14 +121,29 @@ export function createHttpProgressRepository(
   };
 }
 
+/**
+ * Falla cerrado: sin `concedido: true`, no se graba. Solo se dice que el
+ * acudiente no autorizó cuando el motivo es `NO_ACEPTADO`; cualquier otra
+ * respuesta (`NO_VERIFICABLE` o algo raro) es «no se pudo verificar».
+ */
+export function toVoiceConsentStatus(
+  dto: Partial<ConsentimientoVozDto> | null | undefined,
+): VoiceConsentStatus {
+  if (dto?.concedido === true) return 'granted';
+  if (dto?.concedido === false && dto.motivo === 'NO_ACEPTADO') {
+    return 'notGranted';
+  }
+  return 'notVerified';
+}
+
 export function createHttpConsentRepository(api: ApiClient): ConsentRepository {
+  const status = async () =>
+    toVoiceConsentStatus(
+      await api.get<ConsentimientoVozDto>('/estudiantes/me/consentimiento-voz'),
+    );
+
   return {
-    // Falla cerrado: sin una respuesta clara de «concedido», no se graba.
-    hasVoiceRecordingConsent: async () => {
-      const dto = await api.get<ConsentimientoVozDto>(
-        '/estudiantes/me/consentimiento-voz',
-      );
-      return dto.concedido === true;
-    },
+    hasVoiceRecordingConsent: async () => (await status()) === 'granted',
+    getVoiceConsentStatus: status,
   };
 }

@@ -20,6 +20,7 @@ import {
   parseActivityId,
   PRACTICE_TEXT,
 } from '@/features/games/delivery';
+import { notRecordedText } from '@/features/speak/completePractice';
 import { exitPractice } from '@/features/speak/components/PracticeHeader';
 import { usePracticeSession } from '@/features/speak/PracticeSession';
 import { useAttemptPlayback } from '@/features/speak/useAttemptPlayback';
@@ -40,7 +41,10 @@ export default function DoneStep() {
   const letter = vowel.toUpperCase();
   const { outcome } = usePracticeSession();
   const audioUri = outcome?.vowel === vowel ? outcome.attempt.audioUri : null;
-  const voiceConsent = outcome?.voiceConsent ?? false;
+  // Sin resultado (por ejemplo, al abrir «Listo» directo) no se dice nada.
+  const noVoiceText = outcome
+    ? notRecordedText(outcome.voiceConsentStatus)
+    : null;
   const { playModel, playAttempt, attemptPlaying } = useAttemptPlayback(
     vowel,
     audioUri,
@@ -153,9 +157,9 @@ export default function DoneStep() {
             {NOT_SENT_ADULT_TEXT}
           </AppText>
         ) : null}
-        {!voiceConsent && outcome ? (
+        {noVoiceText ? (
           <AppText variant="support" tone="secundario">
-            Tu voz no se grabó porque no hay autorización de tu acudiente.
+            {noVoiceText}
           </AppText>
         ) : null}
       </Card>

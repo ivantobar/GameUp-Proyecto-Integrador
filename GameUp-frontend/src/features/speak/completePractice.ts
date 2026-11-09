@@ -3,6 +3,7 @@ import type {
   NewSpeechAttempt,
   SpeechAttempt,
   StarCount,
+  VoiceConsentStatus,
   Vowel,
 } from '@/data/types';
 import { deliveryOf, type Delivery } from '@/features/games/delivery';
@@ -13,10 +14,27 @@ export interface PracticeOutcome {
   /** Estrellas de práctica de la vocal después de este intento. */
   stars: StarCount;
   attempt: SpeechAttempt;
-  /** Si hubo autorización para grabar; decide qué muestra «Listo». */
+  /** Si hubo autorización para grabar (solo con `granted`). */
   voiceConsent: boolean;
+  /** Por qué se grabó o no; decide qué dice «Listo» cuando no se grabó. */
+  voiceConsentStatus: VoiceConsentStatus;
   /** Si el intento llegó al docente (decide el mensaje de «Listo»). */
   delivery: Delivery;
+}
+
+/**
+ * Lo que «Listo» le dice al niño cuando su voz no se grabó, o `null` si se
+ * grabó. Solo se menciona al acudiente si de verdad no autorizó.
+ */
+export function notRecordedText(status: VoiceConsentStatus): string | null {
+  switch (status) {
+    case 'granted':
+      return null;
+    case 'notGranted':
+      return 'Tu voz no se grabó porque no hay autorización de tu acudiente.';
+    case 'notVerified':
+      return 'Hoy no pudimos guardar tu voz. ¡Igual lo hiciste muy bien!';
+  }
 }
 
 type PracticeRepositories = Pick<
@@ -38,6 +56,25 @@ function notSentAttempt(input: NewSpeechAttempt): SpeechAttempt {
 }
 
 /**
+ * Una sola consulta al consentimiento. Si falla, falla cerrado: no se
+ * graba, pero tampoco se culpa al acudiente (`notVerified`).
+ */
+async function voiceConsentStatusOf(
+  repositories: PracticeRepositories,
+  studentId: string,
+): Promise<VoiceConsentStatus> {
+  try {
+    return await repositories.consent.getVoiceConsentStatus(studentId);
+  } catch (error) {
+    console.warn(
+      '[GameUP] No se pudo consultar el consentimiento de voz',
+      error instanceof Error ? error.name : 'Error',
+    );
+    return 'notVerified';
+  }
+}
+
+/**
  * Cierra un ciclo Mira → Dilo → Listo:
  * 1. vuelve a comprobar el consentimiento (si no hay, no se envía la voz);
  * 2. envía el intento, que queda PENDIENTE de validación del docente (solo
@@ -53,9 +90,11 @@ export async function completePractice(
   activityId: string | null = null,
 ): Promise<PracticeOutcome> {
   const student = await repositories.students.getCurrentStudent();
-  const voiceConsent = await repositories.consent.hasVoiceRecordingConsent(
+  const voiceConsentStatus = await voiceConsentStatusOf(
+    repositories,
     student.id,
   );
+  const voiceConsent = voiceConsentStatus === 'granted';
   const input: NewSpeechAttempt = {
     studentId: student.id,
     vowel,
@@ -92,6 +131,7 @@ export async function completePractice(
     stars,
     attempt,
     voiceConsent,
+    voiceConsentStatus,
     delivery,
   };
 }

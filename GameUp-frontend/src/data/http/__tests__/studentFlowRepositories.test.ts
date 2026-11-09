@@ -118,6 +118,26 @@ describe('lecturas del estudiante (rutas /me con su token)', () => {
     ).resolves.toBe(false);
   });
 
+  it('motivo del consentimiento: solo NO_ACEPTADO culpa al acudiente', async () => {
+    const status = (body: unknown) =>
+      setup(() => jsonResponse(200, body)).repos.consent.getVoiceConsentStatus(
+        '5',
+      );
+
+    await expect(status({ concedido: true, motivo: 'ACEPTADO' })).resolves.toBe(
+      'granted',
+    );
+    await expect(
+      status({ concedido: false, motivo: 'NO_ACEPTADO' }),
+    ).resolves.toBe('notGranted');
+    await expect(
+      status({ concedido: false, motivo: 'NO_VERIFICABLE' }),
+    ).resolves.toBe('notVerified');
+    // Respuesta poco clara: no se graba y no se culpa al acudiente.
+    await expect(status({ concedido: 'true' })).resolves.toBe('notVerified');
+    await expect(status({ concedido: false })).resolves.toBe('notVerified');
+  });
+
   it('la actividad se pide por su id', async () => {
     const { repos, requests } = setup(() =>
       jsonResponse(200, {

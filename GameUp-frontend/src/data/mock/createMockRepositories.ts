@@ -1,5 +1,6 @@
 import { InvalidCredentialsError } from '../authErrors';
 import { bogotaToday } from '../bogotaDate';
+import { NoLinkedStudentsError } from '../guardianErrors';
 import type { Repositories } from '../repositories';
 import { AssignmentError, StudentAccessError } from '../studentErrors';
 import {
@@ -21,6 +22,7 @@ import {
   type StudentAssignment,
   type StudentSummary,
   type TeacherNote,
+  type VoiceConsentStatus,
   type VowelPractice,
 } from '../types';
 import { devSettings } from './devSettings';
@@ -364,6 +366,8 @@ export function createMockRepositories({
     },
     consent: {
       hasVoiceRecordingConsent: () => respond(voiceConsent()),
+      getVoiceConsentStatus: () =>
+        respond<VoiceConsentStatus>(voiceConsent() ? 'granted' : 'notGranted'),
     },
     recordings: {
       submitSpeechAttempt: ({ activityId, ...input }) => {
@@ -690,8 +694,7 @@ export function createMockRepositories({
       },
       getWeeklyPractice: (guardianId, requested) => {
         const studentId = mockGuardianStudents[guardianId];
-        if (!studentId)
-          return fail('Este acudiente no tiene estudiantes asociados');
+        if (!studentId) return rejectWith(new NoLinkedStudentsError());
         if (requested && requested !== studentId) {
           return fail('Solo puedes ver a tu estudiante asociado');
         }

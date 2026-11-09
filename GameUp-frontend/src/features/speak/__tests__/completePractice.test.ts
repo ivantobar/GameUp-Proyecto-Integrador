@@ -1,6 +1,6 @@
 import { createMockRepositories } from '@/data/mock/createMockRepositories';
 import { devSettings } from '@/data/mock/devSettings';
-import { completePractice } from '../completePractice';
+import { completePractice, notRecordedText } from '../completePractice';
 
 /** Los repositorios simulados responden con setTimeout: se avanza el reloj. */
 async function run<T>(promise: Promise<T>): Promise<T> {
@@ -35,7 +35,60 @@ describe('completePractice (ciclo Mira → Dilo → Listo)', () => {
     );
 
     expect(outcome.voiceConsent).toBe(false);
+    expect(outcome.voiceConsentStatus).toBe('notGranted');
     expect(outcome.attempt.audioUri).toBeNull();
+  });
+
+  it('consulta el consentimiento una sola vez', async () => {
+    const repositories = createMockRepositories({ delayMs: 0 });
+    const status = jest.spyOn(repositories.consent, 'getVoiceConsentStatus');
+    const has = jest.spyOn(repositories.consent, 'hasVoiceRecordingConsent');
+
+    await run(completePractice(repositories, 'o', 'file:///cache/voz.m4a'));
+
+    expect(status).toHaveBeenCalledTimes(1);
+    expect(has).not.toHaveBeenCalled();
+  });
+
+  it('si no se pudo verificar, falla cerrado: no se guarda la voz', async () => {
+    const repositories = createMockRepositories({ delayMs: 0 });
+    repositories.consent.getVoiceConsentStatus = () =>
+      Promise.resolve('notVerified');
+
+    const outcome = await run(
+      completePractice(repositories, 'o', 'file:///cache/voz.m4a'),
+    );
+
+    expect(outcome.voiceConsent).toBe(false);
+    expect(outcome.voiceConsentStatus).toBe('notVerified');
+    expect(outcome.attempt.audioUri).toBeNull();
+  });
+
+  it('si la consulta falla, no se graba ni se culpa al acudiente', async () => {
+    const repositories = createMockRepositories({ delayMs: 0 });
+    repositories.consent.getVoiceConsentStatus = () =>
+      Promise.reject(new Error('sin red'));
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const outcome = await run(
+      completePractice(repositories, 'o', 'file:///cache/voz.m4a'),
+    );
+
+    expect(outcome.voiceConsentStatus).toBe('notVerified');
+    expect(outcome.attempt.audioUri).toBeNull();
+    // Se celebra igual: el ciclo termina.
+    expect(outcome.studentName).toBe('Martín');
+    warn.mockRestore();
+  });
+
+  it('textos de «Listo» sin voz', () => {
+    expect(notRecordedText('granted')).toBeNull();
+    expect(notRecordedText('notGranted')).toBe(
+      'Tu voz no se grabó porque no hay autorización de tu acudiente.',
+    );
+    expect(notRecordedText('notVerified')).toBe(
+      'Hoy no pudimos guardar tu voz. ¡Igual lo hiciste muy bien!',
+    );
   });
 
   it('suma 1 estrella de práctica por ciclo, hasta 3', async () => {

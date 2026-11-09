@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import { AccessibilityInfo } from 'react-native';
 import { useRepositories } from '@/data/RepositoryProvider';
 import { useResource } from '@/data/useResource';
 import type {
@@ -21,12 +22,22 @@ export interface DetailMessage {
 }
 
 /**
+ * Por qué no se pudo quitar una asignación. Se muestra en su propia
+ * tarjeta, donde estaba la confirmación, y no arriba, lejos del botón.
+ */
+export interface RowMessage {
+  assignmentId: string;
+  text: string;
+}
+
+/**
  * Detalle de un estudiante para el docente o la directora: progreso
  * oficial, asignaciones y la acción de quitar una (con confirmación).
  */
 export function useStudentDetail(studentId: string) {
   const { directory, assignmentManagement } = useRepositories();
   const [message, setMessage] = useState<DetailMessage | null>(null);
+  const [rowMessage, setRowMessage] = useState<RowMessage | null>(null);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
 
@@ -44,6 +55,7 @@ export function useStudentDetail(studentId: string) {
   /** Primer paso: pedir confirmación (no se puede deshacer). */
   const askRemove = useCallback((assignmentId: string) => {
     setMessage(null);
+    setRowMessage(null);
     setConfirmingId(assignmentId);
   }, []);
 
@@ -61,7 +73,10 @@ export function useStudentDetail(studentId: string) {
         });
         refresh();
       } catch (error) {
-        setMessage({ tone: 'error', text: removeErrorText(error) });
+        const text = removeErrorText(error);
+        setRowMessage({ assignmentId: assignment.id, text });
+        // La región en vivo solo funciona en Android: se anuncia también.
+        AccessibilityInfo.announceForAccessibility(text);
       } finally {
         setBusyId(null);
         setConfirmingId(null);
@@ -79,6 +94,7 @@ export function useStudentDetail(studentId: string) {
     reload,
     refresh,
     message,
+    rowMessage,
     confirmingId,
     busyId,
     askRemove,

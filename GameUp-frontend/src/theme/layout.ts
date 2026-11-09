@@ -41,6 +41,8 @@ export const sizes = {
   tabBarItem: 64,
   avatar: 48,
   stepNumber: 32,
+  /** Círculo de cada vocal en «Vocales terminadas» (Habla conmigo). */
+  vowelDone: 40,
   /** Personaje: Inicio (xs), selección (sm), tarjetas (md), paso Mira (lg). */
   character: { xs: 56, sm: 72, md: 120, lg: 220 },
   /** Boca suelta: Busca la boca y catálogo. */

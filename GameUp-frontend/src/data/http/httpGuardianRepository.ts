@@ -1,4 +1,5 @@
 import type { ApiClient } from '@/services/api';
+import { NoLinkedStudentsError } from '../guardianErrors';
 import type { GuardianRepository } from '../repositories';
 import type {
   ActividadEstudianteDto,
@@ -31,7 +32,8 @@ export function createHttpGuardianRepository(
 
     async getWeeklyPractice(_guardianId, studentId) {
       const id = studentId ?? (await listStudents())[0]?.id;
-      if (!id) throw new Error('Este acudiente no tiene estudiantes asociados');
+      // Sin niños vinculados no es un fallo de red: lo dice la pantalla.
+      if (!id) throw new NoLinkedStudentsError();
 
       const [semana, observaciones, actividades] = await Promise.all([
         api.get<PracticaSemanalDto>(`${student(id)}/practica-semanal`),

@@ -175,6 +175,11 @@ describe.each(implementations)('contrato de la versión %s', (_name, create) => 
       expect(typeof consent).toBe('boolean');
     });
 
+    it('el motivo del consentimiento es uno de tres', async () => {
+      const status = await settle(repos.consent.getVoiceConsentStatus('me'));
+      expect(['granted', 'notGranted', 'notVerified']).toContain(status);
+    });
+
     it('un juego abierto desde una actividad llega al docente', async () => {
       const result = await settle(
         repos.results.submitFindMouthResult({

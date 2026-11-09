@@ -1,4 +1,11 @@
-import { act, render, screen, userEvent } from '@testing-library/react-native';
+import {
+  act,
+  render,
+  screen,
+  userEvent,
+  within,
+} from '@testing-library/react-native';
+import { AccessibilityInfo } from 'react-native';
 import { router } from 'expo-router';
 import { createMockRepositories } from '@/data/mock/createMockRepositories';
 import { mockStudent } from '@/data/mock/fixtures';
@@ -139,6 +146,43 @@ describe('detalle del estudiante', () => {
     expect(
       screen.getByText('Ya empezó a practicarla; no se puede quitar.'),
     ).toBeOnTheScreen();
+  });
+
+  it('P8: el porqué sale junto a esa asignación y se anuncia', async () => {
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    const repos = createMockRepositories({ delayMs: 0 });
+    jest
+      .spyOn(repos.assignmentManagement, 'remove')
+      .mockRejectedValue(new AssignmentError('hasAttempts'));
+    const announce = jest
+      .spyOn(AccessibilityInfo, 'announceForAccessibility')
+      .mockImplementation(() => {});
+    await renderDetail(repos);
+
+    // La segunda asignación con «Quitar» es «Números».
+    await user.press(screen.getAllByRole('button', { name: 'Quitar' })[1]!);
+    await user.press(screen.getByRole('button', { name: 'Sí, quitar' }));
+    await settle();
+
+    const text = 'Ya empezó a practicarla; no se puede quitar.';
+    // Se muestra una sola vez (no también arriba).
+    expect(screen.getAllByText(text)).toHaveLength(1);
+    expect(announce).toHaveBeenCalledWith(text);
+
+    // Su tarjeta más cercana es la de «Números», no la de otra asignación.
+    let row: ReturnType<typeof screen.getByText> | null =
+      screen.getByText(text);
+    while (row && within(row).queryAllByText('Números').length === 0) {
+      row = row.parent;
+    }
+    if (!row) throw new Error('El mensaje no está en ninguna tarjeta');
+    expect(within(row).queryAllByText('Colores')).toHaveLength(0);
+    expect(within(row).queryAllByText('Cuentos')).toHaveLength(0);
+
+    // Volver a tocar «Quitar» limpia el mensaje.
+    await user.press(screen.getAllByRole('button', { name: 'Quitar' })[1]!);
+    expect(screen.queryByText(text)).toBeNull();
+    announce.mockRestore();
   });
 
   it('un estudiante ajeno (403/404) no se presenta como problema de conexión', async () => {

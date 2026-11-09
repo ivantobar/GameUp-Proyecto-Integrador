@@ -55,10 +55,12 @@ describe('ReviewCard', () => {
   it('abierta: modelo, intento y la decisión del docente', async () => {
     const { props } = await renderCard();
     expect(
-      await screen.findByRole('button', { name: 'Escuchar: Modelo' }),
+      await screen.findByRole('button', { name: 'Escuchar: Así debe sonar' }),
     ).toBeOnTheScreen();
     expect(
-      screen.getByRole('button', { name: 'Escuchar: Martín · intento 2 de 2' }),
+      screen.getByRole('button', {
+        name: 'Escuchar: Voz de Martín · intento 2 de 2',
+      }),
     ).toBeOnTheScreen();
     const user = userEvent.setup();
     await user.press(screen.getByRole('button', { name: 'Lo logró' }));

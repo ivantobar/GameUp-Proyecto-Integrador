@@ -149,6 +149,11 @@ export function StudentDetailView({
                   assignment={assignment}
                   confirming={detail.confirmingId === assignment.id}
                   busy={detail.busyId === assignment.id}
+                  problem={
+                    detail.rowMessage?.assignmentId === assignment.id
+                      ? detail.rowMessage.text
+                      : null
+                  }
                   onAskRemove={() => detail.askRemove(assignment.id)}
                   onCancel={detail.cancelRemove}
                   onConfirm={() => {
@@ -179,6 +184,8 @@ interface AssignmentRowProps {
   assignment: StudentAssignment;
   confirming: boolean;
   busy: boolean;
+  /** Por qué no se pudo quitar (se muestra en esta tarjeta). */
+  problem: string | null;
   onAskRemove: () => void;
   onCancel: () => void;
   onConfirm: () => void;
@@ -189,6 +196,7 @@ function AssignmentRow({
   assignment,
   confirming,
   busy,
+  problem,
   onAskRemove,
   onCancel,
   onConfirm,
@@ -208,6 +216,12 @@ function AssignmentRow({
         <AppText variant="support" tone="secundario">
           {assignmentSummary(assignment)}
         </AppText>
+
+        {problem ? (
+          <View accessibilityLiveRegion="polite">
+            <Notice icon="info" tone="warm" message={problem} />
+          </View>
+        ) : null}
 
         {confirming ? (
           <View style={styles.confirm} accessibilityLiveRegion="polite">

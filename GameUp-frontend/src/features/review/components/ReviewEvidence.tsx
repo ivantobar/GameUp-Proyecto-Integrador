@@ -20,9 +20,9 @@ interface SpeechEvidenceProps {
 }
 
 /**
- * «Habla conmigo»: el modelo y la grabación del niño, uno debajo del otro,
- * para compararlos. La app no califica la pronunciación (regla 8): decide
- * el docente. Si el audio está en el servidor, se pide al tocar «Escuchar».
+ * «Habla conmigo»: «Así debe sonar» (el modelo) y la voz del niño, uno
+ * debajo del otro, para compararlos. La app no califica la pronunciación
+ * (regla 8): decide el docente. Si el audio está en el servidor, se pide al tocar «Escuchar».
  */
 function SpeechEvidence({
   studentName,
@@ -34,7 +34,9 @@ function SpeechEvidence({
   const remote = useRemoteRecording(
     speech.remoteAudio ? loadRecording : undefined,
   );
-  const attemptLabel = `${firstName(studentName)} · intento ${speech.attemptNumber} de ${speech.attemptsTotal}`;
+  const attemptText = `${firstName(studentName)} · intento ${speech.attemptNumber} de ${speech.attemptsTotal}`;
+  // «Voz de Martín · intento 2 de 2», junto a «Así debe sonar».
+  const attemptLabel = `Voz de ${attemptText}`;
 
   useEffect(() => {
     if (remote.listened) onListened?.();
@@ -42,7 +44,11 @@ function SpeechEvidence({
 
   return (
     <View style={styles.list}>
-      <AudioClipRow kind="model" label="Modelo" onPlay={local.playModel} />
+      <AudioClipRow
+        kind="model"
+        label="Así debe sonar"
+        onPlay={local.playModel}
+      />
       {speech.audioUri ? (
         <AudioClipRow
           kind="attempt"
@@ -72,7 +78,7 @@ function SpeechEvidence({
         <Notice
           tone="warm"
           icon={speech.voiceConsent ? 'info' : 'mic'}
-          title={`${attemptLabel} · sin grabación`}
+          title={`${attemptText} · sin grabación`}
           message={noAudioText(speech)}
         />
       )}

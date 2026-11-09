@@ -1,6 +1,7 @@
 import { act, render, screen, userEvent } from '@testing-library/react-native';
 import { router } from 'expo-router';
 import GuardianPracticeScreen from '@/app/guardian/index';
+import { NoLinkedStudentsError } from '@/data/guardianErrors';
 import { createMockRepositories } from '@/data/mock/createMockRepositories';
 import { RepositoryProvider } from '@/data/RepositoryProvider';
 import type { Repositories } from '@/data/repositories';
@@ -110,6 +111,32 @@ describe('«Practicar en casa» con la API', () => {
     expect(
       screen.getByText('Luna · esta semana: sin sonido asignado'),
     ).toBeOnTheScreen();
+  });
+
+  it('sin niños vinculados: estado vacío amable y «Cerrar sesión» visible', async () => {
+    const repositories = createMockRepositories({ delayMs: 0 });
+    repositories.guardians.listStudents = () => Promise.resolve([]);
+    repositories.guardians.getWeeklyPractice = () =>
+      Promise.reject(new NoLinkedStudentsError());
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+
+    await renderScreen(repositories);
+
+    expect(
+      screen.getByText('Aún no tienes niños vinculados'),
+    ).toBeOnTheScreen();
+    expect(
+      screen.getByText(
+        'Pide a la Fundación que te vincule en ASISCO UP y vuelve a entrar.',
+      ),
+    ).toBeOnTheScreen();
+    // No parece un fallo de red.
+    expect(screen.queryByText('No pudimos cargar la práctica')).toBeNull();
+    expect(screen.queryByText('Revisa la conexión.')).toBeNull();
+    expect(
+      screen.getByRole('button', { name: 'Cerrar sesión' }),
+    ).toBeOnTheScreen();
+    warn.mockRestore();
   });
 
   it('«Cerrar sesión» olvida la sesión y vuelve a «Iniciar sesión»', async () => {

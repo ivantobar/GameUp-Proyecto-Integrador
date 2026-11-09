@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { router } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 import {
@@ -10,6 +11,8 @@ import {
   StateView,
 } from '@/components/ui';
 import { NarrationButton } from '@/components/gameup';
+import { SignOutButton } from '@/features/auth/components/SignOutButton';
+import { SignOutConfirm } from '@/features/auth/components/SignOutConfirm';
 import { ModuleProgressCard } from '@/features/progress/components/ModuleProgressCard';
 import { useProgressOverview } from '@/features/progress/useProgressOverview';
 import { useRefreshOnFocus } from '@/data/useRefreshOnFocus';
@@ -23,6 +26,8 @@ export default function ProgressScreen() {
   const { resource, reload, refresh } = useProgressOverview();
   // Al volver, se ve lo que la profe validó mientras tanto.
   useRefreshOnFocus(refresh);
+  // «Cerrar sesión» primero pregunta: el niño no sale por un toque.
+  const [askingSignOut, setAskingSignOut] = useState(false);
 
   const narration =
     resource.status === 'ready'
@@ -42,10 +47,23 @@ export default function ProgressScreen() {
           left={
             <HeaderBackButton onPress={() => router.navigate('/student')} />
           }
+          // Sin título: el centro lleva «Cerrar sesión» junto a la narración.
+          center={
+            <View style={styles.headerEnd}>
+              <SignOutButton
+                accessibilityHint="Pide confirmación antes de salir."
+                onPress={() => setAskingSignOut(true)}
+              />
+            </View>
+          }
           right={<NarrationButton text={narration} />}
         />
       }
     >
+      {askingSignOut ? (
+        <SignOutConfirm onCancel={() => setAskingSignOut(false)} />
+      ) : null}
+
       <View style={styles.heading}>
         <Icon name="star" size="lg" color={colors.marca.naranja} />
         <AppText variant="title" accessibilityRole="header">
@@ -95,6 +113,10 @@ export default function ProgressScreen() {
 }
 
 const styles = StyleSheet.create({
+  headerEnd: {
+    alignSelf: 'stretch',
+    alignItems: 'flex-end',
+  },
   heading: {
     flexDirection: 'row',
     alignItems: 'center',

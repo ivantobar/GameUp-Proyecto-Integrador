@@ -12,6 +12,7 @@ import {
   ScreenHeader,
   StateView,
 } from '@/components/ui';
+import { NoLinkedStudentsError } from '@/data/guardianErrors';
 import { firstName } from '@/data/studentName';
 import { useRefreshOnFocus } from '@/data/useRefreshOnFocus';
 import type { PracticeDay } from '@/data/types';
@@ -91,12 +92,21 @@ export default function GuardianPracticeScreen() {
         <StateView kind="loading" title="Preparando la práctica…" />
       ) : null}
       {resource.status === 'error' ? (
-        <StateView
-          kind="error"
-          title="No pudimos cargar la práctica"
-          message="Revisa la conexión."
-          action={{ label: 'Intentar de nuevo', onPress: reload }}
-        />
+        resource.error instanceof NoLinkedStudentsError ? (
+          // No es un fallo de red: «Cerrar sesión» sigue en el encabezado.
+          <StateView
+            kind="empty"
+            title="Aún no tienes niños vinculados"
+            message="Pide a la Fundación que te vincule en ASISCO UP y vuelve a entrar."
+          />
+        ) : (
+          <StateView
+            kind="error"
+            title="No pudimos cargar la práctica"
+            message="Revisa la conexión."
+            action={{ label: 'Intentar de nuevo', onPress: reload }}
+          />
+        )
       ) : null}
 
       {week ? (

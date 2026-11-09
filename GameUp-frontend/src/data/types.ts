@@ -94,6 +94,15 @@ export interface OfficialProgress {
 }
 
 /**
+ * Autorización para grabar la voz, con su motivo:
+ * - `granted`: el acudiente autorizó (solo entonces se graba);
+ * - `notGranted`: el acudiente NO autorizó (`NO_ACEPTADO`);
+ * - `notVerified`: no se pudo consultar o la respuesta no fue clara. Falla
+ *   cerrado (no se graba), pero no se culpa al acudiente.
+ */
+export type VoiceConsentStatus = 'granted' | 'notGranted' | 'notVerified';
+
+/**
  * Intento de «Habla conmigo». La app NO califica la pronunciación: el
  * intento queda pendiente hasta que el docente lo escuche y lo valide.
  */

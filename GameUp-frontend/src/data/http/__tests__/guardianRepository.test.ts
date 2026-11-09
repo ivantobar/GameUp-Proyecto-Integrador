@@ -4,6 +4,7 @@ import {
   jsonResponse,
   type FakeHandler,
 } from '@/test-utils/fakeFetch';
+import { NoLinkedStudentsError } from '../../guardianErrors';
 import type { ActividadEstudianteDto } from '../dto/acudiente';
 import { createHttpGuardianRepository } from '../httpGuardianRepository';
 import {
@@ -177,6 +178,20 @@ const handler: FakeHandler = ({ url }) => {
 };
 
 describe('GuardianRepository (HTTP)', () => {
+  it('sin niños vinculados lanza un error propio (no de conexión)', async () => {
+    const { guardians, requests } = setup(({ url }) =>
+      url.includes('/estudiantes?')
+        ? jsonResponse(200, { items: [], total: 0, page: 1, limit: 50 })
+        : jsonResponse(404, { message: 'no' }),
+    );
+
+    await expect(guardians.getWeeklyPractice('4')).rejects.toBeInstanceOf(
+      NoLinkedStudentsError,
+    );
+    // No pide la práctica de nadie.
+    expect(requests).toHaveLength(1);
+  });
+
   it('sus estudiantes: GET /estudiantes (el backend devuelve solo los suyos)', async () => {
     const { guardians, requests } = setup(handler);
 

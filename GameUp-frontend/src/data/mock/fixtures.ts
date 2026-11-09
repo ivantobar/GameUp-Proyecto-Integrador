@@ -29,7 +29,7 @@ export const mockStudent: StudentProfile = {
   displayName: 'Martín',
 };
 
-/** A, E e I practicadas; O en curso; U sin practicar («Llevas 3 de 5»). */
+/** A, E e I practicadas; O en curso; U sin practicar («Vocales terminadas: 3 de 5»). */
 export const mockVowelPractice: VowelPractice[] = [
   { vowel: 'a', stars: 3 },
   { vowel: 'e', stars: 3 },

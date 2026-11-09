@@ -24,6 +24,7 @@ import type {
   StudentAssignment,
   StudentProfile,
   StudentSummary,
+  VoiceConsentStatus,
   Vowel,
   VowelPractice,
   WeeklyPractice,
@@ -82,6 +83,11 @@ export interface ConsentRepository {
    * Sin autorización, la app no graba.
    */
   hasVoiceRecordingConsent(studentId: string): Promise<boolean>;
+  /**
+   * Lo mismo, con el motivo: decide si se graba y qué dice «Listo» cuando
+   * no se grabó. Solo `granted` deja grabar.
+   */
+  getVoiceConsentStatus(studentId: string): Promise<VoiceConsentStatus>;
 }
 
 export interface RecordingRepository {

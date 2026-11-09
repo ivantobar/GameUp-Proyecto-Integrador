@@ -56,7 +56,7 @@ describe('revisión con la API', () => {
 
     await user.press(
       screen.getByRole('button', {
-        name: 'Escuchar: Estrella · intento 1 de 1',
+        name: 'Escuchar: Voz de Estrella · intento 1 de 1',
       }),
     );
     await act(async () => {
