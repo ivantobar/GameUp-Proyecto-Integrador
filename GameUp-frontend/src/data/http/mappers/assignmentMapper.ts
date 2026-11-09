@@ -20,5 +20,20 @@ export function toAssignment(dto: ActividadPendienteDto): Assignment {
   if (typeof dto.vocal === 'string' && isVowel(dto.vocal)) {
     assignment.vowel = dto.vocal;
   }
+  // Datos para agrupar por módulo: si faltan, la tarea se muestra igual.
+  if (typeof dto.titulo === 'string' && dto.titulo.trim() !== '') {
+    assignment.title = dto.titulo;
+  }
+  const modulo: unknown = dto.modulo;
+  if (typeof modulo === 'object' && modulo !== null) {
+    const { id, nombre } = modulo as { id?: unknown; nombre?: unknown };
+    if (typeof id === 'string' && id !== '') assignment.moduleId = id;
+    if (typeof nombre === 'string' && nombre.trim() !== '') {
+      assignment.moduleTitle = nombre;
+    }
+  }
+  if (typeof dto.orden === 'number' && Number.isFinite(dto.orden)) {
+    assignment.order = dto.orden;
+  }
   return assignment;
 }

@@ -1,10 +1,5 @@
 import type { Assignment } from '@/data/types';
-import {
-  assignmentHref,
-  findGame,
-  gameBadge,
-  nextAssignment,
-} from '../catalog';
+import { assignmentHref, nextAssignment } from '../catalog';
 import { parseActivityId, parseDelivery } from '../delivery';
 
 const task = (overrides: Partial<Assignment>): Assignment => ({
@@ -33,14 +28,6 @@ describe('próxima tarea para abrir', () => {
     const tasks = [task({ id: 'b' }), task({ id: 'm', gameId: 'memory' })];
     expect(nextAssignment(tasks, 'memory')?.id).toBe('m');
     expect(nextAssignment(tasks, 'speak')).toBeNull();
-  });
-
-  it('una tarea para repetir también lleva la insignia «Tarea»', () => {
-    expect(
-      gameBadge(findGame('match'), [
-        task({ gameId: 'match', status: 'rejected', isNew: false }),
-      ]),
-    ).toBe('Tarea');
   });
 });
 

@@ -58,6 +58,14 @@ export interface Assignment {
   status: ActivityStatus;
   /** El estudiante todavía no la ha abierto. */
   isNew: boolean;
+  /** Nombre de la actividad («¿Cuál empieza con A?»), si se conoce. */
+  title?: string;
+  /** Módulo (tema) al que pertenece: agrupa las tareas en «Juegos». */
+  moduleId?: ModuleId;
+  /** Nombre del módulo («La A»). */
+  moduleTitle?: string;
+  /** Orden de la actividad dentro de su módulo. */
+  order?: number;
 }
 
 /**

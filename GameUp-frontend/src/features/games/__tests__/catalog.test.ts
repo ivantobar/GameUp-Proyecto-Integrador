@@ -1,4 +1,3 @@
-import type { Assignment } from '@/data/types';
 import {
   findGame,
   gameBadge,
@@ -6,13 +5,6 @@ import {
   gameHref,
   gameSections,
 } from '../catalog';
-
-const newTask: Assignment = {
-  id: 't1',
-  gameId: 'findMouth',
-  status: 'assigned',
-  isNew: true,
-};
 
 describe('catálogo de juegos', () => {
   it('tiene los 6 juegos del MVP, cada uno en una sección existente', () => {
@@ -39,17 +31,11 @@ describe('catálogo de juegos', () => {
     });
   });
 
-  it('«Tarea» tiene prioridad sobre «Nuevo»', () => {
-    expect(gameBadge(findGame('findMouth'), [newTask])).toBe('Tarea');
+  it('las tareas ya no marcan los juegos: un juego nuevo dice «Nuevo»', () => {
+    expect(gameBadge(findGame('findMouth'))).toBe('Nuevo');
   });
 
-  it('una tarea ya abierta no muestra «Tarea»', () => {
-    expect(
-      gameBadge(findGame('findMouth'), [{ ...newTask, isNew: false }]),
-    ).toBe('Nuevo');
-  });
-
-  it('un juego que no es nuevo y sin tarea no lleva insignia', () => {
-    expect(gameBadge(findGame('match'), [])).toBeUndefined();
+  it('un juego que no es nuevo no lleva insignia', () => {
+    expect(gameBadge(findGame('match'))).toBeUndefined();
   });
 });

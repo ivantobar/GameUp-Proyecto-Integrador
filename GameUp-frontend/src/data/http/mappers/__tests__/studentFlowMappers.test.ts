@@ -68,7 +68,20 @@ describe('actividad pendiente → tarea', () => {
       vowel: 'a',
       status: 'assigned',
       isNew: true,
+      title: 'Di la a',
+      moduleId: '1',
+      moduleTitle: 'Vocales de prueba',
+      order: 0,
     });
+  });
+
+  it('sin módulo ni título (respuesta vieja) la tarea se muestra igual', () => {
+    const viejo = { ...pendiente, titulo: '', modulo: null, orden: 'x' };
+    const tarea = toAssignment(viejo as unknown as typeof pendiente);
+    expect(tarea.moduleId).toBeUndefined();
+    expect(tarea.title).toBeUndefined();
+    expect(tarea.order).toBeUndefined();
+    expect(tarea.activityId).toBe('8');
   });
 
   it('una actividad rechazada no es nueva y no lleva vocal si no es de habla', () => {
@@ -87,6 +100,10 @@ describe('actividad pendiente → tarea', () => {
       gameId: 'findMouth',
       status: 'rejected',
       isNew: false,
+      title: 'Di la a',
+      moduleId: '1',
+      moduleTitle: 'Vocales de prueba',
+      order: 0,
     });
   });
 });

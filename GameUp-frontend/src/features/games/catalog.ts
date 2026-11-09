@@ -18,9 +18,13 @@ export interface GameDefinition {
   href: Href | null;
 }
 
+/**
+ * Secciones de juegos libres. Las tareas de la profe van aparte, agrupadas
+ * por módulo («Tareas de tu profe»): un juego de aquí nunca abre una tarea.
+ */
 export const gameSections: readonly { id: GameSectionId; title: string }[] = [
+  { id: 'thinking', title: 'Juega y sube de nivel' },
   { id: 'sounds', title: 'Sonidos y palabras' },
-  { id: 'thinking', title: 'Pensar y recordar' },
 ];
 
 /**
@@ -151,17 +155,11 @@ export function nextAssignment(
 }
 
 /**
- * Insignia de un juego:
- * - «Tarea» si tiene una tarea para abrir (nueva o para repetir);
- * - si no, «Nuevo» si el juego es nuevo en la app.
+ * Insignia de un juego libre: «Nuevo» si el juego es nuevo en la app. Las
+ * tareas no se marcan aquí: tienen su propia sección por módulo.
  */
-export function gameBadge(
-  game: GameDefinition,
-  pendingAssignments: readonly Assignment[],
-): string | undefined {
-  if (nextAssignment(pendingAssignments, game.id)) return 'Tarea';
-  if (game.isNewGame) return 'Nuevo';
-  return undefined;
+export function gameBadge(game: GameDefinition): string | undefined {
+  return game.isNewGame ? 'Nuevo' : undefined;
 }
 
 /**

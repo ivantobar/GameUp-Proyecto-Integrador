@@ -89,7 +89,7 @@ describe('Juegos con la escalera de niveles', () => {
     });
   });
 
-  it('con una tarea de ese juego, la tarea va primero', async () => {
+  it('una tarea de ese juego va en «Tareas de tu profe»; el juego abre su nivel', async () => {
     const repos = createMockRepositories({ delayMs: 0 });
     jest.spyOn(repos.assignments, 'listPendingForStudent').mockResolvedValue([
       {
@@ -98,14 +98,22 @@ describe('Juegos con la escalera de niveles', () => {
         gameId: 'memory',
         status: 'assigned',
         isNew: true,
+        moduleId: '3',
+        moduleTitle: 'Los colores',
       },
     ]);
     await renderGames(repos);
 
     await userEvent.press(screen.getByRole('button', { name: /^Memoria\./ }));
-    expect(router.push).toHaveBeenCalledWith({
+    expect(router.push).toHaveBeenLastCalledWith({
       pathname: '/student/memory',
-      params: { actividadId: '6' },
+      params: { escalera: '1' },
+    });
+
+    await userEvent.press(screen.getByRole('button', { name: /Los colores/ }));
+    expect(router.push).toHaveBeenLastCalledWith({
+      pathname: '/student/module/[moduleId]',
+      params: { moduleId: '3' },
     });
   });
 

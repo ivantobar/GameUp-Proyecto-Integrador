@@ -39,15 +39,20 @@ describe('datos del estudiante con los repositorios simulados', () => {
     expect(data.modulesCount).toBe(4);
   });
 
-  it('Juegos: Habla conmigo «Nuevo» y Busca la boca «Tarea»', async () => {
+  it('Juegos: las tareas van aparte (por módulo) y los juegos sin «Tarea»', async () => {
     const { result } = await renderHook(() => useGameList(), { wrapper });
     await waitFor(() => expect(result.current.resource.status).toBe('ready'));
     if (result.current.resource.status !== 'ready') return;
 
-    const [sounds, thinking] = result.current.resource.data.sections;
+    const { modules, sections } = result.current.resource.data;
+    expect(modules.flatMap((m) => m.tasks).map((t) => t.gameId)).toContain(
+      'findMouth',
+    );
+    const [thinking, sounds] = sections;
+    expect(thinking?.id).toBe('thinking');
     expect(sounds?.items.map((i) => [i.game.id, i.badge])).toEqual([
       ['speak', 'Nuevo'],
-      ['findMouth', 'Tarea'],
+      ['findMouth', 'Nuevo'],
     ]);
     expect(thinking?.items).toHaveLength(4);
     // Escalera: los juegos de pensar traen su nivel; los de habla, no.

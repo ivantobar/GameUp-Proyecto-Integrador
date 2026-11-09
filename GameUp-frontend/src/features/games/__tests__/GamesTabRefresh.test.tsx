@@ -44,7 +44,7 @@ describe('las pestañas se actualizan al volver a ellas', () => {
     jest.mocked(useRefreshOnFocus).mockClear();
   });
 
-  it('Juegos: después de hacer la tarea, ya no muestra «Tarea»', async () => {
+  it('Juegos: después de hacer la tarea, su módulo ya no aparece', async () => {
     const repositories = createMockRepositories({ delayMs: 0 });
     const pending = jest
       .spyOn(repositories.assignments, 'listPendingForStudent')
@@ -55,13 +55,15 @@ describe('las pestañas se actualizan al volver a ellas', () => {
           gameId: 'match',
           status: 'assigned',
           isNew: true,
+          moduleId: '2',
+          moduleTitle: 'Los animales',
         },
       ])
       // La tarea ya se hizo: queda pendiente de validación, no pendiente.
       .mockResolvedValue([]);
 
     await renderWith(<GamesScreen />, repositories);
-    expect(screen.getByText('Tarea')).toBeOnTheScreen();
+    expect(screen.getByText('Los animales')).toBeOnTheScreen();
 
     await act(async () => {
       lastRegisteredRefresh()();
@@ -69,7 +71,7 @@ describe('las pestañas se actualizan al volver a ellas', () => {
     await settle();
 
     expect(pending).toHaveBeenCalledTimes(2);
-    expect(screen.queryByText('Tarea')).toBeNull();
+    expect(screen.queryByText('Los animales')).toBeNull();
   });
 
   it('Mi progreso: vuelve a pedir el progreso', async () => {

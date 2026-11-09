@@ -1,24 +1,19 @@
 import { useCallback } from 'react';
 import { useRepositories } from '@/data/RepositoryProvider';
 import { useResource } from '@/data/useResource';
-import type { Assignment, GameLevel } from '@/data/types';
+import type { GameLevel } from '@/data/types';
 import {
   gameBadge,
   gameCatalog,
   gameSections,
-  nextAssignment,
   type GameDefinition,
   type GameSectionId,
 } from './catalog';
+import { groupByModule, type ModuleTasks } from './moduleTasks';
 
 export interface GameListItem {
   game: GameDefinition;
   badge: string | undefined;
-  /**
-   * Tarea que abre la tarjeta (la de la insignia «Tarea»), o `null`: el
-   * juego se abre en su nivel (si tiene escalera) o libre.
-   */
-  assignment: Assignment | null;
   /** Nivel en la escalera; `null` si el juego no tiene o no se pudo leer. */
   level: GameLevel | null;
 }
@@ -31,13 +26,18 @@ export interface GameListSection {
 
 export interface GameList {
   studentId: string;
+  /** Tareas de la profe, una tarjeta por módulo (vacío si no hay). */
+  modules: ModuleTasks[];
+  /** Juegos libres: los de pensar abren su nivel; los de sonidos, libres. */
   sections: GameListSection[];
   /** Niveles de la escalera (vacío si no se pudieron leer). */
   levels: GameLevel[];
 }
 
 /**
- * Juegos agrupados por sección, con su insignia (Tarea o Nuevo) y su nivel.
+ * Pantalla Juegos, en dos partes que no se mezclan:
+ * - las tareas de la profe, agrupadas por módulo (cuentan para su módulo);
+ * - los juegos por niveles y de sonidos (la escalera sube con la profe).
  * Si los niveles no cargan, los juegos se muestran igual (sin estrellas).
  */
 export function useGameList() {
@@ -61,12 +61,16 @@ export function useGameList() {
         .filter((game) => game.section === section.id)
         .map((game) => ({
           game,
-          badge: gameBadge(game, pending),
-          assignment: nextAssignment(pending, game.id),
+          badge: gameBadge(game),
           level: myLevels.find((l) => l.gameId === game.id) ?? null,
         })),
     }));
-    return { studentId: student.id, sections, levels: myLevels };
+    return {
+      studentId: student.id,
+      modules: groupByModule(pending),
+      sections,
+      levels: myLevels,
+    };
   }, [students, assignments, levels]);
 
   return useResource(load);

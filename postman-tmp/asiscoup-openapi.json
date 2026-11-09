@@ -1,0 +1,1768 @@
+{
+    "openapi": "3.0.3",
+    "info": {
+      "title": "ASISCO UP — Backend API (Arquitectura Hexagonal + Base de Datos 3FN)",
+      "version": "3.0.0",
+      "description": "API Backend bajo Arquitectura Hexagonal, principios SOLID y Normalización hasta 3FN (Tercera Forma Normal). Incluye Catálogos 3FN, Núcleo Familiar y Consentimiento Informado (FK compuesta a estudiante_acudiente), Cuestionario y Caracterización Pedagógica con Vista SQL 3FN (vw_resultado_caracterizacion), Seguimiento Histórico de Logros y Pautas/Recursos Multimedia (Entidad Débil id_pauta + numero_recurso)."
+    },
+    "servers": [
+      {
+        "url": "http://localhost:3000/api",
+        "description": "Local"
+      },
+      {
+        "url": "https://proyecto-asiscoup-g1-jvaz.onrender.com/api",
+        "description": "Producción"
+      },
+      {
+        "url": "/api",
+        "description": "Servidor Relativo (Automático Local / Render)"
+      }
+    ],
+    "tags": [
+      {
+        "name": "Sistema & Salud",
+        "description": "Estado operativo del backend"
+      },
+      {
+        "name": "Autenticación & Seguridad",
+        "description": "Puente con el microservicio externo de autenticación e identidad JWT"
+      },
+      {
+        "name": "1. Catálogos 3FN",
+        "description": "Entidades independientes normalizadas: parentesco, diagnostico, nivel_apoyo, tipo_recurso y version_terminos"
+      },
+      {
+        "name": "2. Núcleo Familiar y Consentimiento",
+        "description": "Gestión de acudientes (identificados o anónimos), estudiantes, vínculo estudiante_acudiente y consentimiento informado"
+      },
+      {
+        "name": "3. Focalización y Caracterización",
+        "description": "Áreas, banco de preguntas, motor pedagógico de evaluación y consulta sobre la vista 3FN vw_resultado_caracterizacion"
+      },
+      {
+        "name": "4. Pautas, Recursos y Seguimiento de Logros",
+        "description": "Catálogo de pautas pedagógicas, recursos multimedia (entidad débil) e historial de logros por estudiante"
+      }
+    ],
+    "components": {
+      "securitySchemes": {
+        "BearerAuth": {
+          "type": "http",
+          "scheme": "bearer",
+          "bearerFormat": "JWT",
+          "description": "Introduce tu token Bearer JWT obtenido del microservicio de autenticación"
+        }
+      },
+      "schemas": {
+        "Parentesco": {
+          "type": "object",
+          "properties": {
+            "idParentesco": {
+              "type": "integer",
+              "example": 1
+            },
+            "nombre": {
+              "type": "string",
+              "example": "Madre"
+            }
+          }
+        },
+        "Diagnostico": {
+          "type": "object",
+          "properties": {
+            "idDiagnostico": {
+              "type": "integer",
+              "example": 1
+            },
+            "nombre": {
+              "type": "string",
+              "example": "Síndrome de Down"
+            },
+            "descripcion": {
+              "type": "string",
+              "example": "Condición genética por trisomía del par 21, foco principal del Método Consuelo."
+            }
+          }
+        },
+        "NivelApoyo": {
+          "type": "object",
+          "properties": {
+            "idNivelApoyo": {
+              "type": "integer",
+              "example": 2
+            },
+            "nombre": {
+              "type": "string",
+              "enum": [
+                "basico",
+                "moderado",
+                "significativo"
+              ],
+              "example": "moderado"
+            },
+            "puntajeMinimo": {
+              "type": "number",
+              "example": 1.01
+            },
+            "puntajeMaximo": {
+              "type": "number",
+              "example": 2
+            },
+            "descripcion": {
+              "type": "string",
+              "example": "Realiza actividades con guía parcial, supervisión e instrucciones visuales o verbales."
+            }
+          }
+        },
+        "TipoRecurso": {
+          "type": "object",
+          "properties": {
+            "idTipoRecurso": {
+              "type": "integer",
+              "example": 1
+            },
+            "nombre": {
+              "type": "string",
+              "example": "PDF"
+            }
+          }
+        },
+        "VersionTerminos": {
+          "type": "object",
+          "properties": {
+            "idVersionTerminos": {
+              "type": "integer",
+              "example": 1
+            },
+            "codigoVersion": {
+              "type": "string",
+              "example": "v1.0-2026"
+            },
+            "textoLegal": {
+              "type": "string"
+            },
+            "fechaPublicacion": {
+              "type": "string",
+              "format": "date",
+              "example": "2026-10-30"
+            },
+            "vigente": {
+              "type": "boolean",
+              "example": true
+            }
+          }
+        },
+        "Acudiente": {
+          "type": "object",
+          "properties": {
+            "idAcudiente": {
+              "type": "integer",
+              "example": 1
+            },
+            "documentoIdentidad": {
+              "type": "string",
+              "nullable": true,
+              "example": "1012345678"
+            },
+            "idUsuarioAuth": {
+              "type": "string",
+              "nullable": true,
+              "example": "usr_987654"
+            },
+            "nombre": {
+              "type": "string",
+              "example": "María Fernanda Gómez"
+            },
+            "correo": {
+              "type": "string",
+              "nullable": true,
+              "example": "maria.gomez@ejemplo.com"
+            },
+            "telefono": {
+              "type": "string",
+              "nullable": true,
+              "example": "3001234567"
+            },
+            "esAnonimo": {
+              "type": "boolean",
+              "example": false
+            },
+            "creadoEn": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        },
+        "Estudiante": {
+          "type": "object",
+          "properties": {
+            "idEstudiante": {
+              "type": "integer",
+              "example": 1
+            },
+            "documentoIdentidad": {
+              "type": "string",
+              "nullable": true,
+              "example": "1098765432"
+            },
+            "idDiagnostico": {
+              "type": "integer",
+              "example": 1
+            },
+            "nombre": {
+              "type": "string",
+              "example": "Mateo Gómez"
+            },
+            "fechaNacimiento": {
+              "type": "string",
+              "format": "date",
+              "example": "2018-05-14"
+            },
+            "creadoEn": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "diagnostico": {
+              "$ref": "#/components/schemas/Diagnostico"
+            }
+          }
+        },
+        "Consentimiento": {
+          "type": "object",
+          "properties": {
+            "idEstudiante": {
+              "type": "integer",
+              "example": 1
+            },
+            "idAcudiente": {
+              "type": "integer",
+              "example": 1
+            },
+            "idVersionTerminos": {
+              "type": "integer",
+              "example": 1
+            },
+            "aceptaTratamiento": {
+              "type": "boolean",
+              "example": true
+            },
+            "fechaOtorgamiento": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "codigoVersion": {
+              "type": "string",
+              "example": "v1.0-2026"
+            }
+          }
+        },
+        "Area": {
+          "type": "object",
+          "properties": {
+            "idArea": {
+              "type": "integer",
+              "example": 1
+            },
+            "nombre": {
+              "type": "string",
+              "example": "Comunicación y Lenguaje"
+            },
+            "descripcion": {
+              "type": "string",
+              "example": "Comprensión y expresión de ideas, necesidades e instrucciones cotidianas."
+            }
+          }
+        },
+        "Pregunta": {
+          "type": "object",
+          "properties": {
+            "idPregunta": {
+              "type": "integer",
+              "example": 1
+            },
+            "idArea": {
+              "type": "integer",
+              "example": 1
+            },
+            "nombreArea": {
+              "type": "string",
+              "example": "Comunicación y Lenguaje"
+            },
+            "enunciado": {
+              "type": "string",
+              "example": "¿Expresa sus necesidades y emociones mediante palabras, señas o gestos claros?"
+            },
+            "urlAudio": {
+              "type": "string",
+              "nullable": true,
+              "example": "https://storage.asiscoup.org/audios/preguntas/com_01.mp3"
+            },
+            "orden": {
+              "type": "integer",
+              "example": 1
+            },
+            "esAlertaEspecial": {
+              "type": "boolean",
+              "example": false
+            },
+            "activa": {
+              "type": "boolean",
+              "example": true
+            }
+          }
+        },
+        "VistaResultadoCaracterizacion": {
+          "type": "object",
+          "description": "Representa la vista SQL 3FN vw_resultado_caracterizacion sin redundancia de datos calculados",
+          "properties": {
+            "idCaracterizacion": {
+              "type": "integer",
+              "example": 1
+            },
+            "idEstudiante": {
+              "type": "integer",
+              "example": 1
+            },
+            "idAcudiente": {
+              "type": "integer",
+              "example": 1
+            },
+            "fecha": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "idNivelApoyo": {
+              "type": "integer",
+              "example": 2
+            },
+            "nivelApoyoDiagnosticado": {
+              "type": "string",
+              "enum": [
+                "basico",
+                "moderado",
+                "significativo"
+              ],
+              "example": "moderado"
+            },
+            "puntajeTotal": {
+              "type": "number",
+              "example": 10
+            },
+            "promedioGlobal": {
+              "type": "number",
+              "example": 2
+            },
+            "totalPreguntasRespondidas": {
+              "type": "integer",
+              "example": 5
+            }
+          }
+        },
+        "RecursoMultimedia": {
+          "type": "object",
+          "description": "Entidad débil identificada por la PK compuesta (id_pauta, numero_recurso)",
+          "properties": {
+            "idPauta": {
+              "type": "integer",
+              "example": 1
+            },
+            "numeroRecurso": {
+              "type": "integer",
+              "example": 1
+            },
+            "idTipoRecurso": {
+              "type": "integer",
+              "example": 1
+            },
+            "tipoNombre": {
+              "type": "string",
+              "example": "PDF"
+            },
+            "nombre": {
+              "type": "string",
+              "example": "Guía PDF: Estimulación del lenguaje en el hogar"
+            },
+            "urlRecurso": {
+              "type": "string",
+              "example": "https://storage.asiscoup.org/recursos/guia-lenguaje-hogar.pdf"
+            }
+          }
+        },
+        "Pauta": {
+          "type": "object",
+          "properties": {
+            "idPauta": {
+              "type": "integer",
+              "example": 1
+            },
+            "idArea": {
+              "type": "integer",
+              "example": 1
+            },
+            "nombreArea": {
+              "type": "string",
+              "example": "Comunicación y Lenguaje"
+            },
+            "idNivelApoyo": {
+              "type": "integer",
+              "example": 1
+            },
+            "nivelApoyoNombre": {
+              "type": "string",
+              "enum": [
+                "basico",
+                "moderado",
+                "significativo"
+              ],
+              "example": "significativo"
+            },
+            "titulo": {
+              "type": "string",
+              "example": "Canto, espejo y contacto visual en casa"
+            },
+            "descripcionEjercicio": {
+              "type": "string"
+            },
+            "recursos": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/RecursoMultimedia"
+              }
+            }
+          }
+        },
+        "Logro": {
+          "type": "object",
+          "properties": {
+            "idLogro": {
+              "type": "integer",
+              "example": 1
+            },
+            "idArea": {
+              "type": "integer",
+              "example": 1
+            },
+            "nombreArea": {
+              "type": "string",
+              "example": "Comunicación y Lenguaje"
+            },
+            "nombre": {
+              "type": "string",
+              "example": "Expresión funcional de necesidades cotidianas"
+            },
+            "descripcion": {
+              "type": "string"
+            }
+          }
+        },
+        "LogroEstudiante": {
+          "type": "object",
+          "description": "Registro histórico identificado por PK compuesta (id_estudiante, id_logro, fecha_registro)",
+          "properties": {
+            "idEstudiante": {
+              "type": "integer",
+              "example": 1
+            },
+            "idLogro": {
+              "type": "integer",
+              "example": 1
+            },
+            "fechaRegistro": {
+              "type": "string",
+              "format": "date",
+              "example": "2026-10-30"
+            },
+            "nota": {
+              "type": "number",
+              "example": 2.5
+            },
+            "observacion": {
+              "type": "string",
+              "nullable": true,
+              "example": "Avance notable durante la semana"
+            },
+            "nombreLogro": {
+              "type": "string",
+              "example": "Expresión funcional de necesidades cotidianas"
+            },
+            "idArea": {
+              "type": "integer",
+              "example": 1
+            },
+            "nombreArea": {
+              "type": "string",
+              "example": "Comunicación y Lenguaje"
+            }
+          }
+        }
+      }
+    },
+    "paths": {
+      "/health": {
+        "get": {
+          "tags": [
+            "Sistema & Salud"
+          ],
+          "summary": "Verificar estado operativo del backend",
+          "responses": {
+            "200": {
+              "description": "El servicio se encuentra activo"
+            }
+          }
+        }
+      },
+      "/auth/login": {
+        "post": {
+          "tags": [
+            "Autenticación & Seguridad"
+          ],
+          "summary": "Iniciar sesión contra el microservicio externo de autenticación",
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "correo_usuario",
+                    "contraseña_usuario"
+                  ],
+                  "properties": {
+                    "correo_usuario": {
+                      "type": "string",
+                      "format": "email",
+                      "example": "admin@asiscoup.org"
+                    },
+                    "contraseña_usuario": {
+                      "type": "string",
+                      "example": "Password123!"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Credenciales válidas, retorna JWT y perfil"
+            },
+            "401": {
+              "description": "Credenciales inválidas"
+            }
+          }
+        }
+      },
+      "/auth/me": {
+        "get": {
+          "tags": [
+            "Autenticación & Seguridad"
+          ],
+          "summary": "Obtener perfil y contexto de seguridad del usuario autenticado",
+          "security": [
+            {
+              "BearerAuth": []
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Perfil verificado y SecurityContext activo"
+            },
+            "401": {
+              "description": "Token inválido o ausente"
+            }
+          }
+        }
+      },
+      "/catalogos": {
+        "get": {
+          "tags": [
+            "1. Catálogos 3FN"
+          ],
+          "summary": "Obtener todos los catálogos 3FN en una sola consulta (parentescos, diagnósticos, niveles de apoyo, tipos de recurso y versiones de términos)",
+          "responses": {
+            "200": {
+              "description": "Todos los catálogos 3FN"
+            }
+          }
+        }
+      },
+      "/catalogos/parentescos": {
+        "get": {
+          "tags": [
+            "1. Catálogos 3FN"
+          ],
+          "summary": "Listar catálogo de parentescos (Madre, Padre, Tutor, etc.)",
+          "responses": {
+            "200": {
+              "description": "Lista de parentescos",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/Parentesco"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/catalogos/diagnosticos": {
+        "get": {
+          "tags": [
+            "1. Catálogos 3FN"
+          ],
+          "summary": "Listar catálogo de diagnósticos base",
+          "responses": {
+            "200": {
+              "description": "Lista de diagnósticos",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/Diagnostico"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/catalogos/niveles-apoyo": {
+        "get": {
+          "tags": [
+            "1. Catálogos 3FN"
+          ],
+          "summary": "Listar catálogo de niveles de apoyo (basico, moderado, significativo) y sus rangos",
+          "responses": {
+            "200": {
+              "description": "Lista de niveles de apoyo",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/NivelApoyo"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/catalogos/tipos-recurso": {
+        "get": {
+          "tags": [
+            "1. Catálogos 3FN"
+          ],
+          "summary": "Listar catálogo de tipos de recurso multimedia (PDF, Audio, Video, Imagen, Guía)",
+          "responses": {
+            "200": {
+              "description": "Lista de tipos de recurso",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/TipoRecurso"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/catalogos/versiones-terminos": {
+        "get": {
+          "tags": [
+            "1. Catálogos 3FN"
+          ],
+          "summary": "Listar versiones de términos legales de tratamiento de datos (Habeas Data)",
+          "responses": {
+            "200": {
+              "description": "Lista de versiones de términos",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/VersionTerminos"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/acudientes": {
+        "get": {
+          "tags": [
+            "2. Núcleo Familiar y Consentimiento"
+          ],
+          "summary": "Listar acudientes registrados",
+          "responses": {
+            "200": {
+              "description": "Lista de acudientes",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/Acudiente"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "post": {
+          "tags": [
+            "2. Núcleo Familiar y Consentimiento"
+          ],
+          "summary": "Registrar un acudiente (valida restricción 3FN chk_acudiente_identificado)",
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "nombre"
+                  ],
+                  "properties": {
+                    "documentoIdentidad": {
+                      "type": "string",
+                      "example": "1012345678"
+                    },
+                    "idUsuarioAuth": {
+                      "type": "string",
+                      "example": "auth_usr_01"
+                    },
+                    "nombre": {
+                      "type": "string",
+                      "example": "María Fernanda Gómez"
+                    },
+                    "correo": {
+                      "type": "string",
+                      "format": "email",
+                      "example": "maria.gomez@ejemplo.com"
+                    },
+                    "telefono": {
+                      "type": "string",
+                      "example": "3001234567"
+                    },
+                    "esAnonimo": {
+                      "type": "boolean",
+                      "default": false
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "201": {
+              "description": "Acudiente creado o recuperado",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Acudiente"
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Violación de esquema Zod o chk_acudiente_identificado"
+            }
+          }
+        }
+      },
+      "/estudiantes": {
+        "get": {
+          "tags": [
+            "2. Núcleo Familiar y Consentimiento"
+          ],
+          "summary": "Listar estudiantes con su diagnóstico del catálogo 3FN",
+          "responses": {
+            "200": {
+              "description": "Lista de estudiantes",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/Estudiante"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "post": {
+          "tags": [
+            "2. Núcleo Familiar y Consentimiento"
+          ],
+          "summary": "Registrar un nuevo estudiante asociado a un idDiagnostico del catálogo",
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "idDiagnostico",
+                    "nombre",
+                    "fechaNacimiento"
+                  ],
+                  "properties": {
+                    "documentoIdentidad": {
+                      "type": "string",
+                      "example": "1098765432"
+                    },
+                    "idDiagnostico": {
+                      "type": "integer",
+                      "example": 1
+                    },
+                    "nombre": {
+                      "type": "string",
+                      "example": "Mateo Gómez"
+                    },
+                    "fechaNacimiento": {
+                      "type": "string",
+                      "format": "date",
+                      "example": "2018-05-14"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "201": {
+              "description": "Estudiante creado",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Estudiante"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/estudiantes/{id}": {
+        "get": {
+          "tags": [
+            "2. Núcleo Familiar y Consentimiento"
+          ],
+          "summary": "Obtener ficha integral del estudiante (diagnóstico, vínculos en estudiante_acudiente, consentimientos, vista vw_resultado_caracterizacion e historial de logros)",
+          "parameters": [
+            {
+              "name": "id",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "integer"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Ficha integral del estudiante"
+            },
+            "404": {
+              "description": "Estudiante no encontrado"
+            }
+          }
+        }
+      },
+      "/estudiantes/{id}/acudientes": {
+        "post": {
+          "tags": [
+            "2. Núcleo Familiar y Consentimiento"
+          ],
+          "summary": "Vincular un acudiente a un estudiante en estudiante_acudiente (garantiza idx_unico_acudiente_principal)",
+          "parameters": [
+            {
+              "name": "id",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "integer"
+              }
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "idAcudiente",
+                    "idParentesco"
+                  ],
+                  "properties": {
+                    "idAcudiente": {
+                      "type": "integer",
+                      "example": 1
+                    },
+                    "idParentesco": {
+                      "type": "integer",
+                      "example": 1
+                    },
+                    "esPrincipal": {
+                      "type": "boolean",
+                      "default": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "201": {
+              "description": "Vínculo estudiante_acudiente registrado"
+            }
+          }
+        }
+      },
+      "/consentimientos": {
+        "post": {
+          "tags": [
+            "2. Núcleo Familiar y Consentimiento"
+          ],
+          "summary": "Registrar consentimiento informado (apunta a la FK compuesta estudiante_acudiente + version_terminos)",
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "idEstudiante",
+                    "idAcudiente",
+                    "aceptaTratamiento"
+                  ],
+                  "properties": {
+                    "idEstudiante": {
+                      "type": "integer",
+                      "example": 1
+                    },
+                    "idAcudiente": {
+                      "type": "integer",
+                      "example": 1
+                    },
+                    "idVersionTerminos": {
+                      "type": "integer",
+                      "example": 1
+                    },
+                    "aceptaTratamiento": {
+                      "type": "boolean",
+                      "example": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "201": {
+              "description": "Consentimiento registrado",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Consentimiento"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/areas": {
+        "get": {
+          "tags": [
+            "3. Focalización y Caracterización"
+          ],
+          "summary": "Listar áreas de desarrollo pedagógico",
+          "responses": {
+            "200": {
+              "description": "Listado de áreas",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/Area"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "post": {
+          "tags": [
+            "3. Focalización y Caracterización"
+          ],
+          "summary": "Crear una nueva área pedagógica",
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "nombre"
+                  ],
+                  "properties": {
+                    "nombre": {
+                      "type": "string",
+                      "example": "Motricidad Fina"
+                    },
+                    "descripcion": {
+                      "type": "string",
+                      "example": "Coordinación visomotriz y agarre."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "201": {
+              "description": "Área creada"
+            }
+          }
+        }
+      },
+      "/preguntas": {
+        "get": {
+          "tags": [
+            "3. Focalización y Caracterización"
+          ],
+          "summary": "Listar preguntas del cuestionario (filtrable por idArea)",
+          "parameters": [
+            {
+              "name": "idArea",
+              "in": "query",
+              "required": false,
+              "schema": {
+                "type": "integer"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Lista de preguntas",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/Pregunta"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "post": {
+          "tags": [
+            "3. Focalización y Caracterización"
+          ],
+          "summary": "Crear una nueva pregunta en un área (respeta uq_area_orden_pregunta)",
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "idArea",
+                    "enunciado",
+                    "orden"
+                  ],
+                  "properties": {
+                    "idArea": {
+                      "type": "integer",
+                      "example": 1
+                    },
+                    "enunciado": {
+                      "type": "string",
+                      "example": "¿Utiliza frases de dos o más palabras?"
+                    },
+                    "urlAudio": {
+                      "type": "string",
+                      "example": "https://storage.asiscoup.org/audios/preguntas/com_04.mp3"
+                    },
+                    "orden": {
+                      "type": "integer",
+                      "example": 4
+                    },
+                    "esAlertaEspecial": {
+                      "type": "boolean",
+                      "default": false
+                    },
+                    "activa": {
+                      "type": "boolean",
+                      "default": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "201": {
+              "description": "Pregunta creada"
+            }
+          }
+        }
+      },
+      "/cuestionario": {
+        "get": {
+          "tags": [
+            "3. Focalización y Caracterización"
+          ],
+          "summary": "Obtener el cuestionario activo estructurado por áreas, niveles de apoyo 3FN y versión de términos vigente",
+          "responses": {
+            "200": {
+              "description": "Estructura completa del cuestionario"
+            }
+          }
+        }
+      },
+      "/cuestionario/evaluar": {
+        "post": {
+          "tags": [
+            "3. Focalización y Caracterización"
+          ],
+          "summary": "Evaluar cuestionario con el Cerebro Pedagógico y persistir opcionalmente en 3FN (estudiante_acudiente, consentimiento, caracterizacion y vw_resultado_caracterizacion)",
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "respuestas"
+                  ],
+                  "properties": {
+                    "idEstudiante": {
+                      "type": "integer",
+                      "example": 1
+                    },
+                    "idAcudiente": {
+                      "type": "integer",
+                      "example": 1
+                    },
+                    "idParentesco": {
+                      "type": "integer",
+                      "example": 1
+                    },
+                    "esPrincipal": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "estudiante": {
+                      "type": "object",
+                      "properties": {
+                        "documentoIdentidad": {
+                          "type": "string",
+                          "example": "1098765432"
+                        },
+                        "idDiagnostico": {
+                          "type": "integer",
+                          "example": 1
+                        },
+                        "nombre": {
+                          "type": "string",
+                          "example": "Mateo Gómez"
+                        },
+                        "fechaNacimiento": {
+                          "type": "string",
+                          "format": "date",
+                          "example": "2018-05-14"
+                        }
+                      }
+                    },
+                    "acudiente": {
+                      "type": "object",
+                      "properties": {
+                        "documentoIdentidad": {
+                          "type": "string",
+                          "example": "1012345678"
+                        },
+                        "nombre": {
+                          "type": "string",
+                          "example": "María Fernanda Gómez"
+                        },
+                        "correo": {
+                          "type": "string",
+                          "format": "email",
+                          "example": "maria.gomez@ejemplo.com"
+                        },
+                        "telefono": {
+                          "type": "string",
+                          "example": "3001234567"
+                        },
+                        "esAnonimo": {
+                          "type": "boolean",
+                          "example": false
+                        }
+                      }
+                    },
+                    "consentimiento": {
+                      "type": "object",
+                      "properties": {
+                        "idVersionTerminos": {
+                          "type": "integer",
+                          "example": 1
+                        },
+                        "aceptaTratamiento": {
+                          "type": "boolean",
+                          "example": true
+                        }
+                      }
+                    },
+                    "observaciones": {
+                      "type": "string",
+                      "example": "Evaluación inicial de ingreso al programa"
+                    },
+                    "respuestas": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "idPregunta"
+                        ],
+                        "properties": {
+                          "idPregunta": {
+                            "type": "integer",
+                            "example": 1
+                          },
+                          "nota": {
+                            "type": "number",
+                            "minimum": 0,
+                            "maximum": 3,
+                            "example": 2
+                          },
+                          "respuesta": {
+                            "type": "string",
+                            "enum": [
+                              "SIEMPRE",
+                              "A_VECES",
+                              "RARA_VEZ",
+                              "NUNCA"
+                            ],
+                            "example": "A_VECES"
+                          }
+                        }
+                      },
+                      "example": [
+                        {
+                          "idPregunta": 1,
+                          "nota": 2
+                        },
+                        {
+                          "idPregunta": 2,
+                          "nota": 1
+                        },
+                        {
+                          "idPregunta": 4,
+                          "respuesta": "A_VECES"
+                        },
+                        {
+                          "idPregunta": 5,
+                          "respuesta": "SIEMPRE"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Resultado del Cerebro Pedagógico, pautas recomendadas y datos de vw_resultado_caracterizacion"
+            },
+            "400": {
+              "description": "Error de validación Zod"
+            }
+          }
+        }
+      },
+      "/caracterizaciones/{id}": {
+        "get": {
+          "tags": [
+            "3. Focalización y Caracterización"
+          ],
+          "summary": "Obtener detalle de una caracterización junto con sus respuestas y su fila calculada en vw_resultado_caracterizacion",
+          "parameters": [
+            {
+              "name": "id",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "integer"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Detalle de caracterización y vista 3FN"
+            },
+            "404": {
+              "description": "No encontrada"
+            }
+          }
+        }
+      },
+      "/estudiantes/{id}/caracterizaciones": {
+        "get": {
+          "tags": [
+            "3. Focalización y Caracterización"
+          ],
+          "summary": "Consultar el historial de resultados de caracterización de un estudiante desde la vista 3FN vw_resultado_caracterizacion",
+          "parameters": [
+            {
+              "name": "id",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "integer"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Resultados desde vw_resultado_caracterizacion",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/VistaResultadoCaracterizacion"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/pautas": {
+        "get": {
+          "tags": [
+            "4. Pautas, Recursos y Seguimiento de Logros"
+          ],
+          "summary": "Listar pautas pedagógicas con sus recursos multimedia (filtrables por área y nivel de apoyo)",
+          "parameters": [
+            {
+              "name": "idArea",
+              "in": "query",
+              "required": false,
+              "schema": {
+                "type": "integer"
+              }
+            },
+            {
+              "name": "idNivelApoyo",
+              "in": "query",
+              "required": false,
+              "schema": {
+                "type": "integer"
+              }
+            },
+            {
+              "name": "nivelApoyo",
+              "in": "query",
+              "required": false,
+              "schema": {
+                "type": "string",
+                "enum": [
+                  "basico",
+                  "moderado",
+                  "significativo"
+                ]
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Lista de pautas y recursos",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/Pauta"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "post": {
+          "tags": [
+            "4. Pautas, Recursos y Seguimiento de Logros"
+          ],
+          "summary": "Crear una nueva pauta pedagógica (opcionalmente con sus recursos iniciales)",
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "idArea",
+                    "idNivelApoyo",
+                    "titulo",
+                    "descripcionEjercicio"
+                  ],
+                  "properties": {
+                    "idArea": {
+                      "type": "integer",
+                      "example": 1
+                    },
+                    "idNivelApoyo": {
+                      "type": "integer",
+                      "example": 2
+                    },
+                    "titulo": {
+                      "type": "string",
+                      "example": "Lectura compartida con pictogramas"
+                    },
+                    "descripcionEjercicio": {
+                      "type": "string",
+                      "example": "Leer un cuento corto señalando imágenes y pidiendo que nombre los personajes."
+                    },
+                    "recursos": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "idTipoRecurso",
+                          "nombre",
+                          "urlRecurso"
+                        ],
+                        "properties": {
+                          "numeroRecurso": {
+                            "type": "integer",
+                            "example": 1
+                          },
+                          "idTipoRecurso": {
+                            "type": "integer",
+                            "example": 1
+                          },
+                          "nombre": {
+                            "type": "string",
+                            "example": "Plantilla de pictogramas en PDF"
+                          },
+                          "urlRecurso": {
+                            "type": "string",
+                            "example": "https://storage.asiscoup.org/recursos/pictogramas.pdf"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "201": {
+              "description": "Pauta creada exitosamente"
+            }
+          }
+        }
+      },
+      "/pautas/{id}": {
+        "get": {
+          "tags": [
+            "4. Pautas, Recursos y Seguimiento de Logros"
+          ],
+          "summary": "Obtener detalle de una pauta y sus recursos multimedia ordenados por numero_recurso",
+          "parameters": [
+            {
+              "name": "id",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "integer"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Detalle de la pauta",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Pauta"
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "Pauta no encontrada"
+            }
+          }
+        }
+      },
+      "/pautas/{id}/recursos": {
+        "post": {
+          "tags": [
+            "4. Pautas, Recursos y Seguimiento de Logros"
+          ],
+          "summary": "Añadir un recurso multimedia a una pauta (Entidad Débil con PK compuesta id_pauta + numero_recurso)",
+          "parameters": [
+            {
+              "name": "id",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "integer"
+              }
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "idTipoRecurso",
+                    "nombre",
+                    "urlRecurso"
+                  ],
+                  "properties": {
+                    "numeroRecurso": {
+                      "type": "integer",
+                      "example": 3
+                    },
+                    "idTipoRecurso": {
+                      "type": "integer",
+                      "example": 2
+                    },
+                    "nombre": {
+                      "type": "string",
+                      "example": "Audio guía complementaria"
+                    },
+                    "urlRecurso": {
+                      "type": "string",
+                      "example": "https://storage.asiscoup.org/recursos/audio-guia.mp3"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "201": {
+              "description": "Recurso añadido a la pauta",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/RecursoMultimedia"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/logros": {
+        "get": {
+          "tags": [
+            "4. Pautas, Recursos y Seguimiento de Logros"
+          ],
+          "summary": "Listar catálogo de logros pedagógicos (filtrable por idArea)",
+          "parameters": [
+            {
+              "name": "idArea",
+              "in": "query",
+              "required": false,
+              "schema": {
+                "type": "integer"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Lista de logros",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/Logro"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "post": {
+          "tags": [
+            "4. Pautas, Recursos y Seguimiento de Logros"
+          ],
+          "summary": "Crear un nuevo logro en un área",
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "idArea",
+                    "nombre"
+                  ],
+                  "properties": {
+                    "idArea": {
+                      "type": "integer",
+                      "example": 1
+                    },
+                    "nombre": {
+                      "type": "string",
+                      "example": "Uso de frases cortas para pedir ayuda"
+                    },
+                    "descripcion": {
+                      "type": "string",
+                      "example": "Combina dos palabras o señas cuando necesita apoyo."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "201": {
+              "description": "Logro creado"
+            }
+          }
+        }
+      },
+      "/estudiantes/{id}/logros": {
+        "get": {
+          "tags": [
+            "4. Pautas, Recursos y Seguimiento de Logros"
+          ],
+          "summary": "Consultar el historial de evaluaciones de logros de un estudiante (tabla asociativa histórica logro_estudiante)",
+          "parameters": [
+            {
+              "name": "id",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "integer"
+              }
+            },
+            {
+              "name": "idLogro",
+              "in": "query",
+              "required": false,
+              "schema": {
+                "type": "integer"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Historial de logros del estudiante",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/LogroEstudiante"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "post": {
+          "tags": [
+            "4. Pautas, Recursos y Seguimiento de Logros"
+          ],
+          "summary": "Registrar una evaluación histórica de logro para un estudiante (PK compuesta id_estudiante + id_logro + fecha_registro)",
+          "parameters": [
+            {
+              "name": "id",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "integer"
+              }
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "idLogro",
+                    "nota"
+                  ],
+                  "properties": {
+                    "idLogro": {
+                      "type": "integer",
+                      "example": 1
+                    },
+                    "nota": {
+                      "type": "number",
+                      "example": 2.5
+                    },
+                    "fechaRegistro": {
+                      "type": "string",
+                      "format": "date",
+                      "example": "2026-10-30"
+                    },
+                    "observacion": {
+                      "type": "string",
+                      "example": "Logró realizar la actividad con apoyo visual mínimo."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "responses": {
+            "201": {
+              "description": "Evaluación de logro registrada",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/LogroEstudiante"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }

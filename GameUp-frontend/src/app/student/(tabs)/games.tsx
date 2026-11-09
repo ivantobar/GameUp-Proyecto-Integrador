@@ -10,7 +10,9 @@ import {
 import { GameCard, NarrationButton } from '@/components/gameup';
 import { isLadderGame } from '@/data/types';
 import { LevelUpCelebration } from '@/features/games/components/LevelUpCelebration';
-import { assignmentHref, gameHref, ladderHref } from '@/features/games/catalog';
+import { gameHref, ladderHref } from '@/features/games/catalog';
+import { TaskCard } from '@/features/games/components/TaskCard';
+import { moduleBadge, tasksCountText } from '@/features/games/moduleTasks';
 import { useGameList, type GameListItem } from '@/features/games/useGameList';
 import { useLevelCelebration } from '@/features/games/useLevelCelebration';
 import { useRefreshOnFocus } from '@/data/useRefreshOnFocus';
@@ -26,19 +28,21 @@ function pairs(items: GameListItem[]): GameListItem[][] {
 }
 
 /**
- * A dónde lleva una tarjeta: su tarea (si tiene «Tarea»), si no el nivel
- * actual de su escalera y, si no, el juego libre.
+ * A dónde lleva la tarjeta de un juego: el nivel actual de su escalera (los
+ * de pensar) o el juego libre (los de sonidos, o si los niveles no cargan).
+ * Nunca abre una tarea: las tareas están en «Tareas de tu profe».
  */
-function cardHref({ game, assignment, level }: GameListItem) {
-  if (assignment) return assignmentHref(assignment);
+function cardHref({ game, level }: GameListItem) {
   if (level && isLadderGame(game.id)) return ladderHref(game.id);
   return gameHref(game);
 }
 
+const TASKS_TITLE = 'Tareas de tu profe';
+
 /** Pantalla 2 · Juegos. Las secciones y tarjetas salen del catálogo. */
 export default function GamesScreen() {
   const { resource, reload, refresh } = useGameList();
-  // Al volver de un juego, la insignia «Tarea» y las estrellas se actualizan.
+  // Al volver de un juego, las tareas y las estrellas se actualizan.
   useRefreshOnFocus(refresh);
   const list = resource.status === 'ready' ? resource.data : null;
   const celebration = useLevelCelebration(
@@ -79,6 +83,30 @@ export default function GamesScreen() {
         onClose={celebration.close}
       />
 
+      {resource.status === 'ready' && resource.data.modules.length > 0 ? (
+        <View style={styles.section}>
+          <AppText variant="label" tone="secundario" accessibilityRole="header">
+            {TASKS_TITLE}
+          </AppText>
+          {resource.data.modules.map((group) => (
+            <TaskCard
+              key={group.moduleId}
+              caption={`${TASKS_TITLE} · ${tasksCountText(group.tasks.length)}`}
+              title={group.title}
+              icon="book"
+              badge={moduleBadge(group)}
+              accessibilityHint="Abre las actividades de este tema."
+              onPress={() =>
+                router.push({
+                  pathname: '/student/module/[moduleId]',
+                  params: { moduleId: group.moduleId },
+                })
+              }
+            />
+          ))}
+        </View>
+      ) : null}
+
       {resource.status === 'ready'
         ? resource.data.sections.map((section) => (
             <View key={section.id} style={styles.section}>
@@ -103,8 +131,7 @@ export default function GamesScreen() {
                       tone={item.game.tone}
                       badge={item.badge}
                       level={item.level?.level}
-                      // Con «Tarea», abre esa actividad; si no, su nivel
-                      // actual (ambos llegan al docente) o el juego libre.
+                      // Su nivel actual (llega a la profe) o el juego libre.
                       onPress={() => router.push(cardHref(item))}
                     />
                   ))}

@@ -1,0 +1,242 @@
+From e3c72b9abefd779bc97f1d0f3758547d883a8905 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sun, 8 Nov 2026 20:48:04 +0000
+Subject: [PATCH] Enviar el token del usuario al consultar el consentimiento en
+ ASISCO UP
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Desde el 2026-11-08 ASISCO UP responde 401 a
+GET /api/estudiantes/{id}/consentimiento sin Authorization Bearer, así que
+GameUP lo marcaba NO_VERIFICABLE y Habla conmigo nunca grababa. Ahora los
+endpoints de consentimiento-voz y POST /intentos/voz reenvían el JWT de la
+API de seguridad de quien hace la petición (probado en Postman: estudiante,
+acudiente y directora reciben 200). Sigue fallando cerrado si ASISCO UP no
+responde o rechaza el token.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_011mzVJ2B81xMRAsNTePXLNJ
+---
+ .../consentimiento.service.spec.ts            |  5 +++--
+ .../application/consentimiento.service.ts     |  6 ++++--
+ .../domain/consulta-consentimiento.ts         |  7 ++++++-
+ .../consentimiento-asiscoup-http.spec.ts      | 21 +++++++++++++++++++
+ .../consentimiento-asiscoup-http.ts           |  6 +++++-
+ .../presentation/consentimiento.controller.ts | 14 ++++++++++---
+ .../application/habla-conmigo.service.ts      |  2 ++
+ .../presentation/intento.controller.ts        |  8 ++++++-
+ 8 files changed, 59 insertions(+), 10 deletions(-)
+
+diff --git a/GameUp-backend/src/modules/consentimiento/application/consentimiento.service.spec.ts b/GameUp-backend/src/modules/consentimiento/application/consentimiento.service.spec.ts
+index 3ce2d1b..7b33798 100644
+--- a/GameUp-backend/src/modules/consentimiento/application/consentimiento.service.spec.ts
++++ b/GameUp-backend/src/modules/consentimiento/application/consentimiento.service.spec.ts
+@@ -64,8 +64,9 @@ describe('ConsentimientoService (fallar cerrado)', () => {
+ 
+   it('pregunta por el id del estudiante en la API del núcleo familiar', async () => {
+     const vigente = vi.fn(async () => null);
+-    await crear({ vigente }).consultarVoz(ESTUDIANTE_10, 10n);
+-    expect(vigente).toHaveBeenCalledWith(10000n); // idEstudianteExterno del estudiante 10
++    await crear({ vigente }).consultarVoz(ESTUDIANTE_10, 10n, 'jwt');
++    // idEstudianteExterno del estudiante 10, con el token de quien consulta
++    expect(vigente).toHaveBeenCalledWith(10000n, 'jwt');
+   });
+ 
+   it('estudiante ajeno → 404 sin consultar la API', async () => {
+diff --git a/GameUp-backend/src/modules/consentimiento/application/consentimiento.service.ts b/GameUp-backend/src/modules/consentimiento/application/consentimiento.service.ts
+index e294f0c..9ce6d91 100644
+--- a/GameUp-backend/src/modules/consentimiento/application/consentimiento.service.ts
++++ b/GameUp-backend/src/modules/consentimiento/application/consentimiento.service.ts
+@@ -30,18 +30,20 @@ export class ConsentimientoService {
+   async consultarVoz(
+     actual: UsuarioAutenticado,
+     estudianteId: bigint,
++    token?: string | null,
+   ): Promise<VerificacionConsentimiento> {
+     const estudiante = await this.acceso.obtenerVisible(actual, estudianteId);
+-    return this.verificar(estudiante.idEstudianteExterno);
++    return this.verificar(estudiante.idEstudianteExterno, token);
+   }
+ 
+   /** Para las grabaciones (fase 6): el llamador ya verificó la relación. */
+   async verificar(
+     idEstudianteExterno: bigint,
++    token?: string | null,
+   ): Promise<VerificacionConsentimiento> {
+     let consentimiento;
+     try {
+-      consentimiento = await this.consulta.vigente(idEstudianteExterno);
++      consentimiento = await this.consulta.vigente(idEstudianteExterno, token);
+     } catch (error) {
+       if (!(error instanceof ServicioExternoNoDisponibleError)) throw error;
+       this.logger.warn('Consentimiento no verificable: no se guardará audio');
+diff --git a/GameUp-backend/src/modules/consentimiento/domain/consulta-consentimiento.ts b/GameUp-backend/src/modules/consentimiento/domain/consulta-consentimiento.ts
+index 9731ae5..f225b4e 100644
+--- a/GameUp-backend/src/modules/consentimiento/domain/consulta-consentimiento.ts
++++ b/GameUp-backend/src/modules/consentimiento/domain/consulta-consentimiento.ts
+@@ -19,8 +19,13 @@ export interface ConsultaConsentimiento {
+   /**
+    * Consentimiento vigente del estudiante, o null si no hay ninguno.
+    * Lanza ServicioExternoNoDisponibleError si no se puede consultar.
++   * `token`: JWT de la API de seguridad de quien hace la petición; ASISCO UP
++   * lo exige desde el 2026-11-08 (sin él responde 401).
+    */
+-  vigente(idEstudianteExterno: bigint): Promise<ConsentimientoVigente | null>;
++  vigente(
++    idEstudianteExterno: bigint,
++    token?: string | null,
++  ): Promise<ConsentimientoVigente | null>;
+ }
+ 
+ export const CONSULTA_CONSENTIMIENTO = Symbol('CONSULTA_CONSENTIMIENTO');
+diff --git a/GameUp-backend/src/modules/consentimiento/infrastructure/consentimiento-asiscoup-http.spec.ts b/GameUp-backend/src/modules/consentimiento/infrastructure/consentimiento-asiscoup-http.spec.ts
+index 81dc246..f513a95 100644
+--- a/GameUp-backend/src/modules/consentimiento/infrastructure/consentimiento-asiscoup-http.spec.ts
++++ b/GameUp-backend/src/modules/consentimiento/infrastructure/consentimiento-asiscoup-http.spec.ts
+@@ -48,6 +48,27 @@ describe('ConsultaConsentimientoAsiscoUpHttp', () => {
+     );
+   });
+ 
++  it('reenvía el token de quien consulta (ASISCO UP responde 401 sin él)', async () => {
++    await crear().vigente(1n, 'jwt-de-prueba');
++    const [, init] = fetchFalso.mock.calls[0] as [string, RequestInit];
++    expect(init.headers).toMatchObject({
++      Authorization: 'Bearer jwt-de-prueba',
++    });
++  });
++
++  it('sin token no manda Authorization', async () => {
++    await crear().vigente(1n);
++    const [, init] = fetchFalso.mock.calls[0] as [string, RequestInit];
++    expect(init.headers).not.toHaveProperty('Authorization');
++  });
++
++  it('401 de ASISCO UP → no verificable (no se graba)', async () => {
++    fetchFalso.mockResolvedValue(json({ error: 'Falta Bearer' }, 401));
++    await expect(crear().vigente(1n)).rejects.toBeInstanceOf(
++      ServicioExternoNoDisponibleError,
++    );
++  });
++
+   it('vigente y autoriza la voz → acepta, con la versión', async () => {
+     await expect(crear().vigente(1n)).resolves.toEqual({
+       aceptaTratamiento: true,
+diff --git a/GameUp-backend/src/modules/consentimiento/infrastructure/consentimiento-asiscoup-http.ts b/GameUp-backend/src/modules/consentimiento/infrastructure/consentimiento-asiscoup-http.ts
+index 0409646..729a86b 100644
+--- a/GameUp-backend/src/modules/consentimiento/infrastructure/consentimiento-asiscoup-http.ts
++++ b/GameUp-backend/src/modules/consentimiento/infrastructure/consentimiento-asiscoup-http.ts
+@@ -36,13 +36,17 @@ export class ConsultaConsentimientoAsiscoUpHttp implements ConsultaConsentimient
+ 
+   async vigente(
+     idEstudianteExterno: bigint,
++    token?: string | null,
+   ): Promise<ConsentimientoVigente | null> {
+     const url = `${this.baseUrl}/api/estudiantes/${idEstudianteExterno.toString()}/consentimiento`;
+ 
+     let respuesta: Response;
+     try {
++      // ASISCO UP exige Bearer en /consentimiento (401 sin él, 2026-11-08).
++      const headers: Record<string, string> = { Accept: 'application/json' };
++      if (token) headers.Authorization = `Bearer ${token}`;
+       respuesta = await fetch(url, {
+-        headers: { Accept: 'application/json' },
++        headers,
+         signal: AbortSignal.timeout(this.timeoutMs),
+       });
+     } catch {
+diff --git a/GameUp-backend/src/modules/consentimiento/presentation/consentimiento.controller.ts b/GameUp-backend/src/modules/consentimiento/presentation/consentimiento.controller.ts
+index 6ee5850..7676acb 100644
+--- a/GameUp-backend/src/modules/consentimiento/presentation/consentimiento.controller.ts
++++ b/GameUp-backend/src/modules/consentimiento/presentation/consentimiento.controller.ts
+@@ -6,7 +6,11 @@ import {
+   ApiProperty,
+   ApiTags,
+ } from '@nestjs/swagger';
+-import { Roles, UsuarioActual } from '../../../common/auth/decoradores.js';
++import {
++  Roles,
++  TokenActual,
++  UsuarioActual,
++} from '../../../common/auth/decoradores.js';
+ import type { UsuarioAutenticado } from '../../../common/auth/usuario-autenticado.js';
+ import { ParseBigIntPipe } from '../../../common/pipes/parse-bigint.pipe.js';
+ import { ApiErrores } from '../../../docs/api-errores.js';
+@@ -60,8 +64,11 @@ export class ConsentimientoController {
+   @ApiErrores(401, 403)
+   async propio(
+     @UsuarioActual() actual: UsuarioAutenticado,
++    @TokenActual() token: string,
+   ): Promise<ConsentimientoVozDto> {
+-    return aDto(await this.consentimiento.consultarVoz(actual, actual.id));
++    return aDto(
++      await this.consentimiento.consultarVoz(actual, actual.id, token),
++    );
+   }
+ 
+   @Get(':id/consentimiento-voz')
+@@ -76,7 +83,8 @@ export class ConsentimientoController {
+   async deEstudiante(
+     @UsuarioActual() actual: UsuarioAutenticado,
+     @Param('id', ParseBigIntPipe) id: bigint,
++    @TokenActual() token: string,
+   ): Promise<ConsentimientoVozDto> {
+-    return aDto(await this.consentimiento.consultarVoz(actual, id));
++    return aDto(await this.consentimiento.consultarVoz(actual, id, token));
+   }
+ }
+diff --git a/GameUp-backend/src/modules/intentos/application/habla-conmigo.service.ts b/GameUp-backend/src/modules/intentos/application/habla-conmigo.service.ts
+index 87874f6..7355fc1 100644
+--- a/GameUp-backend/src/modules/intentos/application/habla-conmigo.service.ts
++++ b/GameUp-backend/src/modules/intentos/application/habla-conmigo.service.ts
+@@ -80,6 +80,7 @@ export class HablaConmigoService {
+     actividadId: bigint,
+     duracionSeg: number | null,
+     audio: ArchivoSubido | null,
++    token: string | null = null,
+   ): Promise<IntentoDeVoz> {
+     const { actividad, asignacion } = await this.contexto.resolver(
+       actual,
+@@ -105,6 +106,7 @@ export class HablaConmigoService {
+     const estudiante = await this.acceso.existente(actual.id);
+     const verificacion = await this.consentimiento.verificar(
+       estudiante.idEstudianteExterno,
++      token,
+     );
+     let estado = estadoInicial(audio !== null, verificacion);
+ 
+diff --git a/GameUp-backend/src/modules/intentos/presentation/intento.controller.ts b/GameUp-backend/src/modules/intentos/presentation/intento.controller.ts
+index 83197cd..846c2b2 100644
+--- a/GameUp-backend/src/modules/intentos/presentation/intento.controller.ts
++++ b/GameUp-backend/src/modules/intentos/presentation/intento.controller.ts
+@@ -18,7 +18,11 @@ import {
+ } from '@nestjs/swagger';
+ import type { ArchivoSubido } from '../../../common/almacenamiento/almacen-archivos.js';
+ import { SubidaDeArchivo } from '../../../common/almacenamiento/subidas.js';
+-import { Roles, UsuarioActual } from '../../../common/auth/decoradores.js';
++import {
++  Roles,
++  TokenActual,
++  UsuarioActual,
++} from '../../../common/auth/decoradores.js';
+ import type { UsuarioAutenticado } from '../../../common/auth/usuario-autenticado.js';
+ import { aBigInt } from '../../../common/ids/ids.js';
+ import { ParseBigIntPipe } from '../../../common/pipes/parse-bigint.pipe.js';
+@@ -112,12 +116,14 @@ export class IntentoController {
+     @UsuarioActual() actual: UsuarioAutenticado,
+     @Body() dto: RegistrarIntentoVozDto,
+     @UploadedFile() audio: ArchivoSubido | undefined,
++    @TokenActual() token: string,
+   ): Promise<IntentoVozDto> {
+     const resultado = await this.habla.registrar(
+       actual,
+       aBigInt(dto.actividadId),
+       dto.duracionSeg ?? null,
+       audio ?? null,
++      token,
+     );
+     return IntentoMapper.aVozDto(resultado);
+   }
+-- 
+2.43.0
+

@@ -1,0 +1,69 @@
+From 96a660da355d54115bac58f310b1db38c8c2f1c1 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Sun, 8 Nov 2026 19:58:05 +0000
+Subject: [PATCH] =?UTF-8?q?Corregir=20copia=20de=20v=C3=ADnculos=20del=20a?=
+ =?UTF-8?q?cudiente=20al=20iniciar=20sesi=C3=B3n?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+El upsert de acudiente_estudiante fallaba en PostgreSQL con 42P10
+(«there is no unique or exclusion constraint matching the ON CONFLICT
+specification»): Prisma usaba el índice parcial uq_acudiente_principal.
+El login lo callaba y el acudiente quedaba sin estudiantes («revisa la
+conexión»). Ahora se actualiza y, si no había fila, se crea, dentro de la
+misma transacción. Reproducido y verificado contra PostgreSQL 16 con las
+migraciones aplicadas.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_011mzVJ2B81xMRAsNTePXLNJ
+---
+ .../prisma-copia-vinculos.repository.ts       | 29 +++++++++++--------
+ 1 file changed, 17 insertions(+), 12 deletions(-)
+
+diff --git a/GameUp-backend/src/modules/estudiantes/infrastructure/prisma-copia-vinculos.repository.ts b/GameUp-backend/src/modules/estudiantes/infrastructure/prisma-copia-vinculos.repository.ts
+index 74084ff..929a6d4 100644
+--- a/GameUp-backend/src/modules/estudiantes/infrastructure/prisma-copia-vinculos.repository.ts
++++ b/GameUp-backend/src/modules/estudiantes/infrastructure/prisma-copia-vinculos.repository.ts
+@@ -43,21 +43,26 @@ export class PrismaCopiaVinculosRepository implements CopiaVinculosRepository {
+             data: { es_principal: false },
+           });
+         }
+-        await tx.acudiente_estudiante.upsert({
+-          where: {
+-            acudiente_id_estudiante_id: {
++        // Sin upsert: Prisma lo traduce a INSERT ... ON CONFLICT y elige el
++        // índice parcial uq_acudiente_principal (estudiante_id WHERE
++        // es_principal), que PostgreSQL no acepta sin su WHERE («there is no
++        // unique or exclusion constraint matching the ON CONFLICT
++        // specification»). Se actualiza y, si no había fila, se crea; todo
++        // dentro de la transacción.
++        const actualizados = await tx.acudiente_estudiante.updateMany({
++          where: { acudiente_id: acudienteId, estudiante_id: v.estudianteId },
++          data: { parentesco: v.parentesco, es_principal: v.esPrincipal },
++        });
++        if (actualizados.count === 0) {
++          await tx.acudiente_estudiante.create({
++            data: {
+               acudiente_id: acudienteId,
+               estudiante_id: v.estudianteId,
++              parentesco: v.parentesco,
++              es_principal: v.esPrincipal,
+             },
+-          },
+-          create: {
+-            acudiente_id: acudienteId,
+-            estudiante_id: v.estudianteId,
+-            parentesco: v.parentesco,
+-            es_principal: v.esPrincipal,
+-          },
+-          update: { parentesco: v.parentesco, es_principal: v.esPrincipal },
+-        });
++          });
++        }
+       }
+     });
+   }
+-- 
+2.43.0
+

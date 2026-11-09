@@ -1,0 +1,535 @@
+From 72fee7326055bf2316e59a464b3cefc3b01a054c Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Thu, 5 Nov 2026 15:53:46 +0000
+Subject: [PATCH] =?UTF-8?q?Frontend:=20rehacer=20la=20resoluci=C3=B3n=20de?=
+ =?UTF-8?q?=20conflictos=20y=20ajustar=20tipos=20al=20SDK=2058?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+La rama upgrade/sdk58 quitó los marcadores de conflicto quedándose con la
+versión anterior de cada bloque, lo que borró los tipos de los juegos de
+«Pensar y recordar», tamaños del tema, la exportación de PictureCard y las
+rutas de Emparejar, Clasificar, Secuenciar y Memoria (TypeScript: 58 errores).
+
+- Resolución con la versión más reciente en types.ts, mouthQuiz.ts,
+  catalog.ts, catalog.test.ts, theme/layout.ts y README.md.
+- Exporta PictureCard y PictureCardState desde components/gameup.
+- SDK 58: ref de TextInput con ComponentRef<typeof TextInput> (login y
+  TextField) y navigateToTab(route.key) en StudentTabBar.
+
+typecheck: 0 errores; jest: 29 suites, 143 pruebas pasan.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_011mzVHzb19XosQuUjSZTdTQ
+---
+ GameUp-frontend/README.md                     |   8 +-
+ GameUp-frontend/src/app/login.tsx             | 180 +++++++++---------
+ .../src/components/gameup/index.ts            |   1 +
+ .../src/components/ui/TextField.tsx           |   4 +-
+ GameUp-frontend/src/data/types.ts             |  59 ++++++
+ .../src/features/find-mouth/mouthQuiz.ts      |  21 +-
+ .../features/games/__tests__/catalog.test.ts  |  12 +-
+ GameUp-frontend/src/features/games/catalog.ts |  11 +-
+ .../src/features/home/StudentTabBar.tsx       |   8 +-
+ GameUp-frontend/src/theme/layout.ts           |  11 ++
+ 10 files changed, 197 insertions(+), 118 deletions(-)
+
+diff --git a/GameUp-frontend/README.md b/GameUp-frontend/README.md
+index 6c39c92..78addb7 100644
+--- a/GameUp-frontend/README.md
++++ b/GameUp-frontend/README.md
+@@ -12,7 +12,9 @@ App móvil de **GameUP**, el aula virtual inclusiva de la Fundación ASISCO-UP.
+ > **Estado actual (Fase 5):** sistema de diseño, componentes base,
+ > personaje y bocas en SVG, pantallas del estudiante **Inicio**, **Juegos**,
+ > **Mi progreso**, el flujo completo de **Habla conmigo** (selección de
+-> vocal, **Mira**, **Dilo** y **Listo**) y **Busca la boca**; la pantalla
++> vocal, **Mira**, **Dilo** y **Listo**), **Busca la boca** y los juegos
++> de «Pensar y recordar» (**Emparejar**, **Clasificar**, **Secuenciar** y
++> **Memoria**, con contenido de ejemplo); la pantalla
+ > del docente **Por escuchar** y la del acudiente **Practicar en casa**.
+ > Todo funciona con datos simulados en memoria. La app abre en
+ > **Iniciar sesión** (simulado: aún no hay API). Los permisos de cada rol
+@@ -75,7 +77,9 @@ npm start                # las demás veces
+      (`cd ../GameUp-backend && npm run start:dev`), toca «Probar conexión».
+      Debe aparecer «Backend conectado».
+    - **Ver la app como → Estudiante**: Inicio, Juegos, Mi progreso, Habla
+-     conmigo y Busca la boca.
++     conmigo, Busca la boca, Emparejar, Clasificar, Secuenciar y Memoria.
++     El contenido de estos cuatro está en `src/data/mock/gameContent.ts`
++     (dibujos provisionales con emojis) y todavía no se envía al docente.
+    - **Ver la app como → Docente**: «Por escuchar». Lo que hizo el
+      estudiante en esta sesión aparece aquí. «Lo logró» lo valida y sube
+      el progreso; «Practicar más» pide una indicación que llega a la
+diff --git a/GameUp-frontend/src/app/login.tsx b/GameUp-frontend/src/app/login.tsx
+index 4884f00..98600dd 100644
+--- a/GameUp-frontend/src/app/login.tsx
++++ b/GameUp-frontend/src/app/login.tsx
+@@ -1,4 +1,4 @@
+-import { useRef, useState } from 'react';
++import { useRef, useState, type ComponentRef } from 'react';
+ import { router } from 'expo-router';
+ import {
+   KeyboardAvoidingView,
+@@ -24,18 +24,20 @@ import { roleHomes } from '@/features/auth/roleHome';
+ import { useSignIn, type SignInProblem } from '@/features/auth/useSignIn';
+ import { spacing } from '@/theme';
+ 
+-const problemNotices: Record<SignInProblem, { title: string; message: string }> =
+-  {
+-    invalid: {
+-      title: 'No pudimos entrar',
+-      message:
+-        'El correo o la contraseña no coinciden. Revísalos e inténtalo otra vez.',
+-    },
+-    connection: {
+-      title: 'Sin conexión',
+-      message: 'Revisa la conexión a internet e inténtalo otra vez.',
+-    },
+-  };
++const problemNotices: Record<
++  SignInProblem,
++  { title: string; message: string }
++> = {
++  invalid: {
++    title: 'No pudimos entrar',
++    message:
++      'El correo o la contraseña no coinciden. Revísalos e inténtalo otra vez.',
++  },
++  connection: {
++    title: 'Sin conexión',
++    message: 'Revisa la conexión a internet e inténtalo otra vez.',
++  },
++};
+ 
+ /** Nombres de los roles en las cuentas de prueba. */
+ const roleLabels: Record<UserRole, string> = {
+@@ -55,7 +57,7 @@ export default function LoginScreen() {
+   const form = useSignIn();
+   const [showPassword, setShowPassword] = useState(false);
+   const [roleNotReady, setRoleNotReady] = useState<string | null>(null);
+-  const passwordRef = useRef<TextInput>(null);
++  const passwordRef = useRef<ComponentRef<typeof TextInput>>(null);
+ 
+   const onSubmit = async () => {
+     setRoleNotReady(null);
+@@ -95,83 +97,85 @@ export default function LoginScreen() {
+ 
+         <Card>
+           <View style={styles.form}>
+-          <TextField
+-            label="Correo"
+-            value={form.email}
+-            onChangeText={form.setEmail}
+-            placeholder="nombre@correo.com"
+-            error={form.errors.email}
+-            keyboardType="email-address"
+-            autoComplete="email"
+-            textContentType="emailAddress"
+-            autoCapitalize="none"
+-            autoCorrect={false}
+-            returnKeyType="next"
+-            submitBehavior="submit"
+-            onSubmitEditing={() => passwordRef.current?.focus()}
+-            editable={!form.submitting}
+-            testID="login-email"
+-          />
+-          <TextField
+-            inputRef={passwordRef}
+-            label="Contraseña"
+-            value={form.password}
+-            onChangeText={form.setPassword}
+-            error={form.errors.password}
+-            secureTextEntry={!showPassword}
+-            autoComplete="current-password"
+-            textContentType="password"
+-            autoCapitalize="none"
+-            autoCorrect={false}
+-            returnKeyType="go"
+-            onSubmitEditing={() => {
+-              onSubmit().catch(() => {});
+-            }}
+-            editable={!form.submitting}
+-            testID="login-password"
+-            trailing={
+-              <IconButton
+-                icon={showPassword ? 'eyeOff' : 'eye'}
+-                variant="soft"
+-                size="sm"
+-                accessibilityLabel={
+-                  showPassword ? 'Ocultar la contraseña' : 'Mostrar la contraseña'
+-                }
+-                onPress={() => setShowPassword((value) => !value)}
+-              />
+-            }
+-          />
++            <TextField
++              label="Correo"
++              value={form.email}
++              onChangeText={form.setEmail}
++              placeholder="nombre@correo.com"
++              error={form.errors.email}
++              keyboardType="email-address"
++              autoComplete="email"
++              textContentType="emailAddress"
++              autoCapitalize="none"
++              autoCorrect={false}
++              returnKeyType="next"
++              submitBehavior="submit"
++              onSubmitEditing={() => passwordRef.current?.focus()}
++              editable={!form.submitting}
++              testID="login-email"
++            />
++            <TextField
++              inputRef={passwordRef}
++              label="Contraseña"
++              value={form.password}
++              onChangeText={form.setPassword}
++              error={form.errors.password}
++              secureTextEntry={!showPassword}
++              autoComplete="current-password"
++              textContentType="password"
++              autoCapitalize="none"
++              autoCorrect={false}
++              returnKeyType="go"
++              onSubmitEditing={() => {
++                onSubmit().catch(() => {});
++              }}
++              editable={!form.submitting}
++              testID="login-password"
++              trailing={
++                <IconButton
++                  icon={showPassword ? 'eyeOff' : 'eye'}
++                  variant="soft"
++                  size="sm"
++                  accessibilityLabel={
++                    showPassword
++                      ? 'Ocultar la contraseña'
++                      : 'Mostrar la contraseña'
++                  }
++                  onPress={() => setShowPassword((value) => !value)}
++                />
++              }
++            />
+ 
+-          {notice ? (
+-            <View accessibilityLiveRegion="polite">
+-              <Notice
+-                icon={form.problem === 'connection' ? 'offline' : 'info'}
+-                tone="warm"
+-                title={notice.title}
+-                message={notice.message}
+-              />
+-            </View>
+-          ) : null}
++            {notice ? (
++              <View accessibilityLiveRegion="polite">
++                <Notice
++                  icon={form.problem === 'connection' ? 'offline' : 'info'}
++                  tone="warm"
++                  title={notice.title}
++                  message={notice.message}
++                />
++              </View>
++            ) : null}
+ 
+-          {roleNotReady ? (
+-            <View accessibilityLiveRegion="polite">
+-              <Notice
+-                icon="construction"
+-                tone="soft"
+-                title={`Hola, ${roleNotReady}`}
+-                message="Tu espacio en GameUP llega en una próxima versión."
+-              />
+-            </View>
+-          ) : null}
++            {roleNotReady ? (
++              <View accessibilityLiveRegion="polite">
++                <Notice
++                  icon="construction"
++                  tone="soft"
++                  title={`Hola, ${roleNotReady}`}
++                  message="Tu espacio en GameUP llega en una próxima versión."
++                />
++              </View>
++            ) : null}
+ 
+-          <Button
+-            label="Entrar"
+-            icon="login"
+-            loading={form.submitting}
+-            onPress={() => {
+-              onSubmit().catch(() => {});
+-            }}
+-          />
++            <Button
++              label="Entrar"
++              icon="login"
++              loading={form.submitting}
++              onPress={() => {
++                onSubmit().catch(() => {});
++              }}
++            />
+           </View>
+         </Card>
+ 
+diff --git a/GameUp-frontend/src/components/gameup/index.ts b/GameUp-frontend/src/components/gameup/index.ts
+index 49dd258..04d1976 100644
+--- a/GameUp-frontend/src/components/gameup/index.ts
++++ b/GameUp-frontend/src/components/gameup/index.ts
+@@ -15,3 +15,4 @@ export { VideoPlaceholder } from './VideoPlaceholder';
+ export { Waveform, type WaveformTone } from './Waveform';
+ export { HintPill, hintPillStyles, type HintPillKind } from './HintPill';
+ export { Pictogram, type PictogramSize } from './Pictogram';
++export { PictureCard, type PictureCardState } from './PictureCard';
+diff --git a/GameUp-frontend/src/components/ui/TextField.tsx b/GameUp-frontend/src/components/ui/TextField.tsx
+index 617d22e..fdf43a5 100644
+--- a/GameUp-frontend/src/components/ui/TextField.tsx
++++ b/GameUp-frontend/src/components/ui/TextField.tsx
+@@ -1,4 +1,4 @@
+-import { useState, type ReactNode, type Ref } from 'react';
++import { useState, type ComponentRef, type ReactNode, type Ref } from 'react';
+ import { StyleSheet, TextInput, View, type TextInputProps } from 'react-native';
+ import { colors, radii, sizes, spacing, typography } from '@/theme';
+ import { AppText } from './AppText';
+@@ -35,7 +35,7 @@ interface TextFieldProps extends InputOptions {
+   error?: string;
+   /** Botón dentro del campo, a la derecha (por ejemplo, ver la contraseña). */
+   trailing?: ReactNode;
+-  inputRef?: Ref<TextInput>;
++  inputRef?: Ref<ComponentRef<typeof TextInput>>;
+   testID?: string;
+ }
+ 
+diff --git a/GameUp-frontend/src/data/types.ts b/GameUp-frontend/src/data/types.ts
+index 8e4c985..1218b1e 100644
+--- a/GameUp-frontend/src/data/types.ts
++++ b/GameUp-frontend/src/data/types.ts
+@@ -200,3 +200,62 @@ export interface AuthSession {
+   role: UserRole;
+   displayName: string;
+ }
++
++/*
++ * Contenido de los juegos «Pensar y recordar» (Emparejar, Clasificar,
++ * Secuenciar y Memoria). Lo define el docente o la fundación; hoy sale de
++ * datos de ejemplo (`mock/gameContent.ts`).
++ */
++
++/**
++ * Lo que se ve en una tarjeta: un dibujo, una palabra o una cantidad.
++ * - `emoji`: dibujo provisional (pictograma) hasta tener las ilustraciones
++ *   de la fundación;
++ * - `count`: repite el dibujo para mostrar una cantidad (●●●);
++ * - `text`: palabra o número.
++ * `label` es lo que oye el niño y el lector de pantalla.
++ */
++export interface PictureFace {
++  id: string;
++  label: string;
++  emoji?: string;
++  count?: number;
++  text?: string;
++}
++
++/** Emparejar: una tarjeta arriba y de 2 a 4 opciones; una va con ella. */
++export interface MatchRound {
++  id: string;
++  /** Pregunta corta: «¿Qué palabra es?». */
++  question: string;
++  prompt: PictureFace;
++  options: PictureFace[];
++  answerId: string;
++}
++
++export type ClassifyCategory = PictureFace;
++
++export interface ClassifyItem extends PictureFace {
++  categoryId: string;
++}
++
++/** Clasificar: 2 grupos y unos pocos elementos para repartir. */
++export interface ClassifySet {
++  id: string;
++  question: string;
++  categories: ClassifyCategory[];
++  items: ClassifyItem[];
++}
++
++/** Secuenciar: una rutina con sus pasos EN ORDEN (de 2 a 4). */
++export interface SequenceRoutine {
++  id: string;
++  title: string;
++  steps: PictureFace[];
++}
++
++/** Memoria: cada dibujo aparece en dos cartas. */
++export interface MemoryBoard {
++  id: string;
++  pairs: PictureFace[];
++}
+diff --git a/GameUp-frontend/src/features/find-mouth/mouthQuiz.ts b/GameUp-frontend/src/features/find-mouth/mouthQuiz.ts
+index 78e0135..0f0d81b 100644
+--- a/GameUp-frontend/src/features/find-mouth/mouthQuiz.ts
++++ b/GameUp-frontend/src/features/find-mouth/mouthQuiz.ts
+@@ -1,4 +1,8 @@
+ import { VOWELS, type Vowel } from '@/data/types';
++import { shuffle, type Random } from '@/features/games/shuffle';
++
++// Se movió a `features/games` porque la usan varios juegos.
++export { shuffle };
+ 
+ /**
+  * Lógica pura de «Busca la boca» (sin React), para poder probarla sola.
+@@ -31,23 +35,6 @@ export interface QuizState {
+ 
+ export type QuizAction = { type: 'choose'; vowel: Vowel } | { type: 'next' };
+ 
+-type Random = () => number;
+-
+-/** Mezcla una copia de la lista (Fisher–Yates). */
+-export function shuffle<T>(items: readonly T[], random: Random): T[] {
+-  const copy = [...items];
+-  for (let i = copy.length - 1; i > 0; i -= 1) {
+-    const j = Math.floor(random() * (i + 1));
+-    const a = copy[i];
+-    const b = copy[j];
+-    if (a !== undefined && b !== undefined) {
+-      copy[i] = b;
+-      copy[j] = a;
+-    }
+-  }
+-  return copy;
+-}
+-
+ /** Crea las rondas: cada vocal una vez, con 2 bocas distractoras. */
+ export function buildRounds(
+   random: Random = Math.random,
+diff --git a/GameUp-frontend/src/features/games/__tests__/catalog.test.ts b/GameUp-frontend/src/features/games/__tests__/catalog.test.ts
+index 6b1f916..fd9a75d 100644
+--- a/GameUp-frontend/src/features/games/__tests__/catalog.test.ts
++++ b/GameUp-frontend/src/features/games/__tests__/catalog.test.ts
+@@ -23,12 +23,20 @@ describe('catálogo de juegos', () => {
+     });
+   });
+ 
++  it('los 6 juegos del MVP ya tienen su pantalla', () => {
++    gameCatalog.forEach((game) => {
++      expect(game.href).not.toBeNull();
++    });
++    expect(gameHref(findGame('speak'))).toBe('/student/speak');
++    expect(gameHref(findGame('memory'))).toBe('/student/memory');
++  });
++
+   it('un juego sin pantalla lleva a «en construcción»', () => {
+-    expect(gameHref(findGame('memory'))).toEqual({
++    const draft = { ...findGame('memory'), href: null };
++    expect(gameHref(draft)).toEqual({
+       pathname: '/student/coming-soon/[game]',
+       params: { game: 'memory' },
+     });
+-    expect(gameHref(findGame('speak'))).toBe('/student/speak');
+   });
+ 
+   it('«Tarea» tiene prioridad sobre «Nuevo»', () => {
+diff --git a/GameUp-frontend/src/features/games/catalog.ts b/GameUp-frontend/src/features/games/catalog.ts
+index e08f696..945a158 100644
+--- a/GameUp-frontend/src/features/games/catalog.ts
++++ b/GameUp-frontend/src/features/games/catalog.ts
+@@ -27,7 +27,8 @@ export const gameSections: readonly { id: GameSectionId; title: string }[] = [
+  * Catálogo de juegos (abierto/cerrado): agregar un juego es agregar una
+  * entrada aquí; la pantalla Juegos no cambia.
+  *
+- * - Emparejar, Clasificar, Secuenciar y Memoria aún no tienen mockup.
++ * - Emparejar, Clasificar, Secuenciar y Memoria no tienen mockup: su
++ *   interfaz es una propuesta que sigue el estilo de «Busca la boca».
+  */
+ export const gameCatalog: readonly GameDefinition[] = [
+   {
+@@ -58,7 +59,7 @@ export const gameCatalog: readonly GameDefinition[] = [
+     section: 'thinking',
+     tone: 'surface',
+     isNewGame: false,
+-    href: null,
++    href: '/student/match',
+   },
+   {
+     id: 'classify',
+@@ -68,7 +69,7 @@ export const gameCatalog: readonly GameDefinition[] = [
+     section: 'thinking',
+     tone: 'surface',
+     isNewGame: false,
+-    href: null,
++    href: '/student/classify',
+   },
+   {
+     id: 'sequence',
+@@ -78,7 +79,7 @@ export const gameCatalog: readonly GameDefinition[] = [
+     section: 'thinking',
+     tone: 'surface',
+     isNewGame: false,
+-    href: null,
++    href: '/student/sequence',
+   },
+   {
+     id: 'memory',
+@@ -88,7 +89,7 @@ export const gameCatalog: readonly GameDefinition[] = [
+     section: 'thinking',
+     tone: 'surface',
+     isNewGame: false,
+-    href: null,
++    href: '/student/memory',
+   },
+ ];
+ 
+diff --git a/GameUp-frontend/src/features/home/StudentTabBar.tsx b/GameUp-frontend/src/features/home/StudentTabBar.tsx
+index 4a0a215..0d1b275 100644
+--- a/GameUp-frontend/src/features/home/StudentTabBar.tsx
++++ b/GameUp-frontend/src/features/home/StudentTabBar.tsx
+@@ -21,7 +21,7 @@ function isStudentTab(name: string): name is StudentTabRoute {
+  */
+ export function StudentTabBar({
+   state,
+-  navigation,
++  navigateToTab,
+   insets,
+ }: BottomTabBarProps) {
+   const current = state.routes[state.index]?.name ?? 'index';
+@@ -37,7 +37,11 @@ export function StudentTabBar({
+       <BottomTabBar
+         items={studentTabs}
+         activeKey={activeKey}
+-        onSelect={(key) => navigation.navigate(key)}
++        onSelect={(name) => {
++          // SDK 58: navigateToTab recibe la key de la ruta, no su nombre.
++          const route = state.routes.find((r) => r.name === name);
++          if (route) navigateToTab(route.key);
++        }}
+       />
+     </View>
+   );
+diff --git a/GameUp-frontend/src/theme/layout.ts b/GameUp-frontend/src/theme/layout.ts
+index a9ad66b..31c304f 100644
+--- a/GameUp-frontend/src/theme/layout.ts
++++ b/GameUp-frontend/src/theme/layout.ts
+@@ -64,6 +64,17 @@ export const sizes = {
+   mouthOption: 88,
+   /** Ficha de sonido (alto mínimo). */
+   soundTile: 96,
++  /**
++   * Juegos de «Pensar y recordar» (sin mockup: propuesta del equipo).
++   * Tarjeta con dibujo en fila (Emparejar) y en cuadrícula (Secuenciar,
++   * Memoria), grupo de Clasificar y casilla de cada paso en Secuenciar.
++   */
++  pictureRow: 96,
++  /** Tarjeta grande de arriba: lo que se empareja o se clasifica. */
++  pictureStage: 160,
++  pictureTile: 140,
++  categoryBin: 180,
++  sequenceSlot: 72,
+   /** Logo completo de la fundación (guía: con lema, desde 200 px de ancho). */
+   logo: 220,
+ } as const;
+-- 
+2.43.0
+
