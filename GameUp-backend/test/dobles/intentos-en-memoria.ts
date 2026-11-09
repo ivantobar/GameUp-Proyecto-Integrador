@@ -4,6 +4,7 @@ import type { Configuracion } from '../../src/modules/catalogo/domain/juegos/est
 import type {
   ConsentimientoVigente,
   ConsultaConsentimiento,
+  IdsEstudianteConsentimiento,
 } from '../../src/modules/consentimiento/domain/consulta-consentimiento.js';
 import type { Intento } from '../../src/modules/intentos/domain/intento.entity.js';
 import type {
@@ -62,8 +63,7 @@ export class IntentosEnMemoria
   private estudianteDe(f: FilaIntento): bigint {
     return (
       f.estudianteId ??
-      this.asignaciones.filas.find((a) => a.id === f.asignacionId)!
-        .estudianteId
+      this.asignaciones.filas.find((a) => a.id === f.asignacionId)!.estudianteId
     );
   }
 
@@ -208,12 +208,12 @@ export class ConsultaConsentimientoControlada implements ConsultaConsentimiento 
     aceptaTratamiento: true,
     codigoVersion: 'TERMINOS-2026-01',
   };
-  readonly consultados: bigint[] = [];
+  readonly consultados: IdsEstudianteConsentimiento[] = [];
 
   async vigente(
-    idEstudianteExterno: bigint,
+    ids: IdsEstudianteConsentimiento,
   ): Promise<ConsentimientoVigente | null> {
-    this.consultados.push(idEstudianteExterno);
+    this.consultados.push(ids);
     if (this.respuesta === 'CAIDA') {
       throw new ServicioExternoNoDisponibleError(
         'API del núcleo familiar caída (prueba).',

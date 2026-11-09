@@ -35,7 +35,14 @@ export const SELECCION_ESTUDIANTE = {
   personaje_avatar: true,
   id_estudiante_externo: true,
   nivel: { select: { id: true, nombre: true } },
-  usuario: { select: { nombres: true, apellidos: true, activo: true } },
+  usuario: {
+    select: {
+      nombres: true,
+      apellidos: true,
+      activo: true,
+      id_usuario_auth: true,
+    },
+  },
 } satisfies Prisma.estudianteSelect;
 
 export type FilaEstudiante = Prisma.estudianteGetPayload<{
@@ -73,6 +80,7 @@ export const EstudianteMapper = {
       fechaIngreso: fila.fecha_ingreso,
       personajeAvatar: fila.personaje_avatar,
       idEstudianteExterno: fila.id_estudiante_externo,
+      idUsuarioAuth: fila.usuario.id_usuario_auth,
     });
   },
 

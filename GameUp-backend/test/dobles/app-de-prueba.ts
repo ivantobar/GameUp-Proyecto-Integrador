@@ -30,6 +30,8 @@ import {
   CONTENIDO_REPOSITORY,
   MODULO_REPOSITORY,
 } from '../../src/modules/modulos/domain/modulo.repository.js';
+import { CONSULTA_CONSENTIMIENTO } from '../../src/modules/consentimiento/domain/consulta-consentimiento.js';
+import { ConsultaConsentimientoNoDisponible } from '../../src/modules/consentimiento/infrastructure/consultas-consentimiento.js';
 import { CONSULTA_ESTUDIANTE_EXTERNO } from '../../src/modules/estudiantes/domain/estudiante-externo.js';
 import {
   SINCRONIZADOR_VINCULOS,
@@ -225,6 +227,8 @@ export async function crearAppDePrueba(
     [VINCULOS_EN_ASISCO, false],
     [SINCRONIZADOR_VINCULOS, null],
     [CONSULTA_ESTUDIANTE_EXTERNO, null],
+    // El consentimiento también: sin doble, se usaría el ASISCO UP real.
+    [CONSULTA_CONSENTIMIENTO, new ConsultaConsentimientoNoDisponible()],
   ];
   for (const [provide, valor] of sinAsisco) {
     if (reemplazados.has(provide)) continue;

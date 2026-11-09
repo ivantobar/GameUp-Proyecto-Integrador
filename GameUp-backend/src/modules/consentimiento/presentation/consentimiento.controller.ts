@@ -50,6 +50,17 @@ function aDto(v: VerificacionConsentimiento): ConsentimientoVozDto {
   };
 }
 
+const DESCRIPCION_FUENTE =
+  'Consulta **GET /api/estudiantes/por-usuario/{idUsuarioAuth}/consentimiento** de ' +
+  'ASISCO UP (Método Consuelo) con el `id_usuario` central del estudiante ' +
+  '(`idUsuarioAuth`), no con su `idEstudiante` local de ASISCO UP. Se reenvía el ' +
+  'Bearer de quien llama (el JWT de la API central). La respuesta solo se usa si su ' +
+  '`id_usuario` y su `idEstudiante` son los del estudiante en GameUP.\n\n' +
+  'Se puede grabar solo si `tieneConsentimientoVigente`, `autorizaGrabacionVoz === true` ' +
+  'y `requiereAceptarTerminos !== true`. Sin consentimiento (404 en ASISCO UP): ' +
+  'NO_ACEPTADO. Si ASISCO UP no responde o la respuesta no cuadra: concedido = false ' +
+  '(NO_VERIFICABLE) y no se guarda audio.';
+
 /** Consentimiento de grabación de voz (lo consulta la API del núcleo familiar). */
 @ApiTags('estudiantes')
 @ApiBearerAuth(BEARER_AUTH)
@@ -59,7 +70,10 @@ export class ConsentimientoController {
 
   @Get('me/consentimiento-voz')
   @Roles('ESTUDIANTE')
-  @ApiOperation({ summary: '¿Se puede grabar mi voz? (estudiante con sesión)' })
+  @ApiOperation({
+    summary: '¿Se puede grabar mi voz? (estudiante con sesión)',
+    description: DESCRIPCION_FUENTE,
+  })
   @ApiOkResponse({ type: ConsentimientoVozDto })
   @ApiErrores(401, 403)
   async propio(
@@ -76,7 +90,8 @@ export class ConsentimientoController {
   @ApiOperation({
     summary: '¿Se puede grabar la voz de este estudiante?',
     description:
-      'Si la API del núcleo familiar no responde: concedido = false (NO_VERIFICABLE).',
+      '`{id}` es el id interno de GameUP del estudiante (`userId`).\n\n' +
+      DESCRIPCION_FUENTE,
   })
   @ApiOkResponse({ type: ConsentimientoVozDto })
   @ApiErrores(400, 401, 403, 404)

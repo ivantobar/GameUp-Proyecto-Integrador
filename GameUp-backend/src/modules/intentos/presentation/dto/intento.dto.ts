@@ -72,7 +72,8 @@ export class IntentoDto {
     example: null,
     nullable: true,
     type: Number,
-    description: 'Nivel (1-5) si es de la escalera de niveles; null si es de un módulo',
+    description:
+      'Nivel (1-5) si es de la escalera de niveles; null si es de un módulo',
   })
   nivelJuego: number | null;
   @ApiProperty({ example: 2, description: 'Lo pone la base' })

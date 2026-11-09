@@ -62,11 +62,15 @@ describe('ConsentimientoService (fallar cerrado)', () => {
     });
   });
 
-  it('pregunta por el id del estudiante en la API del núcleo familiar', async () => {
+  it('pregunta por el id_usuario central del estudiante y su id de ASISCO UP', async () => {
     const vigente = vi.fn(async () => null);
     await crear({ vigente }).consultarVoz(ESTUDIANTE_10, 10n, 'jwt');
-    // idEstudianteExterno del estudiante 10, con el token de quien consulta
-    expect(vigente).toHaveBeenCalledWith(10000n, 'jwt');
+    // Estudiante 10: id_usuario_auth 1000, idEstudianteExterno 10000, con el
+    // token de quien consulta.
+    expect(vigente).toHaveBeenCalledWith(
+      { idUsuarioAuth: 1000n, idEstudianteExterno: 10000n },
+      'jwt',
+    );
   });
 
   it('estudiante ajeno → 404 sin consultar la API', async () => {

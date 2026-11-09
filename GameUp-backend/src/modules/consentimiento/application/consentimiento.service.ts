@@ -7,6 +7,7 @@ import {
   CONSULTA_CONSENTIMIENTO,
   interpretarConsentimiento,
   type ConsultaConsentimiento,
+  type IdsEstudianteConsentimiento,
   type VerificacionConsentimiento,
 } from '../domain/consulta-consentimiento.js';
 
@@ -33,17 +34,25 @@ export class ConsentimientoService {
     token?: string | null,
   ): Promise<VerificacionConsentimiento> {
     const estudiante = await this.acceso.obtenerVisible(actual, estudianteId);
-    return this.verificar(estudiante.idEstudianteExterno, token);
+    return this.verificar(estudiante, token);
   }
 
-  /** Para las grabaciones (fase 6): el llamador ya verificó la relación. */
+  /**
+   * Para las grabaciones (fase 6): el llamador ya verificó la relación.
+   * Se pregunta por el `id_usuario` central del estudiante (idUsuarioAuth) y
+   * se exige que ASISCO UP responda con su `idEstudianteExterno`.
+   */
   async verificar(
-    idEstudianteExterno: bigint,
+    estudiante: IdsEstudianteConsentimiento,
     token?: string | null,
   ): Promise<VerificacionConsentimiento> {
+    const ids: IdsEstudianteConsentimiento = {
+      idUsuarioAuth: estudiante.idUsuarioAuth,
+      idEstudianteExterno: estudiante.idEstudianteExterno,
+    };
     let consentimiento;
     try {
-      consentimiento = await this.consulta.vigente(idEstudianteExterno, token);
+      consentimiento = await this.consulta.vigente(ids, token);
     } catch (error) {
       if (!(error instanceof ServicioExternoNoDisponibleError)) throw error;
       this.logger.warn('Consentimiento no verificable: no se guardará audio');

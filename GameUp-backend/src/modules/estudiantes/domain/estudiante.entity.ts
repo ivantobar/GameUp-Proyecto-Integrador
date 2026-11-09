@@ -25,6 +25,11 @@ export interface PropiedadesEstudiante {
   personajeAvatar: string | null;
   /** idEstudiante en la API del núcleo familiar (no se expone fuera de la directora). */
   idEstudianteExterno: bigint;
+  /**
+   * usuario.id_usuario_auth: `id_usuario` del estudiante en la API central.
+   * Con él se consulta el consentimiento en ASISCO UP. Nunca sale en un DTO.
+   */
+  idUsuarioAuth: bigint;
 }
 
 function palabras(texto: string): string[] {
@@ -64,6 +69,7 @@ export class Estudiante {
   readonly fechaIngreso: Date;
   readonly personajeAvatar: string | null;
   readonly idEstudianteExterno: bigint;
+  readonly idUsuarioAuth: bigint;
 
   constructor(p: PropiedadesEstudiante) {
     this.id = p.id;
@@ -75,6 +81,7 @@ export class Estudiante {
     this.fechaIngreso = p.fechaIngreso;
     this.personajeAvatar = p.personajeAvatar;
     this.idEstudianteExterno = p.idEstudianteExterno;
+    this.idUsuarioAuth = p.idUsuarioAuth;
   }
 
   /** «Martín» (como saluda la app al niño). */

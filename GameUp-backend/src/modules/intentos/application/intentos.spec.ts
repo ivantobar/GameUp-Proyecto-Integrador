@@ -209,7 +209,10 @@ describe('Intentos y grabaciones', () => {
           consentimientoVerificadoEn: AHORA,
         },
       ]);
-      expect(e.consentimiento.consultados).toEqual([10000n]);
+      // Por el id_usuario central del estudiante 10, con su id de ASISCO UP.
+      expect(e.consentimiento.consultados).toEqual([
+        { idUsuarioAuth: 1000n, idEstudianteExterno: 10000n },
+      ]);
       expect(r.intento.resultado).toEqual({ estadoGrabacion: 'ADJUNTA' });
     });
 

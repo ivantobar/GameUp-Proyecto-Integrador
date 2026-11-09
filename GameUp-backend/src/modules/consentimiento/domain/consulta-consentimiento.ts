@@ -1,7 +1,7 @@
 /**
  * Puerto ConsultaConsentimiento: el consentimiento vive en ASISCO UP (API del
  * núcleo familiar). GameUP no guarda una copia: lo consulta cada vez con
- * GET /api/estudiantes/{id}/consentimiento.
+ * GET /api/estudiantes/por-usuario/{idUsuarioAuth}/consentimiento.
  *
  * Desde los términos v1.1-2026, ASISCO UP separa el permiso de voz
  * (autorizaGrabacionVoz). `aceptaTratamiento` significa aquí "se puede grabar
@@ -15,15 +15,24 @@ export interface ConsentimientoVigente {
   codigoVersion: string;
 }
 
+/** Los dos ids del estudiante fuera de GameUP. */
+export interface IdsEstudianteConsentimiento {
+  /** `id_usuario` en la API central (usuario.id_usuario_auth): con él se pregunta. */
+  idUsuarioAuth: bigint;
+  /** `idEstudiante` local de ASISCO UP: la respuesta debe traer este. */
+  idEstudianteExterno: bigint;
+}
+
 export interface ConsultaConsentimiento {
   /**
    * Consentimiento vigente del estudiante, o null si no hay ninguno.
-   * Lanza ServicioExternoNoDisponibleError si no se puede consultar.
-   * `token`: JWT de la API de seguridad de quien hace la petición; ASISCO UP
-   * lo exige desde el 2026-11-08 (sin él responde 401).
+   * Lanza ServicioExternoNoDisponibleError si no se puede consultar o si la
+   * respuesta no corresponde a ese estudiante.
+   * `token`: JWT de la API central de quien hace la petición; ASISCO UP
+   * lo exige (sin él responde 401).
    */
   vigente(
-    idEstudianteExterno: bigint,
+    ids: IdsEstudianteConsentimiento,
     token?: string | null,
   ): Promise<ConsentimientoVigente | null>;
 }

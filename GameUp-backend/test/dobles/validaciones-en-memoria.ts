@@ -72,7 +72,10 @@ export class ValidacionesEnMemoria
     if (f.asignacionId !== null) return true;
     const n = this.niveles?.nivelDeActividad(f.actividadId);
     if (!n) return false;
-    if (this.niveles!.nivelDe(this.estudianteDe(f), n.juego).nivelActual !== n.nivel)
+    if (
+      this.niveles!.nivelDe(this.estudianteDe(f), n.juego).nivelActual !==
+      n.nivel
+    )
       return false;
     return !pendientes.some((o) => this.mismoGrupo(o, f) && o.id! > f.id!);
   }
@@ -124,8 +127,9 @@ export class ValidacionesEnMemoria
           nivelJuego: actividad.nivelJuego,
         },
         modulo: { id: modulo.id, nombre: modulo.nombre },
-        pendientesMismaActividad: pendientes.filter((o) => this.mismoGrupo(o, f))
-          .length,
+        pendientesMismaActividad: pendientes.filter((o) =>
+          this.mismoGrupo(o, f),
+        ).length,
         grabacion: f.grabacion
           ? {
               disponible: f.grabacion.eliminadaEn === null,
@@ -162,7 +166,10 @@ export class ValidacionesEnMemoria
       : null;
   }
 
-  async aprobarLote(ids: bigint[], validadorId: bigint): Promise<ResultadoLote> {
+  async aprobarLote(
+    ids: bigint[],
+    validadorId: bigint,
+  ): Promise<ResultadoLote> {
     if (ids.some((id) => this.filas.find((x) => x.id === id)?.validacion)) {
       throw new Error('validacion_intento_id_key'); // la transacción no deja ninguna
     }

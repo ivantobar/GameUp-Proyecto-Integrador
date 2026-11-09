@@ -104,10 +104,8 @@ export class HablaConmigoService {
     }
 
     const estudiante = await this.acceso.existente(actual.id);
-    const verificacion = await this.consentimiento.verificar(
-      estudiante.idEstudianteExterno,
-      token,
-    );
+    // Por id_usuario central (idUsuarioAuth), validando su idEstudianteExterno.
+    const verificacion = await this.consentimiento.verificar(estudiante, token);
     let estado = estadoInicial(audio !== null, verificacion);
 
     const vocal = String(actividad.configuracion['vocal'] ?? '');

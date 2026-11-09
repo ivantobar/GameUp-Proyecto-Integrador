@@ -12,7 +12,12 @@ const fila = (extra: Partial<FilaEstudiante> = {}): FilaEstudiante => ({
   personaje_avatar: 'osito',
   id_estudiante_externo: 9001n,
   nivel: { id: 1n, nombre: 'BAJO' },
-  usuario: { nombres: 'Martín José', apellidos: 'cruz Pérez', activo: true },
+  usuario: {
+    id_usuario_auth: 4747n,
+    nombres: 'Martín José',
+    apellidos: 'cruz Pérez',
+    activo: true,
+  },
   ...extra,
 });
 
@@ -43,6 +48,19 @@ describe('EstudianteMapper', () => {
       cuentaActiva: true,
     });
     expect(JSON.stringify(dto)).not.toContain('9001');
+  });
+
+  it('ningún DTO lleva los ids externos (idEstudianteExterno ni idUsuarioAuth)', () => {
+    for (const dto of [
+      EstudianteMapper.aResumenDto(e),
+      EstudianteMapper.aDetalleDto(e),
+      EstudianteMapper.aPropioDto(e),
+    ]) {
+      const json = JSON.stringify(dto);
+      expect(json).not.toContain('9001');
+      expect(json).not.toContain('4747');
+      expect(json).not.toMatch(/idUsuarioAuth|idEstudianteExterno/);
+    }
   });
 
   it('propio (StudentProfile): saluda por el primer nombre', () => {

@@ -126,6 +126,7 @@ export class EstudiantesEnMemoria
       fechaIngreso: FECHA_INGRESO,
       personajeAvatar: null,
       idEstudianteExterno: u.estudiante.idEstudianteExterno,
+      idUsuarioAuth: u.idUsuarioAuth,
     });
   }
 
