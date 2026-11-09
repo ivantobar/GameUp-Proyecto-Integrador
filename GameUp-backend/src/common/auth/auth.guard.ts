@@ -23,7 +23,8 @@ import {
  *
  * 1. Verifica el token con la API de seguridad (puerto VerificadorToken).
  * 2. Busca la cuenta en GameUP y comprueba el rol (puerto ResolutorUsuario).
- * 3. Deja el resultado en `request.usuario` para @UsuarioActual().
+ * 3. Deja el resultado en `request.usuario` (@UsuarioActual()) y la
+ *    identidad central en `request.identidad` (@IdentidadActual()).
  */
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -50,6 +51,7 @@ export class AuthGuard implements CanActivate {
 
     const identidad = await this.verificador.verificar(token);
     solicitud.usuario = await this.resolutor.resolver(identidad);
+    solicitud.identidad = identidad;
     return true;
   }
 }

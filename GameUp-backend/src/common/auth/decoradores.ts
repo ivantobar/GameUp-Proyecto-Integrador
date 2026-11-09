@@ -6,6 +6,7 @@ import {
 import { NoAutenticadoError } from '../errors/dominio.errors.js';
 import { extraerTokenBearer, type SolicitudAutenticada } from './solicitud.js';
 import type { RolGameUp, UsuarioAutenticado } from './usuario-autenticado.js';
+import type { IdentidadExterna } from './verificador-token.js';
 
 export const ES_PUBLICA = 'gameup:es-publica';
 export const ROLES_PERMITIDOS = 'gameup:roles';
@@ -32,6 +33,20 @@ export const UsuarioActual = createParamDecorator(
     // Solo pasa si se usa en una ruta @Public(): es un error de programación.
     if (!usuario) throw new NoAutenticadoError();
     return usuario;
+  },
+);
+
+/**
+ * Inyecta la identidad central de quien hace la petición (lo que respondió
+ * GET /api/auth/perfil de la API central, ya verificado por AuthGuard).
+ */
+export const IdentidadActual = createParamDecorator(
+  (_dato: unknown, ctx: ExecutionContext): IdentidadExterna => {
+    const identidad = ctx
+      .switchToHttp()
+      .getRequest<SolicitudAutenticada>().identidad;
+    if (!identidad) throw new NoAutenticadoError();
+    return identidad;
   },
 );
 

@@ -93,7 +93,18 @@ describe('Auth: login, me y logout (e2e)', () => {
       expect(res.body).toEqual({
         token: TOKEN_TALLERISTA,
         expiraEn: '2027-01-15T08:00:00.000Z',
-        usuario: { userId: '2', role: 'teacher', displayName: 'Ana Gómez' },
+        usuario: {
+          userId: '2',
+          role: 'teacher',
+          displayName: 'Ana Gómez',
+          identidadCentral: {
+            idUsuario: '200',
+            nombres: 'Ana María',
+            apellidos: 'Gómez Ruiz',
+            correo: 'ana@ejemplo.com',
+            roles: ['DONANTE', 'TALLERISTA'],
+          },
+        },
       });
     });
 
@@ -117,6 +128,13 @@ describe('Auth: login, me y logout (e2e)', () => {
         userId: '5',
         role: 'student',
         displayName: 'Martín',
+        identidadCentral: {
+          idUsuario: '500',
+          nombres: 'Martín José',
+          apellidos: 'Cruz',
+          correo: null,
+          roles: ['ESTUDIANTE'],
+        },
       });
       expect(res.body.expiraEn).toBeNull();
     });
@@ -188,6 +206,13 @@ describe('Auth: login, me y logout (e2e)', () => {
           userId: '2',
           role: 'teacher',
           displayName: 'Ana Gómez',
+          identidadCentral: {
+            idUsuario: '200',
+            nombres: 'Ana María',
+            apellidos: 'Gómez Ruiz',
+            correo: 'ana@ejemplo.com',
+            roles: ['DONANTE', 'TALLERISTA'],
+          },
         });
     });
 

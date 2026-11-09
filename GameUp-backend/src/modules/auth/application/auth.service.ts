@@ -42,6 +42,8 @@ export interface SesionIniciada {
   token: string;
   expiraEn: Date | null;
   usuario: Usuario;
+  /** Lo que dijo GET /api/auth/perfil de la API central. */
+  identidad: IdentidadExterna;
 }
 
 /**
@@ -118,7 +120,12 @@ export class AuthService {
         'Tu cuenta aún no está registrada en GameUP.',
       );
     }
-    return { token, expiraEn: leerExpiracionJwt(token), usuario };
+    return {
+      token,
+      expiraEn: leerExpiracionJwt(token),
+      usuario,
+      identidad,
+    };
   }
 
   /**

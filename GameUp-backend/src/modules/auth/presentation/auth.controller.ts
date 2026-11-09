@@ -14,11 +14,13 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import {
+  IdentidadActual,
   Public,
   TokenActual,
   UsuarioActual,
 } from '../../../common/auth/decoradores.js';
 import type { UsuarioAutenticado } from '../../../common/auth/usuario-autenticado.js';
+import type { IdentidadExterna } from '../../../common/auth/verificador-token.js';
 import { ApiErrores } from '../../../docs/api-errores.js';
 import { BEARER_AUTH } from '../../../docs/swagger.js';
 import { AuthService } from '../application/auth.service.js';
@@ -40,8 +42,13 @@ export class AuthController {
   @ApiOperation({
     summary: 'Iniciar sesión',
     description:
-      'Reenvía las credenciales a la API de seguridad y devuelve su token con la ' +
-      'sesión de la app.\n\n' +
+      'Reenvía `{ correo_usuario, contraseña_usuario }` a **POST /api/auth/login de la API ' +
+      'central** y devuelve su JWT sin cambios (GameUP no firma tokens). Luego llama a ' +
+      '**GET /api/auth/perfil** con ese token: la identidad y los roles vienen de ahí ' +
+      '(`usuario.identidadCentral`); `usuario.role` es el rol dentro de GameUP.\n\n' +
+      '**Ids:** `usuario.userId` es el id interno de GameUP; ' +
+      '`usuario.identidadCentral.idUsuario` es el `id_usuario` de la API central ' +
+      '(en GameUP, `idUsuarioAuth`).\n\n' +
       '**Alta automática en el primer inicio de sesión:** si la persona aún no tiene ' +
       'cuenta en GameUP y su rol de seguridad da acceso (ADMIN→DIRECTORA, TALLERISTA, ' +
       'ACUDIENTE, ESTUDIANTE) y está en `ALTA_AUTOMATICA_ROLES`, se crea su cuenta y ' +
@@ -68,13 +75,24 @@ export class AuthController {
 
   @Get('me')
   @ApiBearerAuth(BEARER_AUTH)
-  @ApiOperation({ summary: 'Sesión de quien hace la petición' })
+  @ApiOperation({
+    summary: 'Sesión de quien hace la petición',
+    description:
+      'El Bearer es el JWT de la API central. La identidad y los roles vienen de ' +
+      'GET /api/auth/perfil de la API central (`identidadCentral`, con `idUsuario` = ' +
+      '`id_usuario` central); `role` es el rol dentro de GameUP y `userId` el id interno ' +
+      'de GameUP. No se devuelven documento, teléfono, dirección ni fecha de nacimiento.',
+  })
   @ApiOkResponse({ type: SesionUsuarioDto })
   @ApiErrores(401, 403, 503)
   async me(
     @UsuarioActual() actual: UsuarioAutenticado,
+    @IdentidadActual() identidad: IdentidadExterna,
   ): Promise<SesionUsuarioDto> {
-    return SesionMapper.aSesionDto(await this.auth.sesionActual(actual));
+    return SesionMapper.aSesionDto(
+      await this.auth.sesionActual(actual),
+      identidad,
+    );
   }
 
   @Post('logout')

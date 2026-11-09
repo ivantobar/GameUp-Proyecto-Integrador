@@ -18,12 +18,54 @@ export class LoginDto {
   contrasena: string;
 }
 
+/**
+ * Identidad de la persona según la API central (GET /api/auth/perfil).
+ * Solo lo necesario: nunca documento, teléfono, dirección ni fecha de nacimiento.
+ */
+export class IdentidadCentralDto {
+  @ApiProperty({
+    example: '47',
+    description:
+      '`id_usuario` en la API central (en GameUP se guarda como `idUsuarioAuth`).',
+  })
+  idUsuario: string;
+
+  @ApiProperty({ example: 'Ana María', nullable: true, type: String })
+  nombres: string | null;
+
+  @ApiProperty({ example: 'Gómez Ruiz', nullable: true, type: String })
+  apellidos: string | null;
+
+  @ApiProperty({
+    example: 'tallerista@ejemplo.com',
+    nullable: true,
+    type: String,
+  })
+  correo: string | null;
+
+  @ApiProperty({
+    example: ['TALLERISTA'],
+    type: [String],
+    description:
+      'Roles centrales (`nombre_rol`) tal como los da la API central. ADMIN equivale a DIRECTORA en GameUP.',
+  })
+  roles: string[];
+}
+
 /** Sesión tal como la usa la app (AuthSession en GameUp-frontend). */
 export class SesionUsuarioDto {
-  @ApiProperty({ example: '12', description: 'Id interno de GameUP' })
+  @ApiProperty({
+    example: '12',
+    description:
+      'Id interno de GameUP (`usuario.id`). No es el `id_usuario` de la API central.',
+  })
   userId: string;
 
-  @ApiProperty({ enum: ROLES_APP, example: 'teacher' })
+  @ApiProperty({
+    enum: ROLES_APP,
+    example: 'teacher',
+    description: 'Rol dentro de GameUP (no el rol central).',
+  })
   role: RolApp;
 
   @ApiProperty({
@@ -32,13 +74,22 @@ export class SesionUsuarioDto {
       'Estudiante: primer nombre («Martín»). Adultos: nombre y apellido.',
   })
   displayName: string;
+
+  @ApiProperty({
+    type: IdentidadCentralDto,
+    description:
+      'La identidad y los roles vienen de GET /api/auth/perfil de la API central; ' +
+      '`role` es el rol dentro de GameUP.',
+  })
+  identidadCentral: IdentidadCentralDto;
 }
 
 export class LoginRespuestaDto {
   @ApiProperty({
     example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.e30.firma',
     description:
-      'JWT de la API de seguridad. Se envía en Authorization: Bearer <token>.',
+      'JWT de la API central (POST /api/auth/login). GameUP no firma tokens: ' +
+      'se envía tal cual en Authorization: Bearer <token>.',
   })
   token: string;
 
