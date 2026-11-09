@@ -1,3 +1,4 @@
+import { File } from 'expo-file-system';
 import type { ApiClient } from '@/services/api';
 import type { RecordingRepository, ResultRepository } from '../repositories';
 import type {
@@ -22,6 +23,25 @@ import { withSilentRetry } from './silentRetry';
 const VOICE_FILE = { name: 'voz.m4a', type: 'audio/mp4' } as const;
 
 /**
+ * Parte del multipart con la voz grabada.
+ *
+ * Expo SDK 58 cambia el `fetch` global por `expo/fetch`, que arma el
+ * multipart en JS y solo acepta en cada parte un texto, un `Blob` o un objeto
+ * con `bytes()`. La parte clásica de React Native `{ uri, name, type }` hace
+ * que lance «Unsupported FormDataPart implementation» y el audio nunca sale
+ * del celular. Por eso la parte trae `bytes()` (lee el archivo con
+ * expo-file-system) y conserva `uri`, por si se vuelve al `fetch` de React
+ * Native (`EXPO_PUBLIC_USE_RN_FETCH`).
+ */
+export function voicePart(uri: string) {
+  return {
+    uri,
+    ...VOICE_FILE,
+    bytes: (): Promise<Uint8Array> => new File(uri).bytes(),
+  };
+}
+
+/**
  * Envío de intentos al terminar un juego. Solo se envían los juegos abiertos
  * desde una actividad (`activityId`); el juego libre se practica sin enviar
  * (decisión D1). Si el envío falla, se reintenta en silencio (Regla 11).
@@ -39,11 +59,7 @@ export function createHttpRecordingRepository(
         const form = new FormData();
         form.append('actividadId', activityId);
         if (input.audioUri) {
-          // React Native sube un archivo local con { uri, name, type }.
-          form.append('audio', {
-            uri: input.audioUri,
-            ...VOICE_FILE,
-          } as unknown as Blob);
+          form.append('audio', voicePart(input.audioUri) as unknown as Blob);
         }
         return api.postForm<IntentoVozDto>('/intentos/habla-conmigo', form);
       };

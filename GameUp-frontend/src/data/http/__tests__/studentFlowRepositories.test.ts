@@ -296,7 +296,13 @@ describe('Habla conmigo: envío del intento', () => {
       ['actividadId', '8'],
       [
         'audio',
-        { uri: 'file:///cache/voz.m4a', name: 'voz.m4a', type: 'audio/mp4' },
+        {
+          uri: 'file:///cache/voz.m4a',
+          name: 'voz.m4a',
+          type: 'audio/mp4',
+          // expo/fetch (SDK 58) lee el archivo con bytes().
+          bytes: expect.any(Function),
+        },
       ],
     ]);
     expect(attempt).toMatchObject({
