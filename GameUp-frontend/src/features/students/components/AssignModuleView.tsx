@@ -30,7 +30,8 @@ interface AssignModuleViewProps {
 /**
  * «Asignar actividad»: elegir un módulo publicado y, si se quiere, una
  * fecha sugerida. Los que ya tiene sin terminar aparecen como «Ya
- * asignado». Al confirmar, vuelve al detalle con «Actividad asignada».
+ * asignado». Tocar otra vez el elegido lo quita. Al confirmar, vuelve al
+ * detalle con «¡Listo! La actividad … quedó asignada a …».
  */
 export function AssignModuleView({ studentId }: AssignModuleViewProps) {
   const { resource, reload, error, submitting, assign } =
@@ -49,7 +50,7 @@ export function AssignModuleView({ studentId }: AssignModuleViewProps) {
     if (!selected) return;
     const ok = await assign(selected.module.id, date);
     if (ok) {
-      leaveAssignedNotice(studentId);
+      leaveAssignedNotice(studentId, selected.module.title);
       router.back();
     }
   };
@@ -116,7 +117,12 @@ export function AssignModuleView({ studentId }: AssignModuleViewProps) {
                 key={choice.module.id}
                 choice={choice}
                 selected={choice.module.id === selected?.module.id}
-                onPress={() => setSelectedId(choice.module.id)}
+                // Tocar otra vez el elegido lo deselecciona.
+                onPress={() =>
+                  setSelectedId((current) =>
+                    current === choice.module.id ? null : choice.module.id,
+                  )
+                }
               />
             ))}
           </View>

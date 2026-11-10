@@ -64,8 +64,21 @@ describe('Asignar actividad', () => {
       suggestedDate: '2026-11-20',
     });
     expect(router.back).toHaveBeenCalledTimes(1);
-    // El detalle mostrará «Actividad asignada» al volver.
-    expect(takeAssignedNotice(mockStudent.id)).toBe(true);
+    // El detalle mostrará «¡Listo! La actividad … quedó asignada» al volver.
+    expect(takeAssignedNotice(mockStudent.id)).toBe('Rutinas de la casa');
+  });
+
+  it('tocar otra vez el módulo elegido lo deselecciona', async () => {
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    await renderAssign(createMockRepositories({ delayMs: 0 }));
+
+    await user.press(screen.getByTestId('modulo-routines'));
+    expect(screen.getByText('Elegido')).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: 'Asignar' })).toBeEnabled();
+
+    await user.press(screen.getByTestId('modulo-routines'));
+    expect(screen.queryByText('Elegido')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Asignar' })).toBeDisabled();
   });
 
   it('«Sin fecha» no envía fecha sugerida', async () => {

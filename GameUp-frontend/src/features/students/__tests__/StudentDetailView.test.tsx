@@ -99,7 +99,7 @@ describe('detalle del estudiante', () => {
     expect(screen.queryByText(/^Por revisar/)).toBeNull();
   });
 
-  it('al volver de asignar, avisa «Actividad asignada» y muestra la nueva', async () => {
+  it('al volver de asignar, avisa «¡Listo! … quedó asignada a …» y muestra la nueva', async () => {
     const repos = createMockRepositories({ delayMs: 0 });
     await renderDetail(repos);
 
@@ -112,10 +112,14 @@ describe('detalle del estudiante', () => {
       await jest.runAllTimersAsync();
       await pending;
     });
-    leaveAssignedNotice(mockStudent.id);
+    leaveAssignedNotice(mockStudent.id, 'Rutinas de la casa');
     await focusAgain();
 
-    expect(screen.getByText('Actividad asignada')).toBeOnTheScreen();
+    expect(
+      screen.getByText(
+        '¡Listo! La actividad «Rutinas de la casa» quedó asignada a Martín C.',
+      ),
+    ).toBeOnTheScreen();
     expect(screen.getAllByText('Rutinas de la casa').length).toBeGreaterThan(0);
     // Se actualizó sin volver a «cargando».
     expect(screen.queryByText('Buscando sus datos…')).toBeNull();

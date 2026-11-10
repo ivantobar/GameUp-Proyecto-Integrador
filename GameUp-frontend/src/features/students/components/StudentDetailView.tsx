@@ -70,7 +70,8 @@ export function StudentDetailView({
 
   // Al volver de «Asignar»: aviso y datos nuevos, sin ocultar los de ahora.
   const onFocus = useCallback(() => {
-    if (takeAssignedNotice(studentId)) showAssignedNotice();
+    const assignedTitle = takeAssignedNotice(studentId);
+    if (assignedTitle !== null) showAssignedNotice(assignedTitle);
     refresh();
     refreshPending();
     if (manageTeachers) {
