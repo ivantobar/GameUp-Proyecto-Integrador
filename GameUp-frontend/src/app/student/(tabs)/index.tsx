@@ -98,7 +98,7 @@ export default function StudentHome() {
       {newAssignment ? (
         <AssignmentNotice
           gameTitle={newAssignment.game.title}
-          icon={newAssignment.game.icon}
+          game={newAssignment.game.id}
           again={newAssignment.assignment.status === 'rejected'}
           onPress={() => router.push(assignmentHref(newAssignment.assignment))}
         />

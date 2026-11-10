@@ -101,6 +101,7 @@ export default function ModuleTasksScreen() {
                 caption={game.title}
                 title={taskTitle(task)}
                 icon={game.icon}
+                game={game.id}
                 badge={taskBadge(task)}
                 accessibilityHint="Abre esta actividad de tu profe."
                 onPress={() => router.push(assignmentHref(task))}

@@ -89,6 +89,22 @@ export const colors = {
     lengua: '#EE8F86',
     dientes: '#FFFFFF',
   },
+  /**
+   * [PENDIENTE DE APROBACIÓN] Colores vivos de los dibujos de cada juego
+   * (`GameIcon`): estilo infantil para que el niño reconozca el juego sin
+   * leer. Solo decoran; el texto de la tarjeta dice qué juego es.
+   */
+  juego: {
+    rojo: '#FF5A5F',
+    azul: '#3DA5FF',
+    amarillo: '#FFD23F',
+    rosa: '#FF6F91',
+    mejilla: '#FF8FA3',
+    hoja: '#6CCB5F',
+    morado: '#9B6BFF',
+    moradoClaro: '#C9B3FF',
+    fondoAmarillo: '#FFF1C7',
+  },
   /** Sin color de fondo (enlaces, bordes invisibles). */
   transparente: 'transparent',
 } as const;

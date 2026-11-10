@@ -101,6 +101,7 @@ export default function LevelsScreen() {
                       title={item.game.title}
                       subtitle={item.game.subtitle}
                       icon={item.game.icon}
+                      game={item.game.id}
                       tone={item.game.tone}
                       badge={item.badge}
                       level={item.level?.level}

@@ -2,6 +2,7 @@ export { AudioClipRow, type AudioClipKind } from './AudioClipRow';
 export { Celebration } from './Celebration';
 export { Character } from './Character';
 export { GameCard, type GameCardTone } from './GameCard';
+export { GameIcon } from './GameIcon';
 export { MicButton } from './MicButton';
 export { MirrorView } from './MirrorView';
 export { Mouth } from './Mouth';
