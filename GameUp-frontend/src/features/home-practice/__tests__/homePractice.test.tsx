@@ -1,9 +1,19 @@
 import type { ReactNode } from 'react';
-import { act, renderHook, waitFor } from '@testing-library/react-native';
+import {
+  act,
+  render,
+  renderHook,
+  screen,
+  userEvent,
+  waitFor,
+} from '@testing-library/react-native';
 import { createMockRepositories } from '@/data/mock/createMockRepositories';
 import { RepositoryProvider } from '@/data/RepositoryProvider';
+import { TeacherVideoCard } from '../components/TeacherVideoCard';
 import { homeSteps } from '../homeSteps';
 import { useWeeklyPractice } from '../useWeeklyPractice';
+
+jest.mock('expo-router', () => ({ useIsFocused: () => true }));
 
 const repositories = createMockRepositories({ delayMs: 0 });
 
@@ -41,5 +51,23 @@ describe('Practicar en casa', () => {
       expect(r.status === 'ready' && r.data.week.practicedToday).toBe(true);
     });
     expect(result.current.markState).toBe('idle');
+  });
+
+  it('«Mira cómo lo hace la profe»: ▶ abre el video del sonido de la semana', async () => {
+    const user = userEvent.setup();
+    await render(<TeacherVideoCard vowel="i" />);
+    expect(
+      screen.queryByLabelText('La profe Consuelo hace el gesto de la I'),
+    ).toBeNull();
+
+    await user.press(
+      screen.getByRole('button', { name: 'Ver cómo lo hace la profe' }),
+    );
+
+    expect(
+      screen.getByLabelText('La profe Consuelo hace el gesto de la I'),
+    ).toBeOnTheScreen();
+    expect(screen.getByText('Mira cómo lo hace la profe')).toBeOnTheScreen();
+    expect(screen.queryByText(/Muy pronto/)).toBeNull();
   });
 });

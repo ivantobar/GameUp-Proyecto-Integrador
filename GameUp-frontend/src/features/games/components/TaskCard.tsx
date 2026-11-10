@@ -6,6 +6,8 @@ import {
   PressableCard,
   type IconName,
 } from '@/components/ui';
+import { GameIcon } from '@/components/gameup';
+import type { GameId } from '@/data/types';
 import { colors, radii, sizes, spacing } from '@/theme';
 
 interface TaskCardProps {
@@ -13,6 +15,8 @@ interface TaskCardProps {
   caption: string;
   title: string;
   icon: IconName;
+  /** Actividad de un juego: muestra su dibujo a color en vez del ícono. */
+  game?: GameId;
   badge?: string;
   onPress: () => void;
   accessibilityHint?: string;
@@ -26,6 +30,7 @@ export function TaskCard({
   caption,
   title,
   icon,
+  game,
   badge,
   onPress,
   accessibilityHint,
@@ -37,9 +42,13 @@ export function TaskCard({
       accessibilityHint={accessibilityHint}
     >
       <View style={styles.row}>
-        <View style={styles.iconBox}>
-          <Icon name={icon} size="lg" color={colors.verde.oscuro} />
-        </View>
+        {game ? (
+          <GameIcon game={game} size="sm" />
+        ) : (
+          <View style={styles.iconBox}>
+            <Icon name={icon} size="lg" color={colors.verde.oscuro} />
+          </View>
+        )}
         <View style={styles.texts}>
           <AppText variant="support" tone="secundario">
             {caption}

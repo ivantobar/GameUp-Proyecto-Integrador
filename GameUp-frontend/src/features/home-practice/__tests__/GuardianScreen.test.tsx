@@ -1,14 +1,17 @@
 import { act, render, screen, userEvent } from '@testing-library/react-native';
 import { router } from 'expo-router';
+import { useVideoPlayer } from 'expo-video';
 import GuardianPracticeScreen from '@/app/guardian/index';
 import { NoLinkedStudentsError } from '@/data/guardianErrors';
 import { createMockRepositories } from '@/data/mock/createMockRepositories';
 import { RepositoryProvider } from '@/data/RepositoryProvider';
 import type { Repositories } from '@/data/repositories';
 import type { WeeklyPractice } from '@/data/types';
+import { VIDEO_CREDIT, vowelVideos } from '@/features/speak/vowelVideos';
 
 jest.mock('expo-router', () => ({
   router: { replace: jest.fn(), canGoBack: jest.fn(() => false) },
+  useIsFocused: () => true,
 }));
 jest.mock('@/data/useRefreshOnFocus', () => ({
   useRefreshOnFocus: jest.fn(),
@@ -87,6 +90,64 @@ describe('«Practicar en casa» con la API', () => {
     expect(
       screen.getByText('Esta semana practicaron 2 días.'),
     ).toBeOnTheScreen();
+  });
+
+  it('con sonido asignado, ▶ muestra el video de la profe', async () => {
+    const repositories = createMockRepositories({ delayMs: 0 });
+    repositories.guardians.getWeeklyPractice = () =>
+      Promise.resolve({ ...apiWeek('5', 'Estrella P.'), vowel: 'o' });
+    const user = userEvent.setup();
+
+    await renderScreen(repositories);
+    expect(screen.getByText('Mira cómo lo hace la profe')).toBeOnTheScreen();
+    await user.press(
+      screen.getByRole('button', { name: 'Ver cómo lo hace la profe' }),
+    );
+
+    expect(
+      screen.getByLabelText('La profe Consuelo hace el gesto de la O'),
+    ).toBeOnTheScreen();
+    expect(screen.getByText(VIDEO_CREDIT)).toBeOnTheScreen();
+    expect(screen.queryByText(/Muy pronto/)).toBeNull();
+  });
+
+  it('al cambiar a un estudiante con otra vocal, carga el video de esa vocal', async () => {
+    const repositories = createMockRepositories({ delayMs: 0 });
+    repositories.guardians.listStudents = () =>
+      Promise.resolve([student('5', 'Estrella P.'), student('9', 'Luna R.')]);
+    repositories.guardians.getWeeklyPractice = (_g: string, id?: string) =>
+      Promise.resolve(
+        id === '9'
+          ? { ...apiWeek('9', 'Luna R.'), vowel: 'u' }
+          : { ...apiWeek('5', 'Estrella P.'), vowel: 'a' },
+      );
+    const user = userEvent.setup();
+
+    await renderScreen(repositories);
+    await user.press(
+      screen.getByRole('button', { name: 'Ver cómo lo hace la profe' }),
+    );
+    expect(
+      screen.getByLabelText('La profe Consuelo hace el gesto de la A'),
+    ).toBeOnTheScreen();
+
+    await user.press(screen.getByRole('button', { name: 'Luna' }));
+    await settle();
+
+    // Tarjeta nueva (key={vowel}): vuelve al ▶ y luego muestra la U.
+    expect(
+      screen.queryByLabelText('La profe Consuelo hace el gesto de la A'),
+    ).toBeNull();
+    await user.press(
+      screen.getByRole('button', { name: 'Ver cómo lo hace la profe' }),
+    );
+    expect(
+      screen.getByLabelText('La profe Consuelo hace el gesto de la U'),
+    ).toBeOnTheScreen();
+    expect(jest.mocked(useVideoPlayer)).toHaveBeenLastCalledWith(
+      vowelVideos.u,
+      expect.any(Function),
+    );
   });
 
   it('con varios estudiantes, elige a quién ver', async () => {

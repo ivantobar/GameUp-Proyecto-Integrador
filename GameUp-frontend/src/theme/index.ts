@@ -12,5 +12,6 @@ export {
   type IconSize,
   type CharacterSize,
   type MouthSize,
+  type GameIconSize,
 } from './layout';
 export { motion } from './motion';

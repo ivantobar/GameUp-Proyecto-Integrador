@@ -1,16 +1,13 @@
 import { StyleSheet, View } from 'react-native';
-import {
-  AppText,
-  Badge,
-  Icon,
-  PressableCard,
-  type IconName,
-} from '@/components/ui';
-import { colors, radii, sizes, spacing } from '@/theme';
+import { AppText, Badge, PressableCard } from '@/components/ui';
+import { GameIcon } from '@/components/gameup';
+import type { GameId } from '@/data/types';
+import { spacing } from '@/theme';
 
 interface AssignmentNoticeProps {
   gameTitle: string;
-  icon: IconName;
+  /** Juego de la tarea: se ve su dibujo a color. */
+  game: GameId;
   /** La profe pidió practicarla otra vez (no es nueva). */
   again?: boolean;
   onPress: () => void;
@@ -19,7 +16,7 @@ interface AssignmentNoticeProps {
 /** «Tu profe te dejó…»: la tarea nueva aparece aparte (mockup 1). */
 export function AssignmentNotice({
   gameTitle,
-  icon,
+  game,
   again = false,
   onPress,
 }: AssignmentNoticeProps) {
@@ -34,9 +31,7 @@ export function AssignmentNotice({
       }
     >
       <View style={styles.row}>
-        <View style={styles.iconBox}>
-          <Icon name={icon} size="lg" color={colors.verde.oscuro} />
-        </View>
+        <GameIcon game={game} size="sm" />
         <View style={styles.texts}>
           <AppText variant="support" tone="secundario">
             Tu profe te dejó
@@ -54,14 +49,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-  },
-  iconBox: {
-    width: sizes.iconBox,
-    height: sizes.iconBox,
-    borderRadius: radii.lg,
-    backgroundColor: colors.verde.suave,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   texts: {
     flex: 1,

@@ -49,6 +49,8 @@ export const sizes = {
   mouth: { sm: 56, md: 80, lg: 120 },
   /** Recuadro blanco del ícono en las tarjetas de juego. */
   iconBox: 56,
+  /** Dibujo de cada juego: tareas e Inicio (sm), tarjetas de Juegos (md). */
+  gameIcon: { sm: 56, md: 72 },
   /** Recuadro del símbolo de cada tema en «Mi progreso». */
   moduleBadge: 44,
   /** Botón de micrófono y su halo (paso «Dilo»). */
@@ -88,5 +90,6 @@ export const sizes = {
 
 export type CharacterSize = keyof typeof sizes.character;
 export type MouthSize = keyof typeof sizes.mouth;
+export type GameIconSize = keyof typeof sizes.gameIcon;
 
 export type IconSize = keyof typeof sizes.icon;

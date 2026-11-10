@@ -1,0 +1,13 @@
+{
+  "cli": { "appVersionSource": "local" },
+  "build": {
+    "preview": {
+      "distribution": "internal",
+      "android": { "buildType": "apk" },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://gameup-backend.onrender.com/api/v1",
+        "EXPO_PUBLIC_DATA_SOURCE": "api"
+      }
+    }
+  }
+}

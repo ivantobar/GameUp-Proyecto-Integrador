@@ -8,7 +8,9 @@ import {
   type PressableBaseProps,
   type TextTone,
 } from '@/components/ui';
+import type { GameId } from '@/data/types';
 import { colors, radii, sizes, spacing, type ThemeColor } from '@/theme';
+import { GameIcon } from './GameIcon';
 import { LevelStars, levelStarsLabel } from './LevelStars';
 
 export type GameCardTone = 'brand' | 'warm' | 'surface';
@@ -47,6 +49,11 @@ interface GameCardProps extends PressableBaseProps {
   title: string;
   subtitle: string;
   icon: IconName;
+  /**
+   * Juego de la tarjeta: en vez del ícono de línea muestra su dibujo a
+   * color (`GameIcon`), que el niño reconoce sin leer.
+   */
+  game?: GameId;
   tone: GameCardTone;
   /** «Nuevo», «Tarea»… Se muestra en mayúsculas. */
   badge?: string;
@@ -62,6 +69,7 @@ export function GameCard({
   title,
   subtitle,
   icon,
+  game,
   tone,
   badge,
   level,
@@ -91,9 +99,13 @@ export function GameCard({
       style={styles.card}
     >
       <View style={styles.top}>
-        <View style={[styles.iconSlot, config.iconBox && styles.iconBox]}>
-          <Icon name={icon} size="lg" color={config.icon} />
-        </View>
+        {game ? (
+          <GameIcon game={game} />
+        ) : (
+          <View style={[styles.iconSlot, config.iconBox && styles.iconBox]}>
+            <Icon name={icon} size="lg" color={config.icon} />
+          </View>
+        )}
         {badge ? <Badge label={badge} /> : null}
       </View>
       <AppText variant="bodyStrong" tone={config.title}>

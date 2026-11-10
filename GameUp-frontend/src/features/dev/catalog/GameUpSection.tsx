@@ -25,7 +25,7 @@ export function GameUpSection() {
   return (
     <CatalogSection
       title="Personaje y bocas"
-      note="Diseño original del equipo. No copia las láminas ni los gestos del Método Ventura."
+      note="Diseño original del equipo: no copia las láminas del Método Ventura. Los videos de los gestos sí siguen el método de la profe Consuelo, basado en el Método Ventura de Patricia Ventura."
     >
       <CatalogLabel>Bocas sueltas (Busca la boca)</CatalogLabel>
       <Card>
