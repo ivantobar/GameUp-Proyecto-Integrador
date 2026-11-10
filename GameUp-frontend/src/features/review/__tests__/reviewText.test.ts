@@ -28,7 +28,7 @@ const listening: ReviewItem = {
   listening: { firstTryCorrect: 4, total: 5 },
 };
 
-describe('textos de «Por escuchar»', () => {
+describe('textos de «Por revisar»', () => {
   it('fecha: hoy con hora, ayer, o día y mes', () => {
     expect(formatSubmittedAt(speech.submittedAt, now)).toBe('hoy, 4:10 p. m.');
     expect(

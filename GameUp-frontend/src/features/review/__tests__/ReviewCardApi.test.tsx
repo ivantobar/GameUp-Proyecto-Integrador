@@ -2,7 +2,7 @@ import { act, render, screen, userEvent } from '@testing-library/react-native';
 import type { ReviewItem } from '@/data/types';
 import { ReviewCard } from '../components/ReviewCard';
 
-/** Tarjeta de «Por escuchar» con datos como los que da la API (fase 3). */
+/** Tarjeta de «Por revisar» con datos como los que da la API (fase 3). */
 const speechItem: ReviewItem = {
   id: '41',
   kind: 'speech',

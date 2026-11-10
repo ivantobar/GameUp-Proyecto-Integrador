@@ -45,7 +45,7 @@ function errorText(error: unknown): string {
 }
 
 /**
- * «Por escuchar» (docente) y «Por validar» (directora): actividades
+ * «Por revisar» (docente) y «Por validar» (directora): actividades
  * pendientes que le corresponden a la sesión, y sus acciones (validar,
  * pedir práctica, nota de voz). Con `studentId`, solo las de ese estudiante.
  */

@@ -50,7 +50,7 @@ describe('Iniciar sesión (simulado)', () => {
     expect(spy).not.toHaveBeenCalled();
   });
 
-  it('la docente entra y va a «Por escuchar»', async () => {
+  it('la docente entra y va a «Por revisar»', async () => {
     await renderLogin(createMockRepositories({ delayMs: 0 }));
 
     await signIn('Docente@gameup.test ', MOCK_PASSWORD);

@@ -72,7 +72,7 @@ const cardNames = () =>
     .getAllByRole('button', { name: /actividad(es)? por revisar$/ })
     .map((card) => card.props.accessibilityLabel as string);
 
-describe('«Por escuchar»: primero se elige el estudiante', () => {
+describe('«Por revisar»: primero se elige el estudiante', () => {
   beforeEach(() => {
     jest.mocked(useRefreshOnFocus).mockClear();
     jest.mocked(router.push).mockClear();
@@ -81,7 +81,7 @@ describe('«Por escuchar»: primero se elige el estudiante', () => {
   it('una tarjeta por estudiante con pendientes, primero quien más espera', async () => {
     await renderList(await signedIn('docente@gameup.test'));
 
-    expect(screen.getByText('Por escuchar')).toBeOnTheScreen();
+    expect(screen.getByText('Por revisar')).toBeOnTheScreen();
     expect(
       screen.getByRole('header', { name: '3 estudiantes esperan' }),
     ).toBeOnTheScreen();

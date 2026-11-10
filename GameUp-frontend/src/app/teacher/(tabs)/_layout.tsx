@@ -3,7 +3,7 @@ import { TeacherTabBar, teacherTabs } from '@/features/teacher/TeacherTabBar';
 import { colors } from '@/theme';
 
 /**
- * Pestañas del docente. `/teacher` abre «Por escuchar» (`index`).
+ * Pestañas del docente. `/teacher` abre «Por revisar» (`index`).
  *
  * SDK 58: Expo Router solo muestra las pantallas declaradas en el layout;
  * se declaran a partir de `teacherTabs`, la misma lista de la barra.

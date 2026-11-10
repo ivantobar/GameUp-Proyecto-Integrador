@@ -48,7 +48,7 @@ async function settle<T>(promise: Promise<T>): Promise<T> {
   return value as T;
 }
 
-describe('«Por escuchar» con la API', () => {
+describe('«Por revisar» con la API', () => {
   it('«Practicar más» con la opción: la indicación también llega a la familia', async () => {
     const repositories = apiLike();
     const share = jest.spyOn(repositories.reviews, 'shareNoteWithFamily');

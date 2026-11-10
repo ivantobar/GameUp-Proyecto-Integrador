@@ -75,14 +75,14 @@ describe('detalle del estudiante', () => {
     );
   });
 
-  it('«Por escuchar (n)» abre sus actividades por revisar', async () => {
+  it('«Por revisar (n)» abre sus actividades por revisar', async () => {
     const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
     await renderDetail(createMockRepositories({ delayMs: 0 }));
 
     const button = screen.getByRole('button', {
-      name: 'Por escuchar: 1 actividad por revisar',
+      name: 'Por revisar: 1 actividad por revisar',
     });
-    expect(within(button).getByText('Por escuchar (1)')).toBeOnTheScreen();
+    expect(within(button).getByText('Por revisar (1)')).toBeOnTheScreen();
 
     await user.press(button);
     expect(router.push).toHaveBeenCalledWith(
@@ -90,13 +90,13 @@ describe('detalle del estudiante', () => {
     );
   });
 
-  it('sin actividades por revisar no muestra «Por escuchar»', async () => {
+  it('sin actividades por revisar no muestra «Por revisar»', async () => {
     const repos = createMockRepositories({ delayMs: 0 });
     repos.reviews.listPendingSummary = () => Promise.resolve([]);
     await renderDetail(repos);
 
     expect(screen.getByRole('header', { name: 'Martín C.' })).toBeOnTheScreen();
-    expect(screen.queryByText(/^Por escuchar/)).toBeNull();
+    expect(screen.queryByText(/^Por revisar/)).toBeNull();
   });
 
   it('al volver de asignar, avisa «Actividad asignada» y muestra la nueva', async () => {

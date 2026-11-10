@@ -32,7 +32,7 @@ interface PendingStudentsViewProps {
 }
 
 /**
- * Pestaña «Por escuchar» (docente) y «Por validar» (directora): primero se
+ * Pestaña «Por revisar» (docente) y «Por validar» (directora): primero se
  * elige el estudiante y luego se revisan solo sus actividades. Los conteos
  * vienen del backend (los mismos que su bandeja). Al volver de un
  * estudiante, la lista se recarga: quien quedó al día desaparece.

@@ -37,15 +37,15 @@ async function renderScreen(element: React.ReactElement) {
 }
 
 /**
- * «Por escuchar» (`teacher/(tabs)/index.tsx`): primero la lista de
+ * «Por revisar» (`teacher/(tabs)/index.tsx`): primero la lista de
  * estudiantes, con «Cerrar sesión»; cada uno abre
  * `teacher/student/[id]/review` con solo sus actividades.
  */
-describe('«Por escuchar» de la tallerista', () => {
+describe('«Por revisar» de la tallerista', () => {
   it('la pestaña muestra a sus estudiantes con pendientes y «Cerrar sesión»', async () => {
     await renderScreen(<TeacherReviewScreen />);
 
-    expect(screen.getByText('Por escuchar')).toBeOnTheScreen();
+    expect(screen.getByText('Por revisar')).toBeOnTheScreen();
     expect(
       screen.getByRole('button', { name: 'Cerrar sesión' }),
     ).toBeOnTheScreen();
@@ -63,7 +63,7 @@ describe('«Por escuchar» de la tallerista', () => {
 
     expect(mockStudent.id).toBe('est-demo-001');
     // Sin `name` en la ruta, el título lo toma de sus actividades.
-    expect(screen.getByText('Por escuchar · Martín C.')).toBeOnTheScreen();
+    expect(screen.getByText('Por revisar · Martín C.')).toBeOnTheScreen();
     expect(screen.queryByText(/Valentina G\./)).toBeNull();
     expect(screen.queryByRole('button', { name: 'Cerrar sesión' })).toBeNull();
 

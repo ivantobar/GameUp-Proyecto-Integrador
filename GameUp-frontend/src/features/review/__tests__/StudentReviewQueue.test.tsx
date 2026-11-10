@@ -42,7 +42,7 @@ async function renderQueue(
   await render(
     <RepositoryProvider repositories={repos}>
       <ReviewQueueView
-        title="Por escuchar"
+        title="Por revisar"
         studentId={studentId}
         studentName={studentName}
       />
@@ -51,7 +51,7 @@ async function renderQueue(
   await settle();
 }
 
-describe('«Por escuchar» de un estudiante', () => {
+describe('«Por revisar» de un estudiante', () => {
   beforeEach(() => {
     jest.mocked(router.back).mockClear();
   });
@@ -62,7 +62,7 @@ describe('«Por escuchar» de un estudiante', () => {
     await renderQueue(repos);
 
     expect(list).toHaveBeenCalledWith(expect.any(String), mockStudent.id);
-    expect(screen.getByText('Por escuchar · Martín C.')).toBeOnTheScreen();
+    expect(screen.getByText('Por revisar · Martín C.')).toBeOnTheScreen();
     expect(screen.queryByText(/Valentina G\./)).toBeNull();
     expect(screen.queryByText(/Samuel O\./)).toBeNull();
     // Mismos filtros que antes.
@@ -80,7 +80,7 @@ describe('«Por escuchar» de un estudiante', () => {
 
     expect(screen.getByText('Revisaste todo de Martín C.')).toBeOnTheScreen();
     // El título conserva el nombre aunque ya no queden actividades.
-    expect(screen.getByText('Por escuchar · Martín C.')).toBeOnTheScreen();
+    expect(screen.getByText('Por revisar · Martín C.')).toBeOnTheScreen();
     expect(screen.queryByText('Todas')).toBeNull();
 
     await user.press(screen.getByRole('button', { name: 'Listo' }));

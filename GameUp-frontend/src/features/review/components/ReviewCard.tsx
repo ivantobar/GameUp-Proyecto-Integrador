@@ -42,7 +42,7 @@ interface ReviewCardProps {
 }
 
 /**
- * Tarjeta de «Por escuchar». Cerrada: nombre, juego y fecha, con un botón
+ * Tarjeta de «Por revisar». Cerrada: nombre, juego y fecha, con un botón
  * para abrirla. Abierta: el modelo y la grabación, y la decisión del
  * docente («Lo logró» o «Practicar más»).
  */

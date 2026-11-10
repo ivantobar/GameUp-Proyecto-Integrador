@@ -23,7 +23,7 @@ import { useReviewQueue } from '@/features/review/useReviewQueue';
 import { spacing } from '@/theme';
 
 interface ReviewQueueViewProps {
-  /** «Por escuchar» (docente) o «Por validar» (directora). */
+  /** «Por revisar» (docente) o «Por validar» (directora). */
   title: string;
   /** Solo las actividades de este estudiante. */
   studentId: string;
