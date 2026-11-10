@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { router, useLocalSearchParams } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 import { AppText, Button, Screen } from '@/components/ui';
-import { Character, VideoPlaceholder } from '@/components/gameup';
+import { Character, GestureVideo } from '@/components/gameup';
 import { useNarration } from '@/features/narration/useNarration';
 import { PracticeHeader } from '@/features/speak/components/PracticeHeader';
 import { parseActivityId } from '@/features/games/delivery';
@@ -90,10 +90,9 @@ export default function LookStep() {
         </View>
       </View>
 
+      {/* Al ocultarlo, el video se desmonta y deja de sonar. */}
       {showGesture ? (
-        <VideoPlaceholder
-          description={`Aquí verás a la terapeuta haciendo el gesto de la ${letter}`}
-        />
+        <GestureVideo vowel={vowel} fallbackHint="Toca Oír el sonido." />
       ) : null}
     </Screen>
   );

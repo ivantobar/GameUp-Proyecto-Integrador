@@ -331,3 +331,13 @@ Los juegos se registran en `src/features/games/catalog.ts`. Agregar uno es
 agregar una entrada (título, ícono, sección, tono y ruta); la pantalla
 Juegos no cambia. Mientras `href` sea `null`, el juego lleva a la pantalla
 «Estamos preparando…».
+
+## 9. Créditos
+
+- Videos de los gestos de las vocales (`assets/videos/`): grabados por doña
+  Consuelo, terapeuta de la Fundación ASISCO-UP. Su método de enseñanza se
+  basa en el **Método Ventura de Patricia Ventura**. En la app aparece:
+  «Gestos de la profe Consuelo, basados en el Método Ventura de Patricia
+  Ventura.»
+- El personaje y las ilustraciones de las bocas son un diseño original del
+  equipo GameUP; no copian las láminas del Método Ventura.

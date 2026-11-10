@@ -13,7 +13,7 @@ export { SoundTile } from './SoundTile';
 export { LevelStars, levelStarsLabel } from './LevelStars';
 export { StarRow } from './StarRow';
 export { StepIndicator } from './StepIndicator';
-export { VideoPlaceholder } from './VideoPlaceholder';
+export { GestureVideo } from './GestureVideo';
 export { Waveform, type WaveformTone } from './Waveform';
 export { HintPill, hintPillStyles, type HintPillKind } from './HintPill';
 export { Pictogram, type PictogramSize } from './Pictogram';

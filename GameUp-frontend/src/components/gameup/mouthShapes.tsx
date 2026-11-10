@@ -6,6 +6,8 @@ import type { Vowel } from '@/data/types';
 /**
  * Bocas originales del equipo GameUP, redibujadas a partir de la lámina de
  * los mockups. No reproducen las láminas ni los gestos del Método Ventura.
+ * Los videos de los gestos (`GestureVideo`) sí siguen el método de la profe
+ * Consuelo, basado en el Método Ventura de Patricia Ventura.
  *
  * Cada boca se dibuja en una caja de 100 × 100 centrada en (50, 50), para
  * poder usarla sola (Busca la boca) o dentro del personaje.

@@ -71,7 +71,9 @@ export const colors = {
   },
   /**
    * [derivado GameUP] Colores del personaje y de las bocas, tomados de los
-   * mockups (diseño original del equipo, no del Método Ventura).
+   * mockups (diseño original del equipo, no del Método Ventura). Los videos
+   * de los gestos sí siguen el método de la profe Consuelo, basado en el
+   * Método Ventura de Patricia Ventura.
    */
   ilustracion: {
     piel: '#F7D6BD',

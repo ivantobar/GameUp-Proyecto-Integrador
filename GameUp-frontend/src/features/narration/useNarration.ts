@@ -13,5 +13,8 @@ export function useNarration(narrator: Narrator = expoSpeechNarrator) {
     [narrator],
   );
 
-  return { narrate };
+  /** Calla la narración ya, por ejemplo antes de que hable la profe en un video. */
+  const stop = useCallback(() => narrator.stop(), [narrator]);
+
+  return { narrate, stop };
 }

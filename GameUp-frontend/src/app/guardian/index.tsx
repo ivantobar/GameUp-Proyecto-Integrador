@@ -147,7 +147,9 @@ export default function GuardianPracticeScreen() {
 
           {week.vowel ? (
             <>
-              <TeacherVideoCard />
+              {/* key: si cambia de estudiante y la vocal es otra, se monta un
+                  reproductor nuevo con el video de esa vocal. */}
+              <TeacherVideoCard key={week.vowel} vowel={week.vowel} />
               <Card>
                 <View style={styles.steps}>
                   <AppText variant="subtitle" accessibilityRole="header">
