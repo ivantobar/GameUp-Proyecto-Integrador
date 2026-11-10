@@ -11,7 +11,6 @@ import {
   StateView,
 } from '@/components/ui';
 import { useRefreshOnFocus } from '@/data/useRefreshOnFocus';
-import { StudentLevels } from '@/features/levels/components/StudentLevels';
 import { ReviewCard } from '@/features/review/components/ReviewCard';
 import {
   matchesFilter,
@@ -148,14 +147,9 @@ export function ReviewQueueView({
                   }
                   loadRecording={() => queue.loadRecording(item)}
                   voiceNoteEnabled={queue.features.familyVoiceNote}
+                  // Los niveles de cada juego se ven en el detalle del
+                  // estudiante, no en cada actividad.
                   shareOption={!queue.features.feedbackAlwaysReachesFamily}
-                  // Al abrirla: el nivel de cada juego de ese estudiante.
-                  details={
-                    <StudentLevels
-                      studentId={item.student.id}
-                      title={`Juegos de ${item.student.displayName}`}
-                    />
-                  }
                 />
               ))}
             </View>
