@@ -13,10 +13,12 @@ import {
 import { SELECCION_PERSONA } from '../../estudiantes/infrastructure/estudiante.mapper.js';
 import type { SubidaNivel } from '../../niveles-juego/domain/nivel-juego.js';
 import { subirSiCorresponde } from '../../niveles-juego/infrastructure/subida-en-transaccion.js';
-import type {
-  DecisionValidacion,
-  GrabacionGuardada,
-  ItemRevision,
+import {
+  porEspera,
+  type DecisionValidacion,
+  type GrabacionGuardada,
+  type ItemRevision,
+  type ResumenPendientes,
 } from '../domain/validacion.js';
 import type {
   AlcanceRevision,
@@ -86,23 +88,7 @@ export class PrismaValidacionRepository
     estudianteId: bigint | null,
     paginacion: Paginacion,
   ): Promise<Pagina<ItemRevision>> {
-    // Por el estudiante del intento: con o sin asignación (escalera). De la
-    // escalera solo se ven los del nivel actual, y de cada nivel el más
-    // reciente (pendientesMismaActividad dice cuántos esperan).
-    const escalera = await this.escaleraVisible();
-    const where: Prisma.intentoWhereInput = {
-      validacion: { is: null },
-      OR: [{ asignacion_id: { not: null } }, { id: { in: escalera } }],
-    };
-    if (alcance.tipo === 'tallerista') {
-      where.estudiante = {
-        tallerista_estudiante: {
-          some: { tallerista_id: alcance.talleristaId, activo: true },
-        },
-      };
-    }
-    if (estudianteId !== null) where.estudiante_id = estudianteId;
-
+    const where = await this.filtroPendientes(alcance, estudianteId);
     const [filas, total] = await this.prisma.$transaction([
       this.prisma.intento.findMany({
         where,
@@ -170,6 +156,62 @@ export class PrismaValidacionRepository
       };
     });
     return { items, total, ...paginacion };
+  }
+
+  /**
+   * Lista de «Por escuchar»: por estudiante, cuántos pendientes y el más
+   * antiguo. Mismo filtro que `pendientes`: los conteos coinciden.
+   */
+  async resumenPendientes(
+    alcance: AlcanceRevision,
+  ): Promise<ResumenPendientes[]> {
+    const grupos = await this.prisma.intento.groupBy({
+      by: ['estudiante_id'],
+      where: await this.filtroPendientes(alcance, null),
+      _count: { _all: true },
+      _min: { fecha: true },
+    });
+    if (grupos.length === 0) return [];
+    const personas = await this.prisma.usuario.findMany({
+      where: { id: { in: grupos.map((g) => g.estudiante_id) } },
+      select: SELECCION_PERSONA,
+    });
+    return grupos
+      .flatMap((g): ResumenPendientes[] => {
+        const estudiante = personas.find((p) => p.id === g.estudiante_id);
+        const masAntiguo = g._min.fecha;
+        return estudiante && masAntiguo
+          ? [{ estudiante, pendientes: g._count._all, masAntiguo }]
+          : [];
+      })
+      .sort(porEspera);
+  }
+
+  /**
+   * Qué intentos esperan revisión. Lo usan la bandeja y su resumen: si
+   * cambia la regla (p. ej., de la escalera), ambos siguen coincidiendo.
+   * Por el estudiante del intento: con o sin asignación (escalera). De la
+   * escalera solo se ven los del nivel actual, y de cada nivel el más
+   * reciente (pendientesMismaActividad dice cuántos esperan).
+   */
+  private async filtroPendientes(
+    alcance: AlcanceRevision,
+    estudianteId: bigint | null,
+  ): Promise<Prisma.intentoWhereInput> {
+    const escalera = await this.escaleraVisible();
+    const where: Prisma.intentoWhereInput = {
+      validacion: { is: null },
+      OR: [{ asignacion_id: { not: null } }, { id: { in: escalera } }],
+    };
+    if (alcance.tipo === 'tallerista') {
+      where.estudiante = {
+        tallerista_estudiante: {
+          some: { tallerista_id: alcance.talleristaId, activo: true },
+        },
+      };
+    }
+    if (estudianteId !== null) where.estudiante_id = estudianteId;
+    return where;
   }
 
   /**

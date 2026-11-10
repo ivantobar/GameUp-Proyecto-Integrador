@@ -4,8 +4,11 @@ import {
   nombreCortoDe,
 } from '../../estudiantes/domain/estudiante.entity.js';
 import type { EstadoGrabacion } from '../../intentos/domain/intento.entity.js';
-import type { ItemRevision } from '../domain/validacion.js';
-import type { ItemRevisionDto } from '../presentation/dto/validacion.dto.js';
+import type { ItemRevision, ResumenPendientes } from '../domain/validacion.js';
+import type {
+  ItemRevisionDto,
+  ResumenPendientesDto,
+} from '../presentation/dto/validacion.dto.js';
 
 /** Estados de grabación en los que el acudiente sí autorizó grabar. */
 const CON_CONSENTIMIENTO: readonly EstadoGrabacion[] = [
@@ -43,6 +46,20 @@ export const RevisionMapper = {
         ? CON_CONSENTIMIENTO.includes(estado ?? 'SIN_CONSENTIMIENTO')
         : null,
       grabacion: i.grabacion,
+    };
+  },
+
+  /**
+   * Nombre e iniciales con el mismo formato de la bandeja («Martín C.»):
+   * nunca el nombre completo del menor.
+   */
+  aResumenDto(r: ResumenPendientes): ResumenPendientesDto {
+    return {
+      estudianteId: idATexto(r.estudiante.id),
+      nombre: nombreCortoDe(r.estudiante),
+      iniciales: inicialesDe(r.estudiante),
+      pendientes: r.pendientes,
+      masAntiguo: r.masAntiguo.toISOString(),
     };
   },
 } as const;

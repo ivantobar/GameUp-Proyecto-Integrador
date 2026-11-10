@@ -424,6 +424,27 @@ describe('Escalera de niveles por juego (e2e)', () => {
       ).not.toContain(primero);
     });
 
+    it('el resumen cuenta los mismos que la bandeja (de la escalera, uno por nivel)', async () => {
+      const contar = async () => {
+        const res = await tallerista()
+          .get('/revisiones/pendientes/resumen')
+          .expect(200);
+        const fila = (
+          res.body as Array<{ estudianteId: string; pendientes: number }>
+        ).find((r) => r.estudianteId === '10');
+        return fila?.pendientes ?? 0;
+      };
+      const antes = await contar();
+      await jugarMemoria(1);
+      await jugarMemoria(1);
+      // Dos intentos del mismo nivel: la bandeja muestra solo el más reciente.
+      expect(await contar()).toBe(antes + 1);
+      const bandeja = await tallerista()
+        .get('/revisiones/pendientes?estudianteId=10')
+        .expect(200);
+      expect(await contar()).toBe(bandeja.body.total);
+    });
+
     it('otra tallerista no los ve', async () => {
       await jugarMemoria(1);
       const res = await como('tallerista3')

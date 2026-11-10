@@ -1,9 +1,11 @@
 import { saltar } from '../../src/common/paginacion/paginacion.js';
 import type { Configuracion } from '../../src/modules/catalogo/domain/juegos/estrategia-juego.js';
-import type {
-  DecisionValidacion,
-  GrabacionGuardada,
-  ItemRevision,
+import {
+  porEspera,
+  type DecisionValidacion,
+  type GrabacionGuardada,
+  type ItemRevision,
+  type ResumenPendientes,
 } from '../../src/modules/validaciones/domain/validacion.js';
 import type { SubidaNivel } from '../../src/modules/niveles-juego/domain/nivel-juego.js';
 import type {
@@ -86,15 +88,23 @@ export class ValidacionesEnMemoria
 
   // ─── Bandeja ──────────────────────────────────────────────────────────────
 
-  async pendientes(
-    alcance: AlcanceRevision,
-    estudianteId: bigint | null,
-    p: { page: number; limit: number },
-  ) {
-    const visibles: FilaIntento[] = [];
-    const pendientes = this.filas.filter(
+  /** Sin validar (todos, también los que la bandeja no muestra). */
+  private sinValidar(): FilaIntento[] {
+    return this.filas.filter(
       (x) => x.id !== undefined && x.validacion === null,
     );
+  }
+
+  /**
+   * Como filtroPendientes(): lo usan la bandeja y su resumen, así los
+   * conteos siempre coinciden con la lista.
+   */
+  private async visibles(
+    alcance: AlcanceRevision,
+    estudianteId: bigint | null,
+  ): Promise<FilaIntento[]> {
+    const visibles: FilaIntento[] = [];
+    const pendientes = this.sinValidar();
     for (const f of pendientes) {
       if (!this.visibleEnBandeja(f, pendientes)) continue;
       const est = this.estudianteDe(f);
@@ -104,14 +114,47 @@ export class ValidacionesEnMemoria
         (await this.estudiantes.estaEnAlcance(alcance, est));
       if (enAlcance) visibles.push(f);
     }
+    return visibles;
+  }
+
+  private persona(id: bigint) {
+    const u = this.usuarios.todos().find((x) => x.id === id)!;
+    return { id: u.id, nombres: u.nombres, apellidos: u.apellidos };
+  }
+
+  async resumenPendientes(
+    alcance: AlcanceRevision,
+  ): Promise<ResumenPendientes[]> {
+    const porEstudiante = new Map<bigint, ResumenPendientes>();
+    for (const f of await this.visibles(alcance, null)) {
+      const id = this.estudianteDe(f);
+      const r = porEstudiante.get(id);
+      if (!r) {
+        porEstudiante.set(id, {
+          estudiante: this.persona(id),
+          pendientes: 1,
+          masAntiguo: f.fecha,
+        });
+        continue;
+      }
+      r.pendientes += 1;
+      if (f.fecha < r.masAntiguo) r.masAntiguo = f.fecha;
+    }
+    return [...porEstudiante.values()].sort(porEspera);
+  }
+
+  async pendientes(
+    alcance: AlcanceRevision,
+    estudianteId: bigint | null,
+    p: { page: number; limit: number },
+  ) {
+    const visibles = await this.visibles(alcance, estudianteId);
+    const pendientes = this.sinValidar();
     const items = visibles.map((f): ItemRevision => {
       const actividad = this.actividad(f.actividadId);
       const modulo = this.modulos.modulos.find(
         (m) => m.id === actividad.moduloId,
       )!;
-      const u = this.usuarios
-        .todos()
-        .find((x) => x.id === this.estudianteDe(f))!;
       const vocal = actividad.configuracion['vocal'];
       return {
         intentoId: f.id!,
@@ -119,7 +162,7 @@ export class ValidacionesEnMemoria
         fecha: f.fecha,
         tipoJuego: actividad.tipoJuego.codigo,
         resultado: (f.resultado ?? {}) as Configuracion,
-        estudiante: { id: u.id, nombres: u.nombres, apellidos: u.apellidos },
+        estudiante: this.persona(this.estudianteDe(f)),
         actividad: {
           id: actividad.id,
           titulo: actividad.titulo,
