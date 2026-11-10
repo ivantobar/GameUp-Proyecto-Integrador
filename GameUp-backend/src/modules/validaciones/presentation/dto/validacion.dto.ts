@@ -150,11 +150,33 @@ export class PaginaRevisionDto {
   @ApiProperty({ example: 20 }) limit: number;
 }
 
+/** Un estudiante con actividades por revisar (lista de «Por escuchar»). */
+export class ResumenPendientesDto {
+  @ApiProperty({ example: '10' }) estudianteId: string;
+  @ApiProperty({
+    example: 'Martín C.',
+    description: 'Nombre corto, igual que en la bandeja',
+  })
+  nombre: string;
+  @ApiProperty({ example: 'MC' }) iniciales: string;
+  @ApiProperty({
+    example: 3,
+    description: 'Intentos sin validar (los mismos que muestra la bandeja)',
+  })
+  pendientes: number;
+  @ApiProperty({
+    example: '2026-11-05T15:00:00.000Z',
+    description: 'Fecha del intento que más tiempo lleva esperando',
+  })
+  masAntiguo: string;
+}
+
 export class IntentoValidadoDto extends IntentoDto {
   @ApiProperty({
     type: SubidaNivelDto,
     nullable: true,
-    description: 'Si aprobar subió de nivel en la escalera (o completó el juego)',
+    description:
+      'Si aprobar subió de nivel en la escalera (o completó el juego)',
   })
   subidaNivel: SubidaNivelDto | null;
 }

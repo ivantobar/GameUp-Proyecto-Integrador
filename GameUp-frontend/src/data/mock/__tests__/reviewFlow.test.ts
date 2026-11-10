@@ -54,6 +54,39 @@ describe('ciclo de revisión (datos simulados)', () => {
     expect(items.map((i) => i.kind)).toEqual(['speech', 'speech', 'listening']);
   });
 
+  it('por estudiante: solo sus actividades; uno ajeno, ninguna', async () => {
+    const repos = instant();
+    const items = await repos.reviews.listPendingReviews(
+      mockTeacher.id,
+      mockStudent.id,
+    );
+    expect(items.map((i) => i.student.id)).toEqual([mockStudent.id]);
+
+    // Lucía tiene un pendiente, pero no está a cargo de la docente.
+    expect(
+      await repos.reviews.listPendingReviews(mockTeacher.id, 'est-demo-004'),
+    ).toEqual([]);
+  });
+
+  it('el resumen agrupa por estudiante, primero quien más espera', async () => {
+    const repos = instant();
+    const summary = await repos.reviews.listPendingSummary(mockTeacher.id);
+    expect(summary.map((r) => [r.student.displayName, r.pending])).toEqual([
+      ['Samuel O.', 1],
+      ['Valentina G.', 1],
+      ['Martín C.', 1],
+    ]);
+
+    // Al validar, quien queda al día desaparece del resumen.
+    const [martin] = await repos.reviews.listPendingReviews(
+      mockTeacher.id,
+      mockStudent.id,
+    );
+    await repos.reviews.validate(martin!.id);
+    const after = await repos.reviews.listPendingSummary(mockTeacher.id);
+    expect(after.map((r) => r.student.id)).not.toContain(mockStudent.id);
+  });
+
   it('un docente sin estudiantes asignados no ve nada', async () => {
     const repos = instant();
     expect(await repos.reviews.listPendingReviews('doc-otro')).toEqual([]);

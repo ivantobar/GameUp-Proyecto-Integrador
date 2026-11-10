@@ -7,6 +7,7 @@ import type {
   DecisionValidacion,
   GrabacionGuardada,
   ItemRevision,
+  ResumenPendientes,
 } from './validacion.js';
 
 /** De qué estudiantes ve la bandeja quien revisa. */
@@ -20,6 +21,12 @@ export interface RevisionLecturaRepository {
     estudianteId: bigint | null,
     paginacion: Paginacion,
   ): Promise<Pagina<ItemRevision>>;
+  /**
+   * Por estudiante: cuántos pendientes tiene y desde cuándo espera, con el
+   * MISMO filtro que `pendientes` (los conteos coinciden con la bandeja).
+   * Del que más tiempo lleva esperando al que menos; sin pendientes, no sale.
+   */
+  resumenPendientes(alcance: AlcanceRevision): Promise<ResumenPendientes[]>;
 }
 
 export interface ResultadoLote {
@@ -45,7 +52,10 @@ export interface ValidacionEscrituraRepository {
    * se aplican en orden (fecha, id): como máximo un nivel por intento y sin
    * saltar niveles.
    */
-  aprobarLote(intentoIds: bigint[], validadorId: bigint): Promise<ResultadoLote>;
+  aprobarLote(
+    intentoIds: bigint[],
+    validadorId: bigint,
+  ): Promise<ResultadoLote>;
 }
 
 /** Grabaciones de voz: entrega y borrado. */

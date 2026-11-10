@@ -6,12 +6,13 @@ import type {
   CrearObservacionDto,
   IntentoValidadoDto,
   PaginaRevisionDto,
+  ResumenPendientesDto,
   UrlFirmadaDto,
   ValidarIntentoDto,
 } from './dto/revisiones';
 import { toLevelUp } from './mappers/levelMapper';
 import { requireList, requireText } from './mappers/responseShape';
-import { toReviewItem } from './mappers/reviewMapper';
+import { toPendingSummary, toReviewItem } from './mappers/reviewMapper';
 
 /** La bandeja trae hasta 50 intentos (el máximo de la paginación del backend). */
 const PAGE_LIMIT = 50;
@@ -59,12 +60,27 @@ export function createHttpReviewRepository(api: ApiClient): ReviewRepository {
     // la indicación de «Practicar más» no se vuelve nota por sí sola.
     features: { familyVoiceNote: false, feedbackAlwaysReachesFamily: false },
 
-    async listPendingReviews() {
+    async listPendingReviews(_teacherId, studentId) {
+      // El backend combina el filtro con el alcance: si el estudiante no es
+      // de quien revisa, la lista llega vacía.
+      const student =
+        studentId === undefined
+          ? ''
+          : `&estudianteId=${encodeURIComponent(studentId)}`;
       const page = await api.get<PaginaRevisionDto>(
-        `/revisiones/pendientes?limit=${PAGE_LIMIT}`,
+        `/revisiones/pendientes?limit=${PAGE_LIMIT}${student}`,
       );
       return requireList(page.items, 'items').map((item) =>
         toReviewItem(item as PaginaRevisionDto['items'][number]),
+      );
+    },
+
+    async listPendingSummary() {
+      const list = await api.get<ResumenPendientesDto[]>(
+        '/revisiones/pendientes/resumen',
+      );
+      return requireList(list, 'resumen').map((dto) =>
+        toPendingSummary(dto as ResumenPendientesDto),
       );
     },
 

@@ -372,6 +372,21 @@ describe.each(implementations)('contrato de la versión %s', (_name, create) => 
       });
     });
 
+    it('el resumen cuenta por estudiante lo mismo que su bandeja', async () => {
+      const summary = await settle(repos.reviews.listPendingSummary(teacherId));
+
+      expect(summary.length).toBeGreaterThan(0);
+      for (const row of summary) {
+        const items = await settle(
+          repos.reviews.listPendingReviews(teacherId, row.student.id),
+        );
+        expect(items).toHaveLength(row.pending);
+        expect(items.every((i) => i.student.id === row.student.id)).toBe(true);
+        expect(typeof row.student.initials).toBe('string');
+        expect(Number.isNaN(Date.parse(row.oldestAt))).toBe(false);
+      }
+    });
+
     it('validar y pedir más práctica; sin indicación, rechaza', async () => {
       const [first, second] = await settle(
         repos.reviews.listPendingReviews(teacherId),

@@ -150,6 +150,26 @@ describe('Validación, audio y progreso', () => {
       );
     });
 
+    it('el resumen cuenta por estudiante lo mismo que la bandeja y con su alcance', async () => {
+      const bandeja = await servicio.pendientes(TALLERISTA_2, null, PAGINA);
+      const esperado = [
+        {
+          estudiante: expect.objectContaining({ id: 10n }),
+          pendientes: bandeja.total,
+          masAntiguo: bandeja.items[0]!.fecha,
+        },
+      ];
+      expect(await servicio.resumenPendientes(TALLERISTA_2)).toEqual(esperado);
+      expect(await servicio.resumenPendientes(DIRECTORA)).toEqual(esperado);
+      // Vínculo inactivo con el estudiante 10: no cuenta.
+      expect(await servicio.resumenPendientes(TALLERISTA_3)).toEqual([]);
+
+      await servicio.validar(TALLERISTA_2, juego, 'APROBADO', null);
+      expect(await servicio.resumenPendientes(TALLERISTA_2)).toEqual([
+        expect.objectContaining({ pendientes: bandeja.total - 1 }),
+      ]);
+    });
+
     it('el intento de voz trae el estado del audio y su vocal', async () => {
       const [item] = (await servicio.pendientes(TALLERISTA_2, null, PAGINA))
         .items;

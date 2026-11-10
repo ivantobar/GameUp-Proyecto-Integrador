@@ -70,6 +70,24 @@ export interface ItemRevision {
   grabacion: { disponible: boolean; vencido: boolean } | null;
 }
 
+/**
+ * Cuántos intentos esperan revisión de un estudiante (lista de «Por
+ * escuchar»). Cuenta exactamente los mismos que muestra la bandeja.
+ */
+export interface ResumenPendientes {
+  estudiante: PersonaResumen;
+  pendientes: number;
+  /** Fecha del intento que más tiempo lleva esperando. */
+  masAntiguo: Date;
+}
+
+/** Primero quien más tiempo lleva esperando (a igual fecha, por id). */
+export function porEspera(a: ResumenPendientes, b: ResumenPendientes): number {
+  const diferencia = a.masAntiguo.getTime() - b.masAntiguo.getTime();
+  if (diferencia !== 0) return diferencia;
+  return a.estudiante.id < b.estudiante.id ? -1 : 1;
+}
+
 /** Una grabación guardada (tabla grabacion_estudiante). */
 export interface GrabacionGuardada {
   id: bigint;

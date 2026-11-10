@@ -20,6 +20,7 @@ import {
   type LevelUp,
   type ListeningResult,
   type OfficialProgress,
+  type PendingReviewSummary,
   type ReviewItem,
   type SpeechAttempt,
   type StarCount,
@@ -258,6 +259,19 @@ export function createMockRepositories({
       .map((l) => l.studentId);
 
   const isDirector = () => state.session?.role === 'director';
+
+  /**
+   * Como el backend: por revisar, de la directora los de todos; de la
+   * tallerista, los de sus estudiantes. Lo usan la bandeja y su resumen.
+   */
+  const pendingReviewsOf = (teacherId: string): ReviewItem[] => {
+    const mine = isDirector()
+      ? Object.keys(mockStudentSummaries)
+      : studentsOfTeacher(teacherId);
+    return state.reviews.filter(
+      (r) => r.status === 'pending_validation' && mine.includes(r.student.id),
+    );
+  };
   /** Como el backend: solo la directora, y con un estudiante que existe. */
   const canManageTeachers = (studentId: string) =>
     isDirector() && studentId in mockStudentSummaries;
@@ -536,16 +550,35 @@ export function createMockRepositories({
         };
         return respond(undefined);
       },
-      listPendingReviews: (teacherId) => {
-        // Como el backend: la directora ve los de todos; la docente, los suyos.
-        const mine =
-          state.session?.role === 'director'
-            ? Object.keys(mockStudentSummaries)
-            : studentsOfTeacher(teacherId);
+      listPendingReviews: (teacherId, studentId) =>
+        respond(
+          pendingReviewsOf(teacherId).filter(
+            (r) => studentId === undefined || r.student.id === studentId,
+          ),
+        ),
+      listPendingSummary: (teacherId) => {
+        // Como el backend: agrupa los mismos pendientes por estudiante.
+        const byStudent = new Map<string, PendingReviewSummary>();
+        for (const review of pendingReviewsOf(teacherId)) {
+          const row = byStudent.get(review.student.id);
+          if (!row) {
+            byStudent.set(review.student.id, {
+              student: review.student,
+              pending: 1,
+              oldestAt: review.submittedAt,
+            });
+            continue;
+          }
+          row.pending += 1;
+          if (review.submittedAt < row.oldestAt) {
+            row.oldestAt = review.submittedAt;
+          }
+        }
         return respond(
-          state.reviews.filter(
-            (r) =>
-              r.status === 'pending_validation' && mine.includes(r.student.id),
+          [...byStudent.values()].sort(
+            (a, b) =>
+              a.oldestAt.localeCompare(b.oldestAt) ||
+              a.student.id.localeCompare(b.student.id),
           ),
         );
       },

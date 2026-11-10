@@ -117,6 +117,73 @@ describe('Validación y progreso (e2e)', () => {
     });
   });
 
+  describe('GET /revisiones/pendientes/resumen', () => {
+    it('por estudiante: cuántos esperan y desde cuándo, igual que la bandeja', async () => {
+      const bandeja = await como('tallerista2')
+        .get('/revisiones/pendientes')
+        .expect(200);
+      const res = await como('tallerista2')
+        .get('/revisiones/pendientes/resumen')
+        .expect(200);
+      // Nombre corto, como en la bandeja: nunca el nombre completo del menor.
+      expect(res.body).toEqual([
+        {
+          estudianteId: '10',
+          nombre: 'Martín C.',
+          iniciales: 'MC',
+          pendientes: bandeja.body.total,
+          masAntiguo: bandeja.body.items[0].fecha,
+        },
+      ]);
+      expect(res.body[0].pendientes).toBe(3);
+    });
+
+    it('la directora ve a todos; la tallerista con el vínculo inactivo, a nadie', async () => {
+      const directora = await como('directora')
+        .get('/revisiones/pendientes/resumen')
+        .expect(200);
+      expect(directora.body).toEqual([
+        expect.objectContaining({ estudianteId: '10', pendientes: 3 }),
+      ]);
+      // La tallerista 3 tuvo al estudiante 10, pero ese vínculo ya no está activo.
+      const otra = await como('tallerista3')
+        .get('/revisiones/pendientes/resumen')
+        .expect(200);
+      expect(otra.body).toEqual([]);
+    });
+
+    it('lo validado deja de contar; sin pendientes, el estudiante no sale', async () => {
+      await como('tallerista2')
+        .post('/validaciones/lote', { intentoIds: [juego, memoria] })
+        .expect(200);
+      const res = await como('tallerista2')
+        .get('/revisiones/pendientes/resumen')
+        .expect(200);
+      expect(res.body).toEqual([
+        expect.objectContaining({ estudianteId: '10', pendientes: 1 }),
+      ]);
+
+      await como('tallerista2').get(`/intentos/${voz}/grabacion`).expect(200);
+      await como('tallerista2')
+        .post(`/intentos/${voz}/validacion`, { resultado: 'APROBADO' })
+        .expect(200);
+      const vacio = await como('tallerista2')
+        .get('/revisiones/pendientes/resumen')
+        .expect(200);
+      expect(vacio.body).toEqual([]);
+    });
+
+    it('acudiente y estudiante → 403; sin sesión → 401', async () => {
+      await como('acudiente4')
+        .get('/revisiones/pendientes/resumen')
+        .expect(403);
+      await como('estudiante10')
+        .get('/revisiones/pendientes/resumen')
+        .expect(403);
+      await como(null).get('/revisiones/pendientes/resumen').expect(401);
+    });
+  });
+
   describe('GET /intentos/:id/grabacion', () => {
     it('URL firmada de 10 minutos para la tallerista a cargo', async () => {
       const res = await como('tallerista2')

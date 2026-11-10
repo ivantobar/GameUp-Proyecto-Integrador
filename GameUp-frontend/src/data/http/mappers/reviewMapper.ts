@@ -2,12 +2,13 @@ import {
   isVowel,
   type GameScore,
   type NoAudioReason,
+  type PendingReviewSummary,
   type ReviewItem,
   type ThinkingGameId,
 } from '../../types';
-import type { ItemRevisionDto } from '../dto/revisiones';
+import type { ItemRevisionDto, ResumenPendientesDto } from '../dto/revisiones';
 import { toGameId } from './gameCodes';
-import { requireText, unexpected } from './responseShape';
+import { requireCount, requireText, unexpected } from './responseShape';
 
 /** `estadoGrabacion` del backend → por qué no hay audio. */
 const MOTIVOS_SIN_AUDIO: Record<string, NoAudioReason> = {
@@ -60,6 +61,21 @@ function scoreOf(
         firstTryCorrect: count(resultado['firstTryCorrect']),
         total: count(resultado['total']),
       };
+}
+
+/** Un estudiante del resumen → tarjeta de la lista de «Por escuchar». */
+export function toPendingSummary(
+  dto: ResumenPendientesDto,
+): PendingReviewSummary {
+  return {
+    student: {
+      id: requireText(dto?.estudianteId, 'estudianteId'),
+      displayName: requireText(dto.nombre, 'nombre'),
+      initials: requireText(dto.iniciales, 'iniciales'),
+    },
+    pending: requireCount(dto.pendientes, 'pendientes'),
+    oldestAt: requireText(dto.masAntiguo, 'masAntiguo'),
+  };
 }
 
 /**

@@ -17,6 +17,8 @@ import {
 import { useRefreshOnFocus } from '@/data/useRefreshOnFocus';
 import type { StudentAssignment } from '@/data/types';
 import { StudentLevels } from '@/features/levels/components/StudentLevels';
+import { toReviewText } from '@/features/review/reviewText';
+import { usePendingSummary } from '@/features/review/usePendingSummary';
 import { ModuleProgressCard } from '@/features/progress/components/ModuleProgressCard';
 import { moduleDefinitionFor } from '@/features/progress/modules';
 import { spacing } from '@/theme';
@@ -57,11 +59,20 @@ export function StudentDetailView({
   const teachers = useStudentTeachers(studentId, manageTeachers);
   const { refresh: refreshTeachers, showAssignedNotice: showTeacherNotice } =
     teachers;
+  // Cuántas actividades suyas esperan revisión (las mismas de su bandeja).
+  const pendingSummary = usePendingSummary();
+  const refreshPending = pendingSummary.refresh;
+  const pendingCount =
+    pendingSummary.resource.status === 'ready'
+      ? (pendingSummary.resource.data.find((r) => r.student.id === studentId)
+          ?.pending ?? 0)
+      : 0;
 
   // Al volver de «Asignar»: aviso y datos nuevos, sin ocultar los de ahora.
   const onFocus = useCallback(() => {
     if (takeAssignedNotice(studentId)) showAssignedNotice();
     refresh();
+    refreshPending();
     if (manageTeachers) {
       if (takeTeacherNotice(studentId)) showTeacherNotice();
       refreshTeachers();
@@ -69,6 +80,7 @@ export function StudentDetailView({
   }, [
     studentId,
     refresh,
+    refreshPending,
     showAssignedNotice,
     manageTeachers,
     refreshTeachers,
@@ -123,6 +135,21 @@ export function StudentDetailView({
               {resource.data.student.displayName}
             </AppText>
           </View>
+
+          {pendingCount > 0 ? (
+            <Button
+              label={`${routes.reviewTitle} (${pendingCount})`}
+              icon="ear"
+              variant="secondary"
+              accessibilityLabel={`${routes.reviewTitle}: ${toReviewText(pendingCount)}`}
+              accessibilityHint="Abre sus actividades por revisar"
+              onPress={() =>
+                router.push(
+                  routes.review(studentId, resource.data.student.displayName),
+                )
+              }
+            />
+          ) : null}
 
           {message ? (
             <View accessibilityLiveRegion="polite">

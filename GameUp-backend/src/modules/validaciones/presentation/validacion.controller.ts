@@ -33,6 +33,7 @@ import {
   LoteAprobadoDto,
   PaginaRevisionDto,
   PendientesQueryDto,
+  ResumenPendientesDto,
   ValidarIntentoDto,
 } from './dto/validacion.dto.js';
 
@@ -46,6 +47,25 @@ export class ValidacionController {
     private readonly validaciones: ValidacionService,
     private readonly grabaciones: GrabacionService,
   ) {}
+
+  // Antes de cualquier ruta con parámetro: «resumen» no es un id.
+  @Get('revisiones/pendientes/resumen')
+  @ApiOperation({
+    summary: 'Lista de «Por escuchar»: pendientes por estudiante',
+    description:
+      'Por cada estudiante con intentos sin validar: cuántos tiene y la fecha del más antiguo. ' +
+      'Cuenta los mismos intentos que GET /revisiones/pendientes y con el mismo alcance ' +
+      '(la tallerista, sus estudiantes activos; la directora, todos). ' +
+      'Del que más tiempo lleva esperando al que menos; los que no tienen pendientes no salen.',
+  })
+  @ApiOkResponse({ type: [ResumenPendientesDto] })
+  @ApiErrores(401, 403)
+  async resumenPendientes(
+    @UsuarioActual() actual: UsuarioAutenticado,
+  ): Promise<ResumenPendientesDto[]> {
+    const resumen = await this.validaciones.resumenPendientes(actual);
+    return resumen.map(RevisionMapper.aResumenDto);
+  }
 
   @Get('revisiones/pendientes')
   @ApiOperation({

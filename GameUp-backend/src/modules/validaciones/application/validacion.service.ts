@@ -17,6 +17,7 @@ import {
   normalizarDecision,
   type ItemRevision,
   type ResultadoValidacion,
+  type ResumenPendientes,
 } from '../domain/validacion.js';
 import {
   REVISION_LECTURA_REPOSITORY,
@@ -27,6 +28,13 @@ import {
   type ValidacionEscrituraRepository,
 } from '../domain/validacion.repository.js';
 import { GrabacionService } from './grabacion.service.js';
+
+/** La tallerista ve a sus estudiantes; la directora, a todos. */
+function alcanceDe(actual: UsuarioAutenticado): AlcanceRevision {
+  return actual.rol === 'TALLERISTA'
+    ? { tipo: 'tallerista', talleristaId: actual.id }
+    : { tipo: 'todos' };
+}
 
 export interface ResultadoValidacionIntento {
   intento: Intento;
@@ -56,11 +64,16 @@ export class ValidacionService {
     estudianteId: bigint | null,
     paginacion: Paginacion,
   ): Promise<Pagina<ItemRevision>> {
-    const alcance: AlcanceRevision =
-      actual.rol === 'TALLERISTA'
-        ? { tipo: 'tallerista', talleristaId: actual.id }
-        : { tipo: 'todos' };
-    return this.revision.pendientes(alcance, estudianteId, paginacion);
+    return this.revision.pendientes(
+      alcanceDe(actual),
+      estudianteId,
+      paginacion,
+    );
+  }
+
+  /** Lista de «Por escuchar»: cada estudiante con sus pendientes. */
+  resumenPendientes(actual: UsuarioAutenticado): Promise<ResumenPendientes[]> {
+    return this.revision.resumenPendientes(alcanceDe(actual));
   }
 
   /**
