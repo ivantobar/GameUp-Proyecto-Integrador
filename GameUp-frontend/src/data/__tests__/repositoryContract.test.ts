@@ -504,6 +504,50 @@ describe.each(implementations)('contrato de la versión %s', (_name, create) => 
     });
   });
 
+  describe('actividades de un módulo (antes de asignar)', () => {
+    it('la tallerista ve las activas, en orden y con su juego', async () => {
+      await signInAs('docente@gameup.test');
+      const activities = await settle(
+        repos.assignmentManagement.listModuleActivities('letters'),
+      );
+
+      // Letras tiene 10 activas; la retirada (inactiva) no aparece.
+      expect(activities).toHaveLength(10);
+      expect(activities[0]).toEqual({
+        id: 'act-letters-1',
+        title: 'Di la a',
+        gameId: 'speak',
+      });
+      expect(activities[5]?.gameId).toBe('findMouth');
+      expect(activities.some((a) => a.title === 'Actividad retirada')).toBe(
+        false,
+      );
+    });
+
+    it('un módulo que no existe → notFound', async () => {
+      await signInAs('docente@gameup.test');
+      await expect(
+        settle(repos.assignmentManagement.listModuleActivities('no-existe')),
+      ).rejects.toEqual(new AssignmentError('notFound'));
+    });
+
+    it('un borrador: la tallerista no lo ve; la directora sí', async () => {
+      await signInAs('docente@gameup.test');
+      await expect(
+        settle(
+          repos.assignmentManagement.listModuleActivities('draft-syllables'),
+        ),
+      ).rejects.toEqual(new AssignmentError('notFound'));
+
+      await signInAs('directora@gameup.test');
+      await expect(
+        settle(
+          repos.assignmentManagement.listModuleActivities('draft-syllables'),
+        ),
+      ).resolves.toEqual([]);
+    });
+  });
+
   describe('talleristas a cargo (directora)', () => {
     beforeEach(async () => {
       await signInAs('directora@gameup.test');

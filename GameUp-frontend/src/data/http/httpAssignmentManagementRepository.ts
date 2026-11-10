@@ -6,6 +6,7 @@ import type { AsignacionDto, PaginaAsignacionesDto } from './dto/asignaciones';
 import type { ModuloDto, PaginaModulosDto } from './dto/modulos';
 import {
   toAssignableModule,
+  toModuleActivities,
   toCreateAssignmentBody,
   toStudentAssignment,
 } from './mappers/assignmentManagementMapper';
@@ -76,6 +77,15 @@ export function createHttpAssignmentManagementRepository(
           .filter((modulo) => modulo.publicado === true)
           .map(toAssignableModule);
       }),
+
+    listModuleActivities: (moduleId) =>
+      translated(readProblems, async () =>
+        toModuleActivities(
+          await api.get<unknown>(
+            `/modulos/${encodeURIComponent(moduleId)}/actividades`,
+          ),
+        ),
+      ),
 
     assign: (input) =>
       translated(createProblems, async () =>

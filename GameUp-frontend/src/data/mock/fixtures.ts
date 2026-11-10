@@ -3,6 +3,7 @@ import {
   type ActivityContent,
   type Assignment,
   type AuthSession,
+  type ModuleActivity,
   type OfficialProgress,
   type ResumePoint,
   type ReviewItem,
@@ -252,6 +253,59 @@ export const mockModules: MockModule[] = [
     activities: 0,
   },
 ];
+
+/** Actividades de ejemplo de cada módulo: se repiten hasta su cantidad. */
+const moduleActivityTemplates: Record<
+  string,
+  Pick<ModuleActivity, 'title' | 'gameId'>[]
+> = {
+  colors: [
+    { title: 'Empareja los colores', gameId: 'match' },
+    { title: 'Clasifica por color', gameId: 'classify' },
+    { title: 'Memoria de colores', gameId: 'memory' },
+  ],
+  numbers: [
+    { title: 'Cuenta y empareja', gameId: 'match' },
+    { title: 'Ordena los números', gameId: 'sequence' },
+    { title: 'Memoria de números', gameId: 'memory' },
+    { title: 'Muchos y pocos', gameId: 'classify' },
+  ],
+  letters: [
+    ...VOWELS.map((vowel) => ({
+      title: `Di la ${vowel}`,
+      gameId: 'speak' as const,
+    })),
+    { title: 'Busca la boca', gameId: 'findMouth' },
+  ],
+  stories: [
+    { title: 'Ordena el cuento', gameId: 'sequence' },
+    { title: 'Los personajes', gameId: 'match' },
+  ],
+  routines: [
+    { title: 'Al despertar', gameId: 'sequence' },
+    { title: 'Antes de comer', gameId: 'sequence' },
+  ],
+};
+
+/**
+ * Actividades activas de un módulo simulado, en orden: exactamente
+ * `module.activities` (las mismas que cuenta el progreso). Si una se
+ * repite, lleva su número («Di la a · 2»).
+ */
+export function mockModuleActivities(module: MockModule): ModuleActivity[] {
+  const templates = moduleActivityTemplates[module.id] ?? [
+    { title: 'Actividad', gameId: 'match' as const },
+  ];
+  return Array.from({ length: module.activities }, (_, index) => {
+    const template = templates[index % templates.length];
+    const round = Math.floor(index / templates.length);
+    return {
+      id: `act-${module.id}-${index + 1}`,
+      title: round === 0 ? template.title : `${template.title} · ${round + 1}`,
+      gameId: template.gameId,
+    };
+  });
+}
 
 /**
  * Módulos asignados a cada estudiante. Los de Martín coinciden con su

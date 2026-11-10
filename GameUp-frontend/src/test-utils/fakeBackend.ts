@@ -5,6 +5,7 @@ import {
   mockAssignments,
   mockOfficialProgress,
   mockResumePoint,
+  mockModuleActivities,
   mockModules,
   mockStudent,
   mockStudentAssignments,
@@ -439,6 +440,47 @@ export function createFakeBackend() {
         page: 1,
         limit: 50,
       });
+    }
+    const actividadesDe = ruta?.match(/^\/modulos\/([^/]+)\/actividades$/);
+    if (esPersonal && method === 'GET' && actividadesDe) {
+      const modulo = mockModules.find(
+        (m) => m.id === decodeURIComponent(actividadesDe[1]),
+      );
+      // La tallerista no ve un borrador ajeno: 404, como el backend.
+      if (!modulo || (!modulo.published && session.role !== 'director')) {
+        return errorResponse(404, 'No existe');
+      }
+      const activas = mockModuleActivities(modulo).map((a, orden) => ({
+        id: a.id,
+        moduloId: modulo.id,
+        tipoJuego: {
+          id: String(orden + 1),
+          codigo: CODIGOS[a.gameId],
+          nombre: a.title,
+        },
+        titulo: a.title,
+        instruccionTexto: null,
+        configuracion: {},
+        orden,
+        activa: true,
+        nivelJuego: null,
+      }));
+      // Al personal también le llegan las inactivas; la app no las muestra.
+      const inactiva = {
+        ...(activas[0] ?? {
+          id: 'x',
+          moduloId: modulo.id,
+          tipoJuego: { id: '1', codigo: 'EMPAREJAR', nombre: 'Emparejar' },
+          instruccionTexto: null,
+          configuracion: {},
+          nivelJuego: null,
+        }),
+        id: `act-${modulo.id}-retirada`,
+        titulo: 'Actividad retirada',
+        orden: activas.length,
+        activa: false,
+      };
+      return jsonResponse(200, [...activas, inactiva]);
     }
     if (esPersonal && method === 'GET' && ruta === '/asignaciones') {
       const id = params.get('estudianteId');
