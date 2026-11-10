@@ -73,14 +73,14 @@ describe('pantallas de la directora', () => {
     expect(screen.getByRole('button', { name: 'Volver' })).toBeOnTheScreen();
   });
 
-  it('«Por revisar» de la tallerista conserva el aviso de gestos', async () => {
+  it('«Por revisar» de la tallerista no muestra el aviso de gestos', async () => {
     await renderWith(
       <TeacherReviewScreen />,
       createMockRepositories({ delayMs: 0 }),
     );
 
     expect(screen.getByText('Por revisar')).toBeOnTheScreen();
-    expect(screen.getByText('Gestos de la fundación')).toBeOnTheScreen();
+    expect(screen.queryByText('Gestos de la fundación')).toBeNull();
   });
 
   it('«Estudiantes» muestra a todos y busca por nombre', async () => {
