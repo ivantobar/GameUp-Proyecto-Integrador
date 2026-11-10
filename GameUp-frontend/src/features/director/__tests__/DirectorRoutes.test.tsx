@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import DirectorReviewScreen from '@/app/director/(tabs)/review';
 import DirectorStudentsScreen from '@/app/director/(tabs)/index';
+import DirectorStudentReviewScreen from '@/app/director/student/[id]/review';
 import TeacherReviewScreen from '@/app/teacher/(tabs)/index';
 import { createMockRepositories } from '@/data/mock/createMockRepositories';
 import { MOCK_PASSWORD } from '@/data/mock/fixtures';
@@ -14,6 +15,10 @@ jest.mock('expo-router', () => ({
     replace: jest.fn(),
     canGoBack: jest.fn(() => false),
   },
+  useLocalSearchParams: jest.fn(() => ({
+    id: 'est-demo-004',
+    name: 'Lucía R.',
+  })),
 }));
 jest.mock('@/data/useRefreshOnFocus', () => ({
   useRefreshOnFocus: jest.fn(),
@@ -48,12 +53,24 @@ async function renderWith(element: React.ReactElement, repos: Repositories) {
 }
 
 describe('pantallas de la directora', () => {
-  it('«Por validar» reutiliza la bandeja, sin el aviso de gestos de la tallerista', async () => {
+  it('«Por validar» es la lista de estudiantes de todos, sin el aviso de gestos de la tallerista', async () => {
     await renderWith(<DirectorReviewScreen />, await asDirector());
 
     expect(screen.getByText('Por validar')).toBeOnTheScreen();
     expect(screen.queryByText('Gestos de la fundación')).toBeNull();
-    expect(screen.getAllByText(/Lucía R\./).length).toBeGreaterThan(0);
+    expect(
+      screen.getByRole('button', {
+        name: 'Lucía R., 1 actividad por revisar',
+      }),
+    ).toBeOnTheScreen();
+  });
+
+  it('«Por validar» de un estudiante muestra solo sus actividades', async () => {
+    await renderWith(<DirectorStudentReviewScreen />, await asDirector());
+
+    expect(screen.getByText('Por validar · Lucía R.')).toBeOnTheScreen();
+    expect(screen.queryByText(/Martín C\./)).toBeNull();
+    expect(screen.getByRole('button', { name: 'Volver' })).toBeOnTheScreen();
   });
 
   it('«Por escuchar» de la tallerista conserva el aviso de gestos', async () => {

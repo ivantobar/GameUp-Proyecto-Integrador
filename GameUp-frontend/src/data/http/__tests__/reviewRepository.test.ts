@@ -160,6 +160,58 @@ describe('ReviewRepository (HTTP)', () => {
     });
   });
 
+  it('con un estudiante, añade estudianteId a la URL (codificado)', async () => {
+    const { reviews, requests } = setup(() =>
+      jsonResponse(200, { items: [], total: 0, page: 1, limit: 50 }),
+    );
+
+    await reviews.listPendingReviews('3', '5');
+    await reviews.listPendingReviews('3', '5&limit=1 x');
+
+    expect(requests[0]?.url).toBe(
+      `${BASE}/revisiones/pendientes?limit=50&estudianteId=5`,
+    );
+    expect(requests[1]?.url).toBe(
+      `${BASE}/revisiones/pendientes?limit=50&estudianteId=5%26limit%3D1%20x`,
+    );
+  });
+
+  it('resumen: GET /revisiones/pendientes/resumen → estudiantes con sus conteos', async () => {
+    const { reviews, requests } = setup(() =>
+      jsonResponse(200, [
+        {
+          estudianteId: '5',
+          nombre: 'Estrella P.',
+          iniciales: 'EP',
+          pendientes: 3,
+          masAntiguo: '2026-11-05T21:07:55.000Z',
+        },
+      ]),
+    );
+
+    await expect(reviews.listPendingSummary('3')).resolves.toEqual([
+      {
+        student: { id: '5', displayName: 'Estrella P.', initials: 'EP' },
+        pending: 3,
+        oldestAt: '2026-11-05T21:07:55.000Z',
+      },
+    ]);
+    expect(requests[0]).toMatchObject({
+      url: `${BASE}/revisiones/pendientes/resumen`,
+      method: 'GET',
+    });
+  });
+
+  it('resumen con una forma inesperada → error claro (no datos a medias)', async () => {
+    const { reviews } = setup(() =>
+      jsonResponse(200, [{ estudianteId: '5', nombre: 'Estrella P.' }]),
+    );
+
+    await expect(reviews.listPendingSummary('3')).rejects.toThrow(
+      'Respuesta inesperada del servidor: iniciales',
+    );
+  });
+
   it('«Lo logró»: POST /intentos/:id/validacion con APROBADO', async () => {
     const { reviews, requests } = setup(() => jsonResponse(201, {}));
 

@@ -1,6 +1,7 @@
-import { ReviewQueueView } from '@/features/review/components/ReviewQueueView';
+import { PendingStudentsView } from '@/features/review/components/PendingStudentsView';
+import { teacherRoutes } from '@/features/students/staffRoutes';
 
-/** Pantalla 8 · Docente: «Por escuchar». */
+/** Pantalla 8 · Docente: «Por escuchar», primero se elige el estudiante. */
 export default function TeacherReviewScreen() {
-  return <ReviewQueueView title="Por escuchar" />;
+  return <PendingStudentsView routes={teacherRoutes} />;
 }

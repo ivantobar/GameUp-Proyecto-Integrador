@@ -531,9 +531,31 @@ export function createFakeBackend() {
       });
     }
     // ─── Tallerista ───
+    if (method === 'GET' && path === '/revisiones/pendientes/resumen') {
+      if (session.role !== 'teacher' && session.role !== 'director') {
+        return errorResponse(403, 'Sin permiso');
+      }
+      // Los mismos dos intentos de la bandeja, contados por estudiante.
+      return jsonResponse(200, [
+        {
+          estudianteId: mockStudent.id,
+          nombre: 'Martín C.',
+          iniciales: 'MC',
+          pendientes: 2,
+          masAntiguo: '2026-11-05T15:00:00.000Z',
+        },
+      ]);
+    }
     if (method === 'GET' && path.startsWith('/revisiones/pendientes')) {
       if (session.role !== 'teacher' && session.role !== 'director') {
         return errorResponse(403, 'Sin permiso');
+      }
+      // Como el backend: otro estudiante (o uno ajeno) → lista vacía.
+      const estudianteId = new URLSearchParams(path.split('?')[1] ?? '').get(
+        'estudianteId',
+      );
+      if (estudianteId !== null && estudianteId !== mockStudent.id) {
+        return jsonResponse(200, { items: [], total: 0, page: 1, limit: 50 });
       }
       const item = (intentoId: string, extra: Record<string, unknown>) => ({
         intentoId,

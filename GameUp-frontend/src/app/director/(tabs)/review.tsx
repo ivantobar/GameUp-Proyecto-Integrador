@@ -1,6 +1,9 @@
-import { ReviewQueueView } from '@/features/review/components/ReviewQueueView';
+import { PendingStudentsView } from '@/features/review/components/PendingStudentsView';
+import { directorRoutes } from '@/features/students/staffRoutes';
 
-/** Directora · «Por validar»: los intentos pendientes de todos. */
+/** Directora · «Por validar»: los estudiantes de todos con pendientes. */
 export default function DirectorReviewScreen() {
-  return <ReviewQueueView title="Por validar" showGestureNotice={false} />;
+  return (
+    <PendingStudentsView routes={directorRoutes} showGestureNotice={false} />
+  );
 }

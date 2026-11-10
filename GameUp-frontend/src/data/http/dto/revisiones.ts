@@ -41,6 +41,17 @@ export interface PaginaRevisionDto {
   limit: number;
 }
 
+/** Un estudiante de `GET /revisiones/pendientes/resumen`. */
+export interface ResumenPendientesDto {
+  estudianteId: string;
+  /** Nombre corto, igual que en la bandeja («Martín C.»). */
+  nombre: string;
+  iniciales: string;
+  pendientes: number;
+  /** Fecha del intento que más tiempo lleva esperando. */
+  masAntiguo: string;
+}
+
 /** Cuerpo de `POST /intentos/:id/validacion`. */
 export interface ValidarIntentoDto {
   resultado: 'APROBADO' | 'RECHAZADO';

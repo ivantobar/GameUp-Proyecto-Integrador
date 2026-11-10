@@ -3,7 +3,6 @@ import { router } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 import {
   AppText,
-  Button,
   FilterChip,
   HeaderBackButton,
   Notice,
@@ -12,7 +11,6 @@ import {
   StateView,
 } from '@/components/ui';
 import { useRefreshOnFocus } from '@/data/useRefreshOnFocus';
-import { SignOutButton } from '@/features/auth/components/SignOutButton';
 import { StudentLevels } from '@/features/levels/components/StudentLevels';
 import { ReviewCard } from '@/features/review/components/ReviewCard';
 import {
@@ -27,23 +25,24 @@ import { spacing } from '@/theme';
 interface ReviewQueueViewProps {
   /** «Por escuchar» (docente) o «Por validar» (directora). */
   title: string;
-  /**
-   * Aviso «Gestos de la fundación» (grabar el gesto de cada sonido). Es
-   * tarea de la tallerista; la directora no lo ve.
-   */
-  showGestureNotice?: boolean;
+  /** Solo las actividades de este estudiante. */
+  studentId: string;
+  /** «Martín C.»: para el título mientras cargan (viene de la lista). */
+  studentName?: string;
 }
 
 /**
- * Bandeja de revisión: Pantalla 8 · Docente «Por escuchar», y «Por validar»
- * de la directora. Qué intentos aparecen lo decide el backend según la
- * sesión (la tallerista, los de sus estudiantes; la directora, todos).
+ * Actividades por revisar de un estudiante (Pantalla 8 · Docente «Por
+ * escuchar», y «Por validar» de la directora). Se llega desde la lista de
+ * estudiantes o desde su detalle. El backend combina el filtro con la
+ * sesión: si el estudiante no es de quien revisa, no llega nada.
  */
 export function ReviewQueueView({
   title,
-  showGestureNotice = true,
+  studentId,
+  studentName,
 }: ReviewQueueViewProps) {
-  const queue = useReviewQueue();
+  const queue = useReviewQueue(studentId);
   const { resource, reload, refresh, message, busyId } = queue;
   const [filter, setFilter] = useState<ReviewFilter>('all');
   const [openId, setOpenId] = useState<string | null>(null);
@@ -58,21 +57,19 @@ export function ReviewQueueView({
     openId !== null && items.some((item) => item.id === openId)
       ? openId
       : (items[0]?.id ?? null);
+  const name =
+    (resource.status === 'ready'
+      ? resource.data.items[0]?.student.displayName
+      : undefined) ?? studentName;
+  const allDone =
+    resource.status === 'ready' && resource.data.items.length === 0;
 
   return (
     <Screen
-      // Dentro de las pestañas: la barra inferior ya respeta el borde.
-      safeAreaBottom={false}
       header={
         <ScreenHeader
-          left={
-            // Después de iniciar sesión no hay pantalla anterior.
-            router.canGoBack() ? (
-              <HeaderBackButton onPress={() => router.back()} />
-            ) : undefined
-          }
-          title={title}
-          right={<SignOutButton />}
+          left={<HeaderBackButton onPress={() => router.back()} />}
+          title={name ? `${title} · ${name}` : title}
         />
       }
     >
@@ -104,22 +101,32 @@ export function ReviewQueueView({
             </View>
           ) : null}
 
-          <View style={styles.chips}>
-            {reviewFilters.map(({ value, label }) => (
-              <FilterChip
-                key={value}
-                label={label}
-                selected={filter === value}
-                onPress={() => setFilter(value)}
-              />
-            ))}
-          </View>
+          {allDone ? null : (
+            <View style={styles.chips}>
+              {reviewFilters.map(({ value, label }) => (
+                <FilterChip
+                  key={value}
+                  label={label}
+                  selected={filter === value}
+                  onPress={() => setFilter(value)}
+                />
+              ))}
+            </View>
+          )}
 
-          {items.length === 0 ? (
+          {allDone ? (
             <StateView
               kind="empty"
-              title="No hay nada por revisar"
-              message="Cuando un estudiante termine una actividad, aparecerá aquí."
+              title={name ? `Revisaste todo de ${name}` : 'Revisaste todo'}
+              message="Cuando vuelva a jugar, sus actividades aparecerán aquí."
+              // Vuelve a donde estaba: la lista o el detalle del estudiante.
+              action={{ label: 'Listo', onPress: () => router.back() }}
+            />
+          ) : items.length === 0 ? (
+            <StateView
+              kind="empty"
+              title="Nada en este grupo"
+              message="Toca «Todas» para ver sus otras actividades."
             />
           ) : (
             <View style={styles.list}>
@@ -153,25 +160,6 @@ export function ReviewQueueView({
               ))}
             </View>
           )}
-
-          {showGestureNotice ? (
-            <Notice
-              icon="video"
-              tone="warm"
-              title="Gestos de la fundación"
-              message="Graba el gesto de cada sonido. Es el video que ven los niños en «Ver el gesto». Llega en una próxima versión."
-              action={
-                <Button
-                  label="Grabar un gesto"
-                  icon="video"
-                  variant="secondary"
-                  disabled
-                  accessibilityHint="Próximamente"
-                  onPress={() => {}}
-                />
-              }
-            />
-          ) : null}
         </>
       ) : null}
     </Screen>

@@ -17,6 +17,7 @@ import type {
   NewSpeechAttempt,
   OfficialProgress,
   ResumePoint,
+  PendingReviewSummary,
   ReviewItem,
   StaffProfile,
   SpeechAttempt,
@@ -172,7 +173,20 @@ export interface StaffRepository {
 export interface ReviewRepository {
   /** Qué ofrece esta versión (cambia entre los datos simulados y la API). */
   readonly features: ReviewFeatures;
-  listPendingReviews(teacherId: string): Promise<ReviewItem[]>;
+  /**
+   * Actividades por revisar, de la más antigua a la más reciente. Con
+   * `studentId`, solo las de ese estudiante (si no es suyo, ninguna).
+   */
+  listPendingReviews(
+    teacherId: string,
+    studentId?: string,
+  ): Promise<ReviewItem[]>;
+  /**
+   * Lista de «Por escuchar»: cada estudiante con actividades por revisar y
+   * cuántas son, del que más tiempo lleva esperando al que menos. Cuenta
+   * las mismas que `listPendingReviews(teacherId, studentId)`.
+   */
+  listPendingSummary(teacherId: string): Promise<PendingReviewSummary[]>;
   /**
    * Audio de un intento de voz para escucharlo (`speech.remoteAudio`). Con
    * la API es una URL firmada de pocos minutos; pedirlo es requisito para

@@ -274,6 +274,15 @@ export interface StudentSummary {
   initials: string;
 }
 
+/** Un estudiante con actividades por revisar (lista de «Por escuchar»). */
+export interface PendingReviewSummary {
+  student: StudentSummary;
+  /** Cuántas actividades esperan revisión (las mismas que su bandeja). */
+  pending: number;
+  /** Desde cuándo espera: fecha del intento más antiguo. */
+  oldestAt: string;
+}
+
 /**
  * - speech: «Habla conmigo»;
  * - listening: «Busca la boca»;

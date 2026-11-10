@@ -37,6 +37,19 @@ export function pendingTitle(count: number): string {
   return count === 1 ? '1 actividad nueva' : `${count} actividades nuevas`;
 }
 
+/** «3 actividades por revisar» / «1 actividad por revisar». */
+export function toReviewText(count: number): string {
+  return count === 1
+    ? '1 actividad por revisar'
+    : `${count} actividades por revisar`;
+}
+
+/** «2 estudiantes esperan» / «1 estudiante espera». */
+export function waitingStudentsTitle(count: number): string {
+  if (count === 0) return 'Todo revisado';
+  return count === 1 ? '1 estudiante espera' : `${count} estudiantes esperan`;
+}
+
 /**
  * Frases rápidas para «Practicar más». PROPUESTA: deben revisarlas las
  * terapeutas de la fundación. El docente siempre puede escribir la suya.
