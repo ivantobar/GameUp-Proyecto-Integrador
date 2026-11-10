@@ -64,8 +64,21 @@ describe('Asignar actividad', () => {
       suggestedDate: '2026-11-20',
     });
     expect(router.back).toHaveBeenCalledTimes(1);
-    // El detalle mostrará «Actividad asignada» al volver.
-    expect(takeAssignedNotice(mockStudent.id)).toBe(true);
+    // El detalle mostrará «¡Listo! La actividad … quedó asignada» al volver.
+    expect(takeAssignedNotice(mockStudent.id)).toBe('Rutinas de la casa');
+  });
+
+  it('tocar otra vez el módulo elegido lo deselecciona', async () => {
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    await renderAssign(createMockRepositories({ delayMs: 0 }));
+
+    await user.press(screen.getByTestId('modulo-routines'));
+    expect(screen.getByText('Elegido')).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: 'Asignar' })).toBeEnabled();
+
+    await user.press(screen.getByTestId('modulo-routines'));
+    expect(screen.queryByText('Elegido')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Asignar' })).toBeDisabled();
   });
 
   it('«Sin fecha» no envía fecha sugerida', async () => {
@@ -130,6 +143,129 @@ describe('Asignar actividad', () => {
       screen.getByText(
         'No se pudo asignar. Revisa la conexión e inténtalo otra vez.',
       ),
+    ).toBeOnTheScreen();
+  });
+});
+
+describe('Asignar actividad · qué trae el módulo elegido', () => {
+  it('al elegir un módulo se ven sus actividades con su juego', async () => {
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    await renderAssign(createMockRepositories({ delayMs: 0 }));
+
+    // Sin elegir no se ve ninguna lista.
+    expect(screen.queryByText(/^Trae /)).toBeNull();
+
+    await user.press(screen.getByTestId('modulo-routines'));
+    await settle();
+
+    expect(
+      screen.getByRole('header', { name: 'Trae 4 actividades' }),
+    ).toBeOnTheScreen();
+    expect(screen.getByLabelText('Al despertar, Secuenciar')).toBeOnTheScreen();
+    expect(screen.getByText('Al despertar · 2')).toBeOnTheScreen();
+    expect(screen.queryByText(/^Y \d+ más\.$/)).toBeNull();
+  });
+
+  it('al cambiar de módulo muestra solo las del nuevo, y resume las demás', async () => {
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    await renderAssign(createMockRepositories({ delayMs: 0 }), 'est-demo-002');
+
+    await user.press(screen.getByTestId('modulo-routines'));
+    await settle();
+    expect(screen.getByText('Al despertar')).toBeOnTheScreen();
+
+    await user.press(screen.getByTestId('modulo-numbers'));
+    await settle();
+
+    expect(
+      screen.getByRole('header', { name: 'Trae 20 actividades' }),
+    ).toBeOnTheScreen();
+    expect(screen.getByText('Cuenta y empareja')).toBeOnTheScreen();
+    // Se ven 6; las otras 14 se resumen.
+    expect(screen.getByText('Y 14 más.')).toBeOnTheScreen();
+    expect(screen.queryByText('Al despertar')).toBeNull();
+  });
+
+  it('mientras carga el nuevo módulo no quedan las del anterior', async () => {
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    const repos = createMockRepositories({ delayMs: 0 });
+    const real = repos.assignmentManagement.listModuleActivities;
+    jest
+      .spyOn(repos.assignmentManagement, 'listModuleActivities')
+      .mockImplementation((moduleId) =>
+        // «Números» no termina de cargar.
+        moduleId === 'numbers' ? new Promise(() => {}) : real(moduleId),
+      );
+    await renderAssign(repos, 'est-demo-002');
+
+    await user.press(screen.getByTestId('modulo-routines'));
+    await settle();
+    expect(screen.getByText('Al despertar')).toBeOnTheScreen();
+
+    await user.press(screen.getByTestId('modulo-numbers'));
+    await settle();
+    expect(
+      screen.getByText('Buscando las actividades de «Números»…'),
+    ).toBeOnTheScreen();
+    expect(screen.queryByText('Al despertar')).toBeNull();
+    expect(screen.queryByText(/^Trae /)).toBeNull();
+  });
+
+  it('al quitar la selección se esconde la lista', async () => {
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    await renderAssign(createMockRepositories({ delayMs: 0 }));
+
+    await user.press(screen.getByTestId('modulo-routines'));
+    await settle();
+    expect(screen.getByText('Al despertar')).toBeOnTheScreen();
+
+    await user.press(screen.getByTestId('modulo-routines'));
+    expect(screen.queryByText('Al despertar')).toBeNull();
+    expect(screen.queryByText(/^Trae /)).toBeNull();
+  });
+
+  it('si no cargan, avisa, deja reintentar y se puede asignar igual', async () => {
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    const repos = createMockRepositories({ delayMs: 0 });
+    const real = repos.assignmentManagement.listModuleActivities;
+    const list = jest
+      .spyOn(repos.assignmentManagement, 'listModuleActivities')
+      .mockRejectedValueOnce(new Error('sin red'));
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    await renderAssign(repos);
+
+    await user.press(screen.getByTestId('modulo-routines'));
+    await settle();
+
+    expect(
+      screen.getByText(
+        'No pudimos ver las actividades de «Rutinas de la casa». Igual puedes asignarlo.',
+      ),
+    ).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: 'Asignar' })).toBeEnabled();
+
+    list.mockImplementation(real);
+    await user.press(screen.getByRole('button', { name: 'Intentar de nuevo' }));
+    await settle();
+    expect(
+      screen.getByRole('header', { name: 'Trae 4 actividades' }),
+    ).toBeOnTheScreen();
+    warn.mockRestore();
+  });
+
+  it('un módulo sin actividades lo dice', async () => {
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    const repos = createMockRepositories({ delayMs: 0 });
+    jest
+      .spyOn(repos.assignmentManagement, 'listModuleActivities')
+      .mockResolvedValue([]);
+    await renderAssign(repos);
+
+    await user.press(screen.getByTestId('modulo-routines'));
+    await settle();
+
+    expect(
+      screen.getByText('«Rutinas de la casa» todavía no tiene actividades.'),
     ).toBeOnTheScreen();
   });
 });

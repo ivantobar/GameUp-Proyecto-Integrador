@@ -1,16 +1,26 @@
 /**
- * Aviso «Actividad asignada» que la pantalla de asignar deja para el
- * detalle del estudiante al volver. Vive en memoria y se lee una sola vez.
+ * Aviso «¡Listo! La actividad … quedó asignada» que la pantalla de asignar
+ * deja para el detalle del estudiante al volver. Guarda el nombre del
+ * módulo; vive en memoria y se lee una sola vez.
  */
-const pending = new Set<string>();
+const pending = new Map<string, string>();
 
-export function leaveAssignedNotice(studentId: string): void {
-  pending.add(studentId);
+export function leaveAssignedNotice(
+  studentId: string,
+  moduleTitle: string,
+): void {
+  pending.set(studentId, moduleTitle);
 }
 
-/** `true` (una sola vez) si acaban de asignarle una actividad. */
-export function takeAssignedNotice(studentId: string): boolean {
-  return pending.delete(studentId);
+/**
+ * El módulo que acaban de asignarle (una sola vez), o `null` si no hay
+ * aviso pendiente.
+ */
+export function takeAssignedNotice(studentId: string): string | null {
+  const title = pending.get(studentId);
+  if (title === undefined) return null;
+  pending.delete(studentId);
+  return title;
 }
 
 /** Aviso «Tallerista asignada» al volver de elegir una tallerista. */

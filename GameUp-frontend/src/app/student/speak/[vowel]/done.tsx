@@ -1,4 +1,4 @@
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams, useNavigation } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 import {
   AppText,
@@ -38,6 +38,20 @@ export default function DoneStep() {
   }>();
   const vowel = parseVowel(params.vowel);
   const activityId = parseActivityId(params.actividadId);
+  // Viene de una tarea de la profe (no de la práctica libre).
+  const fromTask = activityId !== null;
+  const navigation = useNavigation();
+  /**
+   * Sale de todo «Habla conmigo» (el stack anidado) y vuelve a la pantalla
+   * desde donde se abrió la tarea: el módulo o el Inicio. Si no hay a dónde
+   * volver, abre «Tareas de mi profe».
+   */
+  const backToTasks = () => {
+    const parent = navigation.getParent();
+    if (parent?.canGoBack()) parent.goBack();
+    else router.navigate('/student/tasks');
+  };
+  const onClose = fromTask ? backToTasks : exitPractice;
   const letter = vowel.toUpperCase();
   const { outcome } = usePracticeSession();
   const audioUri = outcome?.vowel === vowel ? outcome.attempt.audioUri : null;
@@ -69,8 +83,12 @@ export default function DoneStep() {
         <ScreenHeader
           left={
             <HeaderCloseButton
-              accessibilityLabel="Salir de la práctica"
-              onPress={exitPractice}
+              accessibilityLabel={
+                fromTask
+                  ? 'Cerrar y volver a mis tareas'
+                  : 'Salir de la práctica'
+              }
+              onPress={onClose}
             />
           }
           right={
@@ -82,9 +100,18 @@ export default function DoneStep() {
       }
       footer={
         <>
+          {fromTask ? (
+            <Button
+              label="Volver a mis tareas"
+              variant="accent"
+              size="large"
+              accessibilityHint="Vuelve a las tareas de tu profe."
+              onPress={backToTasks}
+            />
+          ) : null}
           <Button
             label="Otro sonido"
-            variant="accent"
+            variant={fromTask ? 'secondary' : 'accent'}
             size="large"
             onPress={exitPractice}
           />

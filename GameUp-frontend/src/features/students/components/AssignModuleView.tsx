@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { Fragment, useMemo, useState } from 'react';
 import { router } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 import {
@@ -22,6 +22,7 @@ import {
   type SuggestedDateOption,
 } from '../suggestedDates';
 import { useAssignModule, type ModuleChoice } from '../useAssignModule';
+import { ModuleActivitiesPreview } from './ModuleActivitiesPreview';
 
 interface AssignModuleViewProps {
   studentId: string;
@@ -30,7 +31,9 @@ interface AssignModuleViewProps {
 /**
  * «Asignar actividad»: elegir un módulo publicado y, si se quiere, una
  * fecha sugerida. Los que ya tiene sin terminar aparecen como «Ya
- * asignado». Al confirmar, vuelve al detalle con «Actividad asignada».
+ * asignado». Al elegir uno se ven sus actividades; tocar otra vez el
+ * elegido lo quita. Al confirmar, vuelve al detalle con «¡Listo! La
+ * actividad … quedó asignada a …».
  */
 export function AssignModuleView({ studentId }: AssignModuleViewProps) {
   const { resource, reload, error, submitting, assign } =
@@ -49,7 +52,7 @@ export function AssignModuleView({ studentId }: AssignModuleViewProps) {
     if (!selected) return;
     const ok = await assign(selected.module.id, date);
     if (ok) {
-      leaveAssignedNotice(studentId);
+      leaveAssignedNotice(studentId, selected.module.title);
       router.back();
     }
   };
@@ -111,14 +114,31 @@ export function AssignModuleView({ studentId }: AssignModuleViewProps) {
             Elige un módulo
           </AppText>
           <View style={styles.list}>
-            {choices.map((choice) => (
-              <ModuleOption
-                key={choice.module.id}
-                choice={choice}
-                selected={choice.module.id === selected?.module.id}
-                onPress={() => setSelectedId(choice.module.id)}
-              />
-            ))}
+            {choices.map((choice) => {
+              const isSelected = choice.module.id === selected?.module.id;
+              return (
+                <Fragment key={choice.module.id}>
+                  <ModuleOption
+                    choice={choice}
+                    selected={isSelected}
+                    // Tocar otra vez el elegido lo deselecciona.
+                    onPress={() =>
+                      setSelectedId((current) =>
+                        current === choice.module.id ? null : choice.module.id,
+                      )
+                    }
+                  />
+                  {/* Qué trae: debajo del elegido. `key` evita ver las de otro. */}
+                  {isSelected ? (
+                    <ModuleActivitiesPreview
+                      key={choice.module.id}
+                      moduleId={choice.module.id}
+                      moduleTitle={choice.module.title}
+                    />
+                  ) : null}
+                </Fragment>
+              );
+            })}
           </View>
 
           <AppText variant="label" tone="secundario" accessibilityRole="header">

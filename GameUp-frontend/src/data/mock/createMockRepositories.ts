@@ -41,6 +41,7 @@ import {
   mockAssignments,
   mockGuardian,
   mockGuardianStudents,
+  mockModuleActivities,
   mockModules,
   mockOfficialProgress,
   mockResumePoint,
@@ -655,6 +656,18 @@ export function createMockRepositories({
                 })),
             )
           : rejectWith(new AssignmentError('notAllowed')),
+      listModuleActivities: (moduleId) => {
+        if (!canAssign()) return rejectWith(new AssignmentError('notAllowed'));
+        const module = mockModules.find((m) => m.id === moduleId);
+        // Como el backend: la tallerista no ve un borrador ajeno (404).
+        if (
+          !module ||
+          (!module.published && state.session?.role !== 'director')
+        ) {
+          return rejectWith(new AssignmentError('notFound'));
+        }
+        return respond(mockModuleActivities(module));
+      },
       assign: ({ moduleId, studentId, suggestedDate }) => {
         if (!canAssign()) return rejectWith(new AssignmentError('notAllowed'));
         if (!canSee(studentId)) {

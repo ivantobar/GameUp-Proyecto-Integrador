@@ -13,7 +13,7 @@ export interface StaffRoutes {
    * para el título mientras cargan.
    */
   review(studentId: string, name?: string): Href;
-  /** Cómo se llama la revisión en este espacio: «Por escuchar» o «Por validar». */
+  /** Cómo se llama la revisión en este espacio: «Por revisar» o «Por validar». */
   reviewTitle: string;
 }
 
@@ -27,7 +27,7 @@ export const teacherRoutes: StaffRoutes = {
     pathname: '/teacher/student/[id]/review',
     params: name ? { id, name } : { id },
   }),
-  reviewTitle: 'Por escuchar',
+  reviewTitle: 'Por revisar',
 };
 
 export const directorRoutes: StaffRoutes = {

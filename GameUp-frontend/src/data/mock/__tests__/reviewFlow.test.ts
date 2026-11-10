@@ -92,7 +92,7 @@ describe('ciclo de revisión (datos simulados)', () => {
     expect(await repos.reviews.listPendingReviews('doc-otro')).toEqual([]);
   });
 
-  it('el intento del estudiante llega a «Por escuchar» como intento 2 de 2', async () => {
+  it('el intento del estudiante llega a «Por revisar» como intento 2 de 2', async () => {
     const repos = instant({ voiceConsent: () => true });
     await repos.recordings.submitSpeechAttempt({
       studentId: mockStudent.id,

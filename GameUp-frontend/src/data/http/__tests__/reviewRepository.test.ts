@@ -27,7 +27,7 @@ const base: ItemRevisionDto = {
   grabacion: null,
 };
 
-describe('bandeja del backend → «Por escuchar»', () => {
+describe('bandeja del backend → «Por revisar»', () => {
   it('voz sin grabación (NO_VERIFICABLE): explica el motivo y no hay audio que esperar', () => {
     expect(toReviewItem(base)).toEqual({
       id: '41',

@@ -504,6 +504,17 @@ export interface AssignableModule {
   category: string;
 }
 
+/**
+ * Una actividad de un módulo, para que el adulto vea qué trae antes de
+ * asignarlo (solo las activas: las mismas que verá el estudiante).
+ */
+export interface ModuleActivity {
+  id: string;
+  /** «Di la a». */
+  title: string;
+  gameId: GameId;
+}
+
 /** Lo que se envía al asignar. */
 export interface NewAssignment {
   moduleId: ModuleId;

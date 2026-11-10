@@ -17,7 +17,7 @@ async function renderTeacher(initialUrl: string) {
     {
       'teacher/_layout': TeacherLayout,
       'teacher/(tabs)/_layout': TeacherTabsLayout,
-      'teacher/(tabs)/index': stub('pantalla Por escuchar'),
+      'teacher/(tabs)/index': stub('pantalla Por revisar'),
       'teacher/(tabs)/students': stub('pantalla Mis estudiantes'),
       'teacher/student/[id]/index': stub('pantalla detalle'),
     },
@@ -29,12 +29,12 @@ async function renderTeacher(initialUrl: string) {
 }
 
 describe('pestañas del docente', () => {
-  it('/teacher sigue abriendo «Por escuchar»', async () => {
+  it('/teacher sigue abriendo «Por revisar»', async () => {
     await renderTeacher('/teacher');
 
-    expect(screen.getByText('pantalla Por escuchar')).toBeOnTheScreen();
+    expect(screen.getByText('pantalla Por revisar')).toBeOnTheScreen();
     expect(
-      screen.getByRole('tab', { name: 'Por escuchar', selected: true }),
+      screen.getByRole('tab', { name: 'Por revisar', selected: true }),
     ).toBeOnTheScreen();
   });
 

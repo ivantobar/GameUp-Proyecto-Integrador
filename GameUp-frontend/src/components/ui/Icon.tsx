@@ -18,6 +18,7 @@ export const iconGlyphs = {
   play: 'play',
   mic: 'mic-outline',
   ear: 'ear-outline',
+  review: 'checkmark-done-outline',
   hand: 'hand-left-outline',
   game: 'game-controller-outline',
   star: 'star',

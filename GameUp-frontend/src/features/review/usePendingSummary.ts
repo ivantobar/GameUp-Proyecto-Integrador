@@ -3,7 +3,7 @@ import { useRepositories } from '@/data/RepositoryProvider';
 import { useResource } from '@/data/useResource';
 
 /**
- * Lista de «Por escuchar» (docente) y «Por validar» (directora): cada
+ * Lista de «Por revisar» (docente) y «Por validar» (directora): cada
  * estudiante con actividades por revisar, del que más tiempo lleva
  * esperando al que menos. El backend decide a quiénes ve la sesión.
  */

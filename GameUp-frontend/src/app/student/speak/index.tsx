@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { router } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 import {
@@ -7,7 +6,6 @@ import {
   HeaderBackButton,
   Screen,
   ScreenHeader,
-  SegmentedTabs,
   StateView,
 } from '@/components/ui';
 import { Character, NarrationButton, SoundTile } from '@/components/gameup';
@@ -19,24 +17,14 @@ import { useRefreshOnFocus } from '@/data/useRefreshOnFocus';
 
 const INSTRUCTION = 'Toca un sonido para practicar';
 
-type SoundGroup = 'vowels' | 'syllables' | 'words';
-
 /**
- * Sílabas y Palabras son de la segunda etapa: se ven, pero bloqueadas.
- * La fila «Con los labios» (M, P, B) se oculta en el MVP.
+ * Pantalla 3 · Habla conmigo, selección de sonido. En el MVP solo hay
+ * vocales: sílabas y palabras quedan para la segunda etapa.
  */
-const soundGroups = [
-  { value: 'vowels', label: 'Vocales' },
-  { value: 'syllables', label: 'Sílabas', disabled: true },
-  { value: 'words', label: 'Palabras', disabled: true },
-] as const;
-
-/** Pantalla 3 · Habla conmigo, selección de sonido. */
 export default function SpeakSelectionScreen() {
   const { resource, reload, refresh } = useVowelSelection();
   // Al volver de una práctica, la ficha muestra la estrella nueva.
   useRefreshOnFocus(refresh);
-  const [group, setGroup] = useState<SoundGroup>('vowels');
   // Con los datos, la narración dice cuándo se termina una vocal y cuántas van.
   const narration =
     resource.status === 'ready'
@@ -72,13 +60,6 @@ export default function SpeakSelectionScreen() {
           </AppText>
         </View>
       </Card>
-
-      <SegmentedTabs
-        accessibilityLabel="Tipo de sonido"
-        options={soundGroups}
-        value={group}
-        onChange={setGroup}
-      />
 
       {resource.status === 'loading' ? (
         <StateView kind="loading" title="Preparando los sonidos…" />

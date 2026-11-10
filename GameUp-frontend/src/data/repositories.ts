@@ -11,6 +11,8 @@ import type {
   LevelActivity,
   LevelUp,
   ListeningResult,
+  ModuleActivity,
+  ModuleId,
   NewGameResult,
   NewAssignment,
   NewListeningResult,
@@ -261,6 +263,12 @@ export interface AssignmentManagementRepository {
   listForStudent(studentId: string): Promise<StudentAssignment[]>;
   /** Solo los módulos publicados: los demás no se pueden asignar. */
   listAssignableModules(): Promise<AssignableModule[]>;
+  /**
+   * Actividades activas de un módulo, en su orden, para verlas antes de
+   * asignarlo. Si el módulo no existe o no se puede ver, rechaza con
+   * `AssignmentError` (`notFound` o `notAllowed`).
+   */
+  listModuleActivities(moduleId: ModuleId): Promise<ModuleActivity[]>;
   assign(input: NewAssignment): Promise<StudentAssignment>;
   /** Quitar una asignación. No se puede deshacer. */
   remove(assignmentId: string): Promise<void>;

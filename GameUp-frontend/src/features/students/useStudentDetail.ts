@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo } from 'react-native';
 import { useRepositories } from '@/data/RepositoryProvider';
 import { useResource } from '@/data/useResource';
@@ -30,6 +30,18 @@ export interface RowMessage {
   text: string;
 }
 
+/** Confirmación al volver de asignar un módulo. */
+export function assignedText(
+  moduleTitle: string,
+  studentName: string | null,
+): string {
+  const text = `¡Listo! La actividad «${moduleTitle}» quedó asignada${
+    studentName ? ` a ${studentName}` : ''
+  }`;
+  // «Martín C.» ya trae su punto: no se repite.
+  return text.endsWith('.') ? text : `${text}.`;
+}
+
 /**
  * Detalle de un estudiante para el docente o la directora: progreso
  * oficial, asignaciones y la acción de quitar una (con confirmación).
@@ -51,6 +63,14 @@ export function useStudentDetail(studentId: string) {
   }, [directory, assignmentManagement, studentId]);
 
   const { resource, reload, refresh } = useResource(load);
+
+  // Nombre del estudiante para el aviso de «asignada» (sin rehacer callbacks).
+  const nameRef = useRef<string | null>(null);
+  const loadedName =
+    resource.status === 'ready' ? resource.data.student.displayName : null;
+  useEffect(() => {
+    if (loadedName) nameRef.current = loadedName;
+  }, [loadedName]);
 
   /** Primer paso: pedir confirmación (no se puede deshacer). */
   const askRemove = useCallback((assignmentId: string) => {
@@ -85,8 +105,12 @@ export function useStudentDetail(studentId: string) {
     [assignmentManagement, refresh],
   );
 
-  const showAssignedNotice = useCallback(() => {
-    setMessage({ tone: 'done', text: 'Actividad asignada' });
+  /** «¡Listo! La actividad «Letras» quedó asignada a Martín C.» */
+  const showAssignedNotice = useCallback((moduleTitle: string) => {
+    setMessage({
+      tone: 'done',
+      text: assignedText(moduleTitle, nameRef.current),
+    });
   }, []);
 
   return {

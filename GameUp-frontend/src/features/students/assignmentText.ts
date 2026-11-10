@@ -79,3 +79,8 @@ export function isAccessError(error: unknown): boolean {
       (error.problem === 'notAllowed' || error.problem === 'notFound'))
   );
 }
+
+/** «Trae 1 actividad» / «Trae 10 actividades» (antes de asignar un módulo). */
+export function moduleActivitiesTitle(count: number): string {
+  return count === 1 ? 'Trae 1 actividad' : `Trae ${count} actividades`;
+}
