@@ -33,6 +33,7 @@ import type {
   Vowel,
   VowelPractice,
   WeeklyPractice,
+  LevelChange,
 } from './types';
 
 /**
@@ -149,6 +150,12 @@ export interface GameLevelRepository {
    * acudiente (el backend responde 404 con cualquier otro).
    */
   getStudentLevels(studentId: string): Promise<GameLevel[]>;
+  /**
+   * Pone a mano el nivel de un juego (motivo obligatorio). La directora sube
+   * o baja; la tallerista a cargo solo baja. Rechaza con `LevelChangeError`
+   * (`notAllowed` trae el mensaje del backend) o `StudentAccessError`.
+   */
+  setStudentLevel(change: LevelChange): Promise<GameLevel>;
 }
 
 export interface ProgressRepository {

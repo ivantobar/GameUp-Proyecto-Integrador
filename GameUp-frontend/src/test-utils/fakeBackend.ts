@@ -671,6 +671,53 @@ export function createFakeBackend() {
         ? jsonResponse(200, nivelesDto())
         : errorResponse(404, 'El estudiante no existe');
     }
+    const ajusteNivel = /^\/estudiantes\/([\w-]+)\/niveles-juego\/(\w+)$/.exec(
+      path,
+    );
+    if (method === 'PUT' && ajusteNivel && ajusteNivel[1] !== 'me') {
+      // Como el backend: directora o tallerista a cargo; motivo
+      // obligatorio; la tallerista solo baja.
+      if (session.role !== 'teacher' && session.role !== 'director') {
+        return errorResponse(403, 'Tu rol no tiene acceso a esta acción.');
+      }
+      if (ajusteNivel[1] !== mockStudent.id) {
+        return errorResponse(404, 'El estudiante no existe.');
+      }
+      const gameId = LADDER_GAMES.find((g) => CODIGOS[g] === ajusteNivel[2]);
+      if (!gameId) return errorResponse(404, 'Ese juego no tiene escalera');
+      const cuerpo = body as { nivel?: unknown; motivo?: unknown };
+      const motivo =
+        typeof cuerpo.motivo === 'string' ? cuerpo.motivo.trim() : '';
+      const nivel = cuerpo.nivel;
+      if (
+        typeof nivel !== 'number' ||
+        !Number.isInteger(nivel) ||
+        nivel < 1 ||
+        nivel > 5
+      ) {
+        return errorResponse(400, 'nivel debe estar entre 1 y 5');
+      }
+      if (!motivo) {
+        return errorResponse(
+          422,
+          'Para cambiar el nivel a mano, el motivo es obligatorio.',
+        );
+      }
+      if (nivel === nivelDe(gameId)) {
+        return errorResponse(422, `Ya va en el nivel ${nivel} de ese juego.`);
+      }
+      if (session.role === 'teacher' && nivel > nivelDe(gameId)) {
+        return errorResponse(
+          403,
+          'Solo la directora puede subir de nivel a mano. La tallerista lo sube aprobando un intento del nivel actual.',
+        );
+      }
+      niveles.set(gameId, nivel);
+      return jsonResponse(
+        200,
+        nivelesDto().find((n) => n.juego === CODIGOS[gameId]),
+      );
+    }
     if (
       method === 'POST' &&
       /^\/estudiantes\/[\w-]+\/observaciones$/.test(path)

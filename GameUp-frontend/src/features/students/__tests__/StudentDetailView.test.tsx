@@ -13,9 +13,9 @@ import { RepositoryProvider } from '@/data/RepositoryProvider';
 import type { Repositories } from '@/data/repositories';
 import { AssignmentError, StudentAccessError } from '@/data/studentErrors';
 import { useRefreshOnFocus } from '@/data/useRefreshOnFocus';
-import { leaveAssignedNotice } from '../assignmentNotice';
+import { leaveAssignedNotice, leaveLevelNotice } from '../assignmentNotice';
 import { StudentDetailView } from '../components/StudentDetailView';
-import { teacherRoutes } from '../staffRoutes';
+import { directorRoutes, teacherRoutes } from '../staffRoutes';
 
 jest.mock('expo-router', () => ({
   router: { push: jest.fn(), back: jest.fn() },
@@ -123,6 +123,39 @@ describe('detalle del estudiante', () => {
     expect(screen.getAllByText('Rutinas de la casa').length).toBeGreaterThan(0);
     // Se actualizó sin volver a «cargando».
     expect(screen.queryByText('Buscando sus datos…')).toBeNull();
+  });
+
+  it('«Cambiar nivel» abre la pantalla de niveles de su espacio', async () => {
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    await renderDetail(createMockRepositories({ delayMs: 0 }));
+
+    const button = screen.getByRole('button', {
+      name: 'Cambiar el nivel de sus juegos',
+    });
+    await user.press(button);
+    expect(router.push).toHaveBeenCalledWith(
+      teacherRoutes.levels(mockStudent.id),
+    );
+    expect(teacherRoutes.canRaiseLevels).toBe(false);
+    expect(directorRoutes.canRaiseLevels).toBe(true);
+  });
+
+  it('al volver de «Cambiar nivel», avisa y muestra el nivel nuevo', async () => {
+    const repos = createMockRepositories({ delayMs: 0 });
+    await renderDetail(repos);
+    expect(screen.getByLabelText('Memoria: Nivel 1')).toBeOnTheScreen();
+
+    // Lo que deja la pantalla de niveles al guardar: el nivel nuevo y el aviso.
+    jest
+      .spyOn(repos.levels, 'getStudentLevels')
+      .mockResolvedValueOnce([
+        { gameId: 'memory', level: 3, completed: false, pendingReview: 0 },
+      ]);
+    leaveLevelNotice(mockStudent.id, 'Memoria quedó en el nivel 3.');
+    await focusAgain();
+
+    expect(screen.getByText('Memoria quedó en el nivel 3.')).toBeOnTheScreen();
+    expect(screen.getByLabelText('Memoria: Nivel 3')).toBeOnTheScreen();
   });
 
   it('quitar pide confirmación y, al confirmar, actualiza la lista', async () => {

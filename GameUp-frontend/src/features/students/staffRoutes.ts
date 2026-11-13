@@ -15,6 +15,13 @@ export interface StaffRoutes {
   review(studentId: string, name?: string): Href;
   /** Cómo se llama la revisión en este espacio: «Por revisar» o «Por validar». */
   reviewTitle: string;
+  /** «Cambiar nivel» de los juegos con escalera. */
+  levels(studentId: string): Href;
+  /**
+   * Puede SUBIR el nivel a mano (solo la directora). La tallerista solo
+   * baja: sube al niño aprobando un intento del nivel actual.
+   */
+  canRaiseLevels: boolean;
 }
 
 export const teacherRoutes: StaffRoutes = {
@@ -28,6 +35,11 @@ export const teacherRoutes: StaffRoutes = {
     params: name ? { id, name } : { id },
   }),
   reviewTitle: 'Por revisar',
+  levels: (id) => ({
+    pathname: '/teacher/student/[id]/levels',
+    params: { id },
+  }),
+  canRaiseLevels: false,
 };
 
 export const directorRoutes: StaffRoutes = {
@@ -41,6 +53,11 @@ export const directorRoutes: StaffRoutes = {
     params: name ? { id, name } : { id },
   }),
   reviewTitle: 'Por validar',
+  levels: (id) => ({
+    pathname: '/director/student/[id]/levels',
+    params: { id },
+  }),
+  canRaiseLevels: true,
 };
 
 /** Directora · elegir la tallerista a cargo de un estudiante. */

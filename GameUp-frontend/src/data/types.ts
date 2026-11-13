@@ -200,6 +200,16 @@ export interface LevelActivity {
   content: ActivityContent;
 }
 
+/** Cambio manual del nivel de un juego (directora o tallerista a cargo). */
+export interface LevelChange {
+  studentId: string;
+  gameId: LadderGameId;
+  /** 1 a 5. */
+  level: number;
+  /** Obligatorio: queda en el historial. */
+  reason: string;
+}
+
 /** Lo que pasó con el nivel al aprobar un intento de la escalera. */
 export interface LevelUp {
   gameId: LadderGameId;

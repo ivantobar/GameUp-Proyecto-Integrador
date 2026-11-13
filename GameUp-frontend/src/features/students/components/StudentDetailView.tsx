@@ -16,13 +16,18 @@ import {
 } from '@/components/ui';
 import { useRefreshOnFocus } from '@/data/useRefreshOnFocus';
 import type { StudentAssignment } from '@/data/types';
-import { StudentLevels } from '@/features/levels/components/StudentLevels';
+import { StudentLevelsList } from '@/features/levels/components/StudentLevels';
+import { useStudentLevels } from '@/features/levels/useStudentLevels';
 import { toReviewText } from '@/features/review/reviewText';
 import { usePendingSummary } from '@/features/review/usePendingSummary';
 import { ModuleProgressCard } from '@/features/progress/components/ModuleProgressCard';
 import { moduleDefinitionFor } from '@/features/progress/modules';
 import { spacing } from '@/theme';
-import { takeAssignedNotice, takeTeacherNotice } from '../assignmentNotice';
+import {
+  takeAssignedNotice,
+  takeLevelNotice,
+  takeTeacherNotice,
+} from '../assignmentNotice';
 import {
   assignmentStateLabels,
   assignmentSummary,
@@ -55,7 +60,11 @@ export function StudentDetailView({
   manageTeachers = false,
 }: StudentDetailViewProps) {
   const detail = useStudentDetail(studentId);
-  const { resource, reload, refresh, message, showAssignedNotice } = detail;
+  const { resource, reload, refresh, message, showAssignedNotice, showNotice } =
+    detail;
+  // Niveles por juego: se recargan al volver de «Cambiar nivel».
+  const levels = useStudentLevels(studentId);
+  const refreshLevels = levels.refresh;
   const teachers = useStudentTeachers(studentId, manageTeachers);
   const { refresh: refreshTeachers, showAssignedNotice: showTeacherNotice } =
     teachers;
@@ -72,7 +81,10 @@ export function StudentDetailView({
   const onFocus = useCallback(() => {
     const assignedTitle = takeAssignedNotice(studentId);
     if (assignedTitle !== null) showAssignedNotice(assignedTitle);
+    const levelNotice = takeLevelNotice(studentId);
+    if (levelNotice !== null) showNotice(levelNotice);
     refresh();
+    refreshLevels();
     refreshPending();
     if (manageTeachers) {
       if (takeTeacherNotice(studentId)) showTeacherNotice();
@@ -83,6 +95,8 @@ export function StudentDetailView({
     refresh,
     refreshPending,
     showAssignedNotice,
+    showNotice,
+    refreshLevels,
     manageTeachers,
     refreshTeachers,
     showTeacherNotice,
@@ -189,7 +203,25 @@ export function StudentDetailView({
             ) : null}
           </Section>
 
-          <StudentLevels studentId={studentId} />
+          {levels.resource.status === 'ready' &&
+          levels.resource.data.length > 0 ? (
+            <>
+              <StudentLevelsList levels={levels.resource.data} />
+              <Button
+                label="Cambiar nivel"
+                icon="game"
+                size="large"
+                variant="secondary"
+                accessibilityLabel="Cambiar el nivel de sus juegos"
+                accessibilityHint={
+                  routes.canRaiseLevels
+                    ? 'Puedes subirlo o bajarlo, con un motivo'
+                    : 'Solo puedes bajarlo, con un motivo'
+                }
+                onPress={() => router.push(routes.levels(studentId))}
+              />
+            </>
+          ) : null}
 
           <Section title="Asignaciones">
             {resource.data.assignments.length === 0 ? (
