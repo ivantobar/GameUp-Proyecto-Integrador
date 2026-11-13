@@ -86,9 +86,9 @@ export function normalizarMotivo(motivo: string | null | undefined): string {
 }
 
 /**
- * Ajuste manual de la directora o la tallerista a cargo: pone el nivel que
- * digan (también puede bajarlo, lo decide una persona). El juego queda sin
- * completar: se completa al aprobar el nivel 5.
+ * Ajuste manual: pone el nivel que se pida. El juego queda sin completar: se
+ * completa al aprobar el nivel 5. Quién puede subir y quién solo bajar lo
+ * decide `esSubida` (la tallerista solo baja; subir a mano, la directora).
  */
 export function ajusteManual(
   estado: EstadoNivel,
@@ -107,6 +107,18 @@ export function ajusteManual(
     completado: false,
   };
 }
+
+/**
+ * ¿El ajuste manual SUBE de nivel? Solo si el nivel pedido es mayor que el
+ * actual. Volver a abrir un juego completado en el mismo nivel (o en uno
+ * menor) no es subir: es repetir.
+ */
+export function esSubida(estado: EstadoNivel, nivelNuevo: number): boolean {
+  return nivelNuevo > estado.nivelActual;
+}
+
+export const SOLO_DIRECTORA_SUBE =
+  'Solo la directora puede subir de nivel a mano. La tallerista lo sube aprobando un intento del nivel actual.';
 
 /** Aviso al acudiente (sin presión, sin género). */
 export function mensajeSubida(

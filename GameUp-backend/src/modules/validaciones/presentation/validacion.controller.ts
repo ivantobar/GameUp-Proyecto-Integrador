@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -14,7 +15,11 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
-import { Roles, UsuarioActual } from '../../../common/auth/decoradores.js';
+import {
+  Roles,
+  TokenActual,
+  UsuarioActual,
+} from '../../../common/auth/decoradores.js';
 import type { UsuarioAutenticado } from '../../../common/auth/usuario-autenticado.js';
 import { aBigInt } from '../../../common/ids/ids.js';
 import { mapearPagina } from '../../../common/paginacion/paginacion.js';
@@ -29,6 +34,7 @@ import { ValidacionService } from '../application/validacion.service.js';
 import { RevisionMapper } from '../infrastructure/revision.mapper.js';
 import {
   AprobarLoteDto,
+  GrabacionesBorradasDto,
   IntentoValidadoDto,
   LoteAprobadoDto,
   PaginaRevisionDto,
@@ -91,16 +97,46 @@ export class ValidacionController {
   @ApiOperation({
     summary: 'URL firmada del audio de un intento (10 min)',
     description:
-      'Solo la tallerista a cargo o la directora. 404 si no hay audio, venció o ya se validó.',
+      'Solo la tallerista a cargo o la directora. 404 si no hay audio, venció o ya se validó.\n\n' +
+      'Antes de entregarlo se vuelve a consultar el consentimiento en ASISCO UP ' +
+      '(`autorizaGrabacionVoz`, con caché de CONSENTIMIENTO_CACHE_SEG): si el acudiente ' +
+      'retiró la autorización → 403 y no se entrega; si ASISCO UP no responde → 503 ' +
+      '(falla cerrado). En ningún caso se borra el audio por esto: lo borra la directora ' +
+      'con DELETE /estudiantes/{id}/grabaciones, la validación o el plazo de 30 días.',
   })
   @ApiOkResponse({ type: UrlFirmadaDto })
-  @ApiErrores(400, 401, 403, 404, 503)
+  @ApiErrores(400, 401, 404, {
+    403: 'Tu rol no tiene acceso, o el acudiente retiró la autorización de grabar la voz',
+    503: 'ASISCO UP no responde (no se puede verificar la autorización) o Storage no está disponible',
+  })
   async grabacion(
     @UsuarioActual() actual: UsuarioAutenticado,
     @Param('id', ParseBigIntPipe) id: bigint,
+    @TokenActual() token: string,
   ): Promise<UrlFirmadaDto> {
-    const url = await this.grabaciones.urlAudio(actual, id);
+    const url = await this.grabaciones.urlAudio(actual, id, token);
     return { url: url.url, expiraEn: url.expiraEn.toISOString() };
+  }
+
+  @Delete('estudiantes/:id/grabaciones')
+  @Roles('DIRECTORA')
+  @ApiOperation({
+    summary: 'Borrar todas las grabaciones de voz de un estudiante (directora)',
+    description:
+      'Derecho de supresión (Ley 1581 de 2012): borra de Storage todos los audios del ' +
+      'estudiante que aún existan. Los intentos se conservan sin audio y se pueden ' +
+      'validar sin escucharlo. Idempotente: si no queda ninguno, `borradas` es 0. ' +
+      'Si Storage falla, no se marca nada (503) y se puede repetir.',
+  })
+  @ApiOkResponse({ type: GrabacionesBorradasDto })
+  @ApiErrores(400, 401, 403, 404, {
+    503: 'Storage no respondió: no se borró nada, intenta de nuevo',
+  })
+  async borrarGrabaciones(
+    @UsuarioActual() actual: UsuarioAutenticado,
+    @Param('id', ParseBigIntPipe) id: bigint,
+  ): Promise<GrabacionesBorradasDto> {
+    return this.grabaciones.borrarDeEstudiante(actual, id);
   }
 
   @Post('intentos/:id/validacion')

@@ -27,6 +27,15 @@ describe('Swagger (e2e)', () => {
     await app.close();
   });
 
+  it('no guarda el token en el navegador (sin persistAuthorization)', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/api-docs/swagger-ui-init.js')
+      .expect(200);
+    // Es el script que configura Swagger UI (lleva la especificación).
+    expect(res.text).toContain('swaggerDoc');
+    expect(res.text).not.toContain('persistAuthorization');
+  });
+
   it('GET /api-docs sirve la página de Swagger UI', async () => {
     const res = await request(app.getHttpServer())
       .get('/api-docs')

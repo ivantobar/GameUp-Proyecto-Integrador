@@ -306,6 +306,13 @@ export class ValidacionesEnMemoria
       .slice(0, limite);
   }
 
+  async activasDeEstudiante(estudianteId: bigint) {
+    return this.filas
+      .filter((f) => this.estudianteDe(f) === estudianteId)
+      .map((f) => this.aGrabacion(f))
+      .filter((g): g is GrabacionGuardada => g !== null && !g.eliminadaEn);
+  }
+
   async marcarEliminadas(ids: bigint[], fecha: Date) {
     for (const f of this.filas) {
       if (

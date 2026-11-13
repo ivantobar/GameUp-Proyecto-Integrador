@@ -189,3 +189,12 @@ export class LoteAprobadoDto {
   })
   subidas: SubidaNivelDto[];
 }
+
+export class GrabacionesBorradasDto {
+  @ApiProperty({
+    example: 3,
+    description:
+      'Grabaciones cuyo archivo se borró de Storage en esta llamada.',
+  })
+  borradas: number;
+}

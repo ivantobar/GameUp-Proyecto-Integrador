@@ -98,10 +98,14 @@ export class NivelJuegoController {
     summary: 'Poner a mano el nivel de un juego',
     description:
       'Directora o tallerista a cargo (estudiante ajeno → 404). Motivo obligatorio; queda en el historial. ' +
-      'Puede subir o bajar el nivel; el juego queda sin completar. No avisa al acudiente.',
+      'El juego queda sin completar. No avisa al acudiente.\n\n' +
+      '**Quién sube y quién baja:** la directora puede subir o bajar. La tallerista solo puede ' +
+      'bajar (o repetir un juego completado en su nivel): si pide un nivel mayor que el actual → 403. ' +
+      'La tallerista sube al niño aprobando un intento del nivel actual (POST /intentos/:id/validacion).',
   })
   @ApiOkResponse({ type: NivelJuegoDto })
-  @ApiErrores(400, 401, 403, {
+  @ApiErrores(400, 401, {
+    403: 'Rol sin acceso, o tallerista que intenta subir de nivel a mano (solo la directora sube)',
     404: 'Estudiante ajeno o juego sin escalera',
     409: 'El nivel cambió mientras tanto (vuelve a cargarlo)',
     422: 'Falta el motivo o ya va en ese nivel',

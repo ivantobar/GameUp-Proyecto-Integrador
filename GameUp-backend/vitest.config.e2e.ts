@@ -21,6 +21,11 @@ export default defineConfig({
       // Alta automática con los cuatro roles (el valor por defecto), aunque
       // el .env local diga otra cosa. Las pruebas que la apagan lo hacen a mano.
       ALTA_AUTOMATICA_ROLES: 'ESTUDIANTE,ACUDIENTE,TALLERISTA,DIRECTORA',
+      // Límites altos para que las pruebas que hacen muchas peticiones no
+      // choquen con el límite. test/limites.e2e-spec.ts usa límites bajos.
+      THROTTLE_GLOBAL_LIMITE: '100000',
+      THROTTLE_LOGIN_LIMITE: '10000',
+      THROTTLE_LOGIN_IP_LIMITE: '100000',
     },
   },
 });

@@ -2,7 +2,12 @@ import type { INestApplication } from '@nestjs/common';
 import request from 'supertest';
 import type { App } from 'supertest/types.js';
 import { RELOJ, RelojFijo } from '../src/common/reloj/reloj.js';
+import { DURACION_CACHE_CONSENTIMIENTO } from '../src/modules/consentimiento/application/consentimiento.service.js';
 import { CONSULTA_CONSENTIMIENTO } from '../src/modules/consentimiento/domain/consulta-consentimiento.js';
+import {
+  AUTORIZACION_NO_VERIFICABLE,
+  AUTORIZACION_RETIRADA,
+} from '../src/modules/validaciones/application/grabacion.service.js';
 import { crearAppDePrueba } from './dobles/app-de-prueba.js';
 import { TOKENS_ESCENARIO } from './dobles/escenario-estudiantes.js';
 import { ARCHIVOS } from './dobles/escenario-modulos.js';
@@ -32,6 +37,10 @@ describe('Validación y progreso (e2e)', () => {
       verificador: new VerificadorTokenFalso(TOKENS_ESCENARIO),
       reemplazos: [
         { provide: CONSULTA_CONSENTIMIENTO, useValue: e.consentimiento },
+        // Sin caché del consentimiento: cada prueba cambia la respuesta de
+        // ASISCO UP y la quiere ver al instante (la caché tiene sus pruebas
+        // en consentimiento.service.spec.ts).
+        { provide: DURACION_CACHE_CONSENTIMIENTO, useValue: 0 },
         {
           provide: RELOJ,
           useValue: new RelojFijo(new Date('2026-11-05T15:00:00Z')),
@@ -81,6 +90,7 @@ describe('Validación y progreso (e2e)', () => {
       post: (ruta: string, cuerpo: object) =>
         con(agente.post(`/api/v1${ruta}`).send(cuerpo)),
       voz: () => con(agente.post('/api/v1/intentos/habla-conmigo')),
+      del: (ruta: string) => con(agente.delete(`/api/v1${ruta}`)),
     };
   }
 
@@ -199,6 +209,64 @@ describe('Validación y progreso (e2e)', () => {
       await como('tallerista3').get(`/intentos/${voz}/grabacion`).expect(404);
       await como('acudiente4').get(`/intentos/${voz}/grabacion`).expect(403);
       await como('tallerista2').get(`/intentos/${juego}/grabacion`).expect(404);
+    });
+
+    it('autorización retirada en ASISCO UP → 403 y no se entrega ni se borra', async () => {
+      e.consentimiento.respuesta = {
+        aceptaTratamiento: false,
+        codigoVersion: 'TERMINOS-2026-01',
+      };
+      const res = await como('tallerista2')
+        .get(`/intentos/${voz}/grabacion`)
+        .expect(403);
+      expect(res.body).toEqual({
+        statusCode: 403,
+        error: 'Forbidden',
+        message: AUTORIZACION_RETIRADA,
+      });
+      expect(e.almacen.rutas('grabaciones')).toHaveLength(1);
+    });
+
+    it('ASISCO UP caído → 503 (falla cerrado)', async () => {
+      e.consentimiento.respuesta = 'CAIDA';
+      const res = await como('directora')
+        .get(`/intentos/${voz}/grabacion`)
+        .expect(503);
+      expect(res.body.message).toBe(AUTORIZACION_NO_VERIFICABLE);
+      expect(e.almacen.rutas('grabaciones')).toHaveLength(1);
+    });
+  });
+
+  describe('DELETE /estudiantes/:id/grabaciones', () => {
+    it('la directora borra todas; después no hay audio y se valida sin escucharlo', async () => {
+      await expect(
+        como('directora').del('/estudiantes/10/grabaciones').expect(200),
+      ).resolves.toMatchObject({ body: { borradas: 1 } });
+      expect(e.almacen.rutas('grabaciones')).toEqual([]);
+      await como('tallerista2').get(`/intentos/${voz}/grabacion`).expect(404);
+      await como('tallerista2')
+        .post(`/intentos/${voz}/validacion`, { resultado: 'APROBADO' })
+        .expect(200);
+      // Idempotente.
+      const otra = await como('directora')
+        .del('/estudiantes/10/grabaciones')
+        .expect(200);
+      expect(otra.body).toEqual({ borradas: 0 });
+    });
+
+    it('solo la directora: tallerista, acudiente y estudiante → 403; sin sesión → 401', async () => {
+      await como('tallerista2').del('/estudiantes/10/grabaciones').expect(403);
+      await como('acudiente4').del('/estudiantes/10/grabaciones').expect(403);
+      await como('estudiante10').del('/estudiantes/10/grabaciones').expect(403);
+      await como(null).del('/estudiantes/10/grabaciones').expect(401);
+      expect(e.almacen.rutas('grabaciones')).toHaveLength(1);
+    });
+
+    it('estudiante inexistente → 404; id inválido → 400; Storage caído → 503', async () => {
+      await como('directora').del('/estudiantes/999/grabaciones').expect(404);
+      await como('directora').del('/estudiantes/abc/grabaciones').expect(400);
+      e.almacen.caido = true;
+      await como('directora').del('/estudiantes/10/grabaciones').expect(503);
     });
   });
 

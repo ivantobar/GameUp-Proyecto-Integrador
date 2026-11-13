@@ -4,10 +4,16 @@ import {
   ESTUDIANTE_10,
   escenarioEstudiantes,
 } from '../../../../test/dobles/escenario-estudiantes.js';
-import { RecursoNoEncontradoError } from '../../../common/errors/dominio.errors.js';
+import {
+  RecursoNoEncontradoError,
+  ServicioExternoNoDisponibleError,
+} from '../../../common/errors/dominio.errors.js';
 import { RelojFijo } from '../../../common/reloj/reloj.js';
 import { AccesoEstudianteService } from '../../estudiantes/application/acceso-estudiante.service.js';
-import type { ConsultaConsentimiento } from '../domain/consulta-consentimiento.js';
+import type {
+  ConsentimientoVigente,
+  ConsultaConsentimiento,
+} from '../domain/consulta-consentimiento.js';
 import {
   ConsultaConsentimientoNoDisponible,
   ConsultaConsentimientoSimulada,
@@ -89,6 +95,95 @@ describe('ConsentimientoService (fallar cerrado)', () => {
     });
     await expect(servicio.consultarVoz(ESTUDIANTE_10, 10n)).rejects.toThrow(
       'error de programación',
+    );
+  });
+});
+
+describe('ConsentimientoService (caché corta)', () => {
+  /** ASISCO UP de mentira: cuenta las consultas y se puede cambiar o apagar. */
+  class AsiscoQueCuenta implements ConsultaConsentimiento {
+    consultas = 0;
+    respuesta: ConsentimientoVigente | null | 'CAIDA' = {
+      aceptaTratamiento: true,
+      codigoVersion: 'v1',
+    };
+    async vigente(): Promise<ConsentimientoVigente | null> {
+      this.consultas++;
+      if (this.respuesta === 'CAIDA') {
+        throw new ServicioExternoNoDisponibleError('caída (prueba)');
+      }
+      return this.respuesta;
+    }
+  }
+
+  function crearConCache(segundos: number | null) {
+    const { estudiantes } = escenarioEstudiantes();
+    const reloj = new RelojFijo(AHORA);
+    const asisco = new AsiscoQueCuenta();
+    const servicio = new ConsentimientoService(
+      asisco,
+      reloj,
+      new AccesoEstudianteService(estudiantes),
+      segundos,
+    );
+    vi.spyOn(servicio['logger'], 'warn').mockImplementation(() => undefined);
+    return { servicio, reloj, asisco };
+  }
+
+  it('dentro del plazo responde de la caché, con la hora en que ASISCO UP respondió', async () => {
+    const { servicio, reloj, asisco } = crearConCache(120);
+    await servicio.consultarVoz(ESTUDIANTE_10, 10n);
+    reloj.avanzar(119_000);
+    await expect(
+      servicio.consultarVoz(ESTUDIANTE_10, 10n),
+    ).resolves.toMatchObject({ concedido: true, verificadoEn: AHORA });
+    expect(asisco.consultas).toBe(1);
+  });
+
+  it('vencido el plazo vuelve a preguntar (y ve un retiro de la autorización)', async () => {
+    const { servicio, reloj, asisco } = crearConCache(120);
+    await servicio.consultarVoz(ESTUDIANTE_10, 10n);
+    asisco.respuesta = { aceptaTratamiento: false, codigoVersion: 'v1' };
+    reloj.avanzar(120_000);
+    await expect(
+      servicio.consultarVoz(ESTUDIANTE_10, 10n),
+    ).resolves.toMatchObject({ concedido: false, motivo: 'NO_ACEPTADO' });
+    expect(asisco.consultas).toBe(2);
+  });
+
+  it('nunca guarda un NO_VERIFICABLE: en cuanto ASISCO UP vuelve, pregunta', async () => {
+    const { servicio, asisco } = crearConCache(120);
+    asisco.respuesta = 'CAIDA';
+    await expect(
+      servicio.consultarVoz(ESTUDIANTE_10, 10n),
+    ).resolves.toMatchObject({ motivo: 'NO_VERIFICABLE' });
+    asisco.respuesta = { aceptaTratamiento: true, codigoVersion: 'v1' };
+    await expect(
+      servicio.consultarVoz(ESTUDIANTE_10, 10n),
+    ).resolves.toMatchObject({ concedido: true });
+    expect(asisco.consultas).toBe(2);
+  });
+
+  it('también guarda el "no aceptado" (no insiste con ASISCO UP)', async () => {
+    const { servicio, asisco } = crearConCache(120);
+    asisco.respuesta = null;
+    await servicio.consultarVoz(ESTUDIANTE_10, 10n);
+    await servicio.consultarVoz(ESTUDIANTE_10, 10n);
+    expect(asisco.consultas).toBe(1);
+  });
+
+  it.each([0, null])('con %s segundos no hay caché', async (segundos) => {
+    const { servicio, asisco } = crearConCache(segundos);
+    await servicio.consultarVoz(ESTUDIANTE_10, 10n);
+    await servicio.consultarVoz(ESTUDIANTE_10, 10n);
+    expect(asisco.consultas).toBe(2);
+  });
+
+  it('la relación se verifica siempre, aunque haya caché', async () => {
+    const { servicio } = crearConCache(120);
+    await servicio.consultarVoz(ESTUDIANTE_10, 10n);
+    await expect(servicio.consultarVoz(ACUDIENTE_5, 10n)).rejects.toThrow(
+      RecursoNoEncontradoError,
     );
   });
 });

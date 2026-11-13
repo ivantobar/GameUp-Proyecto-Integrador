@@ -65,6 +65,8 @@ export interface GrabacionRepository {
   validadasSinBorrar(limite: number): Promise<GrabacionGuardada[]>;
   /** Nunca validadas, creadas antes de `antesDe` y aún no borradas. */
   vencidas(antesDe: Date, limite: number): Promise<GrabacionGuardada[]>;
+  /** Las de un estudiante cuyo archivo sigue en Storage (borrado a pedido). */
+  activasDeEstudiante(estudianteId: bigint): Promise<GrabacionGuardada[]>;
   /** Marca eliminada_en (solo las que aún no lo tenían). */
   marcarEliminadas(ids: bigint[], fecha: Date): Promise<void>;
 }

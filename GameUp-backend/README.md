@@ -65,8 +65,14 @@ Abre <http://localhost:3000/api/v1/health>. Respuesta esperada:
 { "status": "ok", "service": "gameup-backend", "timestamp": "...", "database": "conectada", "supabase": "no_configurado" }
 ```
 
-Si `database` dice `"error"`, revisa `DATABASE_URL` y que PostgreSQL esté
-encendido. La consola también lo indica al arrancar.
+Si `database` dice `"error"`, el health responde **503** (con el mismo cuerpo
+y `"status": "error"`): revisa `DATABASE_URL` y que PostgreSQL esté
+encendido. La consola también lo indica al arrancar. Así Render no da por
+bueno un despliegue sin base.
+
+`supabase` es solo informativo (nunca cambia el código): lee los datos del
+bucket privado `grabaciones` y da `"error"` si Storage no responde **o si ese
+bucket es público**. El resultado se recuerda 60 segundos.
 
 ### Conectar la app móvil (Expo Go)
 
@@ -130,19 +136,27 @@ Si al actualizar Prisma npm avisa de scripts bloqueados:
 | `CORS_ORIGINS` | No | — | Solo para probar en navegador (Expo web). La app móvil no lo usa |
 | `PUBLIC_URL` | No | — | URL pública del backend desplegado (servidor "Producción" en Swagger) |
 | `TRUST_PROXY_HOPS` | No | `0` | Proxies delante del backend (`1` en Render) |
-| `SUPABASE_URL` | No | — | URL del proyecto de Supabase (Auth/Storage) |
-| `SUPABASE_SECRET_KEY` | No | — | Clave secreta de Supabase (**solo backend**) |
-| `SEGURIDAD_API_URL` | No* | — | URL base de la API de seguridad (login y perfil). *Sin ella, el login y las rutas protegidas responden 503 |
+| `SUPABASE_URL` | **En producción** | — | URL del proyecto de Supabase (Auth/Storage) |
+| `SUPABASE_SECRET_KEY` | **En producción** | — | Clave secreta de Supabase (**solo backend**) |
+| `SEGURIDAD_API_URL` | **En producción*** | — | URL base de la API de seguridad (login y perfil). *Sin ella, el login y las rutas protegidas responden 503 |
 | `SEGURIDAD_API_TIMEOUT_MS` | No | `5000` | Espera máxima por llamada a la API de seguridad |
 | `AUTH_CACHE_TTL_SEG` | No | `300` | Segundos que se recuerda un token verificado (máx. 300 y nunca más que su `exp`) |
-| `ASISCO_API_URL` | No | — | URL base de ASISCO UP, sin `/api` (ej. `https://proyecto-asiscoup-g1-jvaz.onrender.com`). Activa la integración: consentimiento de voz (`autorizaGrabacionVoz`) y copia de los vínculos de acudientes al iniciar sesión. Sin ella, no se graba voz (falla cerrado) y la directora vincula acudientes a mano |
+| `ASISCO_API_URL` | **En producción** | — | URL base de ASISCO UP, sin `/api` (ej. `https://proyecto-asiscoup-g1-jvaz.onrender.com`). Activa la integración: consentimiento de voz (`autorizaGrabacionVoz`) y copia de los vínculos de acudientes al iniciar sesión. Sin ella, no se graba voz (falla cerrado) y la directora vincula acudientes a mano |
 | `ASISCO_API_TIMEOUT_MS` | No | `5000` | Espera máxima por llamada a ASISCO UP (500 a 30000) |
 | `ALTA_AUTOMATICA_ROLES` | No | `ESTUDIANTE,ACUDIENTE,TALLERISTA,DIRECTORA` | Roles de GameUP cuya cuenta se crea sola en el primer inicio de sesión (separados por comas). Vacía = apagada: sin cuenta, 403 y alta manual con `POST /usuarios`. El ESTUDIANTE además necesita `ASISCO_API_URL` |
 | `LIMPIEZA_GRABACIONES_MIN` | No | `30` | Cada cuántos minutos se borran de Storage las grabaciones validadas pendientes y las vencidas (30 días). `0` la desactiva |
+| `CONSENTIMIENTO_CACHE_SEG` | No | `120` | Segundos que se recuerda la respuesta de ASISCO UP sobre el consentimiento de voz (0 a 300; 0 = sin caché). Un retiro de la autorización tarda hasta este plazo en aplicarse. Nunca se guarda un «no verificable» |
 | `CONSENTIMIENTO_SIMULADO` | No | `false` | **Solo desarrollo**: todos los estudiantes figuran con consentimiento de voz. Prohibido en producción |
+| `THROTTLE_GLOBAL_LIMITE` / `THROTTLE_GLOBAL_VENTANA_SEG` | No | `600` / `60` | Peticiones por IP en cada ventana, sumando todas las rutas (menos `/health`) |
+| `THROTTLE_LOGIN_LIMITE` / `THROTTLE_LOGIN_VENTANA_SEG` | No | `10` / `60` | Intentos de login por IP + correo en cada ventana |
+| `THROTTLE_LOGIN_IP_LIMITE` / `THROTTLE_LOGIN_IP_VENTANA_SEG` | No | `100` / `60` | Intentos de login por IP (cualquier correo) en cada ventana |
 
 Se validan al arrancar (`src/config/env.validation.ts`). Si falta
 `DATABASE_URL` o algo es inválido, la app no inicia y muestra el error.
+Con `NODE_ENV=production` también son obligatorias `SEGURIDAD_API_URL`,
+`SUPABASE_URL`, `SUPABASE_SECRET_KEY` y `ASISCO_API_URL`: sin ellas la app
+arrancaría «sana» pero rota. En Render, un despliegue al que le falte alguna
+falla y Render deja corriendo la versión anterior.
 
 ## 7. Documentación con Swagger
 
@@ -177,6 +191,13 @@ y en los DTO, `@ApiProperty({ example: ... })` en cada campo.
     (ver «Alta automática al primer inicio de sesión»);
   - el mapeo de roles (ADMIN → DIRECTORA, TALLERISTA, ACUDIENTE, ESTUDIANTE)
     vive solo en `src/modules/auth/domain/mapeador-roles.ts`.
+- **Límite de peticiones** (`src/common/limites/`): un guard global que corre
+  **antes** de `AuthGuard`, así una ráfaga de tokens inventados recibe 429 sin
+  llegar a la API central. Tres reglas: global por IP (holgado, porque los
+  celulares de la fundación comparten la Wi-Fi), login por IP + correo
+  normalizado y login por IP. `GET /health` no tiene límite. Los contadores
+  viven en memoria (Render corre una sola instancia); con varias instancias
+  habría que usar un almacenamiento compartido. Valores en «Variables de entorno».
 - **Dos niveles de autorización:** `@Roles('DIRECTORA', ...)` en la ruta
   (`RolesGuard`) y, en el servicio, la relación con el estudiante
   (tallerista a cargo, acudiente vinculado, el propio estudiante). Si el
@@ -194,6 +215,7 @@ y en los DTO, `@ApiProperty({ example: ... })` en cada campo.
 | `ReglaNegocioError` | 422 |
 | `ConflictoError` | 409 |
 | `NoAutenticadoError` | 401 |
+| Límite de peticiones (`@nestjs/throttler`) | 429 + `Retry-After` |
 | `ServicioExternoNoDisponibleError` | 503 |
 | Base: único (23505) / FK (23503) / CHECK o trigger (23514) / vínculo (42501) | 409 / 422 / 422 / 403 |
 | Cualquier otro | 500 genérico (sin traza ni SQL) |
@@ -244,7 +266,7 @@ tallerista a cargo o la directora **aprueba** un intento del nivel actual.
 | `GET /estudiantes/me/niveles-juego` | E | Nivel (1-5), `completado` y `pendientesValidacion` de cada juego |
 | `GET /estudiantes/me/niveles-juego/:juego/actividad` | E | `{ nivel, actividad }` del nivel actual (`:juego` = `EMPAREJAR`, `CLASIFICAR`, `SECUENCIAR` o `MEMORIA`) |
 | `GET /estudiantes/:id/niveles-juego` | D, T a cargo, A | Ajeno → 404 |
-| `PUT /estudiantes/:id/niveles-juego/:juego` | D, T a cargo | `{ nivel, motivo }` (motivo obligatorio). Queda en el historial; no avisa |
+| `PUT /estudiantes/:id/niveles-juego/:juego` | D sube o baja; T a cargo solo baja | `{ nivel, motivo }` (motivo obligatorio). Queda en el historial; no avisa. Si la tallerista pide un nivel mayor que el actual → **403** (subir a mano es solo de la directora; la tallerista sube aprobando un intento del nivel actual). Volver a abrir un juego completado en su nivel cuenta como bajar |
 
 | Nivel | Memoria | Emparejar | Clasificar | Secuenciar |
 |---|---|---|---|---|
@@ -272,14 +294,19 @@ tallerista a cargo o la directora **aprueba** un intento del nivel actual.
 | Método y ruta | Quién | Notas |
 |---|---|---|
 | `GET /revisiones/pendientes?estudianteId&page&limit` | T (sus estudiantes), D | Bandeja «Por escuchar», del más antiguo al más reciente |
-| `GET /intentos/:id/grabacion` | T a cargo, D | URL firmada del audio, **10 minutos**. 404 si no hay audio, venció o ya se validó |
+| `GET /intentos/:id/grabacion` | T a cargo, D | URL firmada del audio, **10 minutos**. 404 si no hay audio, venció o ya se validó. Antes vuelve a consultar el consentimiento en ASISCO UP: retirado → **403** «El acudiente retiró la autorización de grabar la voz»; ASISCO UP caído → **503**. Nunca borra el audio por eso |
+| `DELETE /estudiantes/:id/grabaciones` | D | Borra de Storage **todas** las grabaciones del estudiante (derecho de supresión, Ley 1581). `{ borradas }`; idempotente. Los intentos quedan sin audio y se validan sin escucharlo. Storage caído → 503 sin marcar nada |
 | `POST /intentos/:id/validacion` | T a cargo, D | `{ resultado: APROBADO \| RECHAZADO, retroalimentacion? }`. RECHAZADO exige retroalimentación. 409 si ya está validado. Si el intento de voz tiene audio, antes hay que pedir su URL firmada (si no, 422) |
 | `POST /validaciones/lote` | T a cargo, D | `{ intentoIds: [...] }` (1-50): aprueba juegos **sin voz**, todos o ninguno |
 | `GET /estudiantes/:id/progreso`, `GET /estudiantes/me/progreso` | D, T, A / E | Por módulo: `validadas` de `total` y `progreso` (de la base); las pendientes, aparte |
 
 - **Borrado del audio:** al validarse el intento (APROBADO o RECHAZADO) se
   borra de Storage y se marca `eliminada_en`. Las nunca validadas se borran a
-  los **30 días** (la bandeja muestra `vencido: true`). Si Storage falla, se
+  los **30 días** (la bandeja muestra `vencido: true`, también para las que
+  borró la directora a pedido). Si el acudiente retira la autorización, el
+  audio deja de entregarse (403) pero **no se borra solo**: lo borra la
+  directora con `DELETE /estudiantes/:id/grabaciones` (o el plazo de 30 días),
+  y después la tallerista puede validar esos intentos sin escucharlos. Si Storage falla, se
   reintenta: al arrancar, cada `LIMPIEZA_GRABACIONES_MIN` minutos y con la
   vista `grabacion_por_eliminar`.
 - La base recalcula el progreso con cada validación (solo actividades activas
@@ -393,6 +420,16 @@ de seguridad da acceso, el backend crea su cuenta
 
 Para volver al alta manual, deja `ALTA_AUTOMATICA_ROLES` vacía.
 
+> **Riesgo aceptado (auditoría de producción, 2026-11-12): ADMIN en la API
+> central = DIRECTORA en GameUP.** Con DIRECTORA en `ALTA_AUTOMATICA_ROLES`,
+> cualquier persona con el rol ADMIN en la API central entra a GameUP como
+> directora en su primer inicio de sesión y ve a **todos** los estudiantes,
+> sus observaciones y sus grabaciones. Se acepta porque doña Consuelo es la
+> única directora y ella decide quién tiene el rol ADMIN en la API central.
+> Si eso cambia (otra persona administra la API central, o hay ADMIN de otros
+> sistemas), quita DIRECTORA de `ALTA_AUTOMATICA_ROLES` y da de alta a la
+> directora con `POST /usuarios` o con el script de «Primera directora».
+
 ### Primera directora
 
 Con el alta automática, la primera directora solo tiene que iniciar sesión
@@ -421,6 +458,18 @@ En Render: **New > Blueprint**, elegir el repositorio y completar
 
 En el plan gratuito el servicio se duerme tras 15 minutos sin uso; la primera
 petición después tarda cerca de un minuto.
+
+### Antes de producción
+
+Pendientes que no se resuelven con código:
+
+- [ ] **Limpiar las cuentas ADMIN de prueba de la API central.** Cada cuenta
+  ADMIN que quede viva entra a GameUP como DIRECTORA (ver «Riesgo aceptado»
+  en «Alta automática al primer inicio de sesión»). Revisa también si alguna
+  ya tiene cuenta en GameUP y desactívala con `PATCH /usuarios/{id}/estado`.
+- [ ] **Recordar que ADMIN en la API central = DIRECTORA en GameUP.** Antes
+  de dar el rol ADMIN a alguien en la API central, confirma con doña
+  Consuelo que esa persona debe ver a todos los estudiantes.
 
 ## 10. Diferencias con `proyecto-integrador-backend`
 

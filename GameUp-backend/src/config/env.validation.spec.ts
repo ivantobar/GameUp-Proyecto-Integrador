@@ -1,4 +1,7 @@
-import { validateEnv } from './env.validation.js';
+import {
+  validateEnv,
+  VARIABLES_OBLIGATORIAS_EN_PRODUCCION,
+} from './env.validation.js';
 
 const DB = 'postgresql://usuario:clave@localhost:5432/gameup';
 
@@ -124,8 +127,87 @@ describe('validateEnv', () => {
     });
   });
 
-  it('Supabase es opcional', () => {
-    const env = validateEnv({ DATABASE_URL: DB, NODE_ENV: 'production' });
-    expect(env.SUPABASE_URL).toBeUndefined();
+  it('límite de peticiones: valores por defecto', () => {
+    const env = validateEnv({ DATABASE_URL: DB });
+    expect(env.THROTTLE_GLOBAL_LIMITE).toBe(600);
+    expect(env.THROTTLE_GLOBAL_VENTANA_SEG).toBe(60);
+    expect(env.THROTTLE_LOGIN_LIMITE).toBe(10);
+    expect(env.THROTTLE_LOGIN_VENTANA_SEG).toBe(60);
+    expect(env.THROTTLE_LOGIN_IP_LIMITE).toBe(100);
+    expect(env.THROTTLE_LOGIN_IP_VENTANA_SEG).toBe(60);
+  });
+
+  it('límite de peticiones: se ajusta por variable y rechaza 0 o texto', () => {
+    expect(
+      validateEnv({ DATABASE_URL: DB, THROTTLE_LOGIN_LIMITE: '5' })
+        .THROTTLE_LOGIN_LIMITE,
+    ).toBe(5);
+    expect(() =>
+      validateEnv({ DATABASE_URL: DB, THROTTLE_GLOBAL_LIMITE: '0' }),
+    ).toThrow(/inválidas/);
+    expect(() =>
+      validateEnv({ DATABASE_URL: DB, THROTTLE_LOGIN_VENTANA_SEG: 'abc' }),
+    ).toThrow(/inválidas/);
+  });
+
+  it('caché del consentimiento: 120 s por defecto, máximo 300', () => {
+    expect(validateEnv({ DATABASE_URL: DB }).CONSENTIMIENTO_CACHE_SEG).toBe(
+      120,
+    );
+    expect(
+      validateEnv({ DATABASE_URL: DB, CONSENTIMIENTO_CACHE_SEG: '0' })
+        .CONSENTIMIENTO_CACHE_SEG,
+    ).toBe(0);
+    expect(() =>
+      validateEnv({ DATABASE_URL: DB, CONSENTIMIENTO_CACHE_SEG: '301' }),
+    ).toThrow(/inválidas/);
+  });
+
+  it('fuera de producción, Supabase y las APIs externas son opcionales', () => {
+    for (const NODE_ENV of ['development', 'test']) {
+      const env = validateEnv({ DATABASE_URL: DB, NODE_ENV });
+      expect(env.SUPABASE_URL).toBeUndefined();
+      expect(env.SEGURIDAD_API_URL).toBeUndefined();
+      expect(env.ASISCO_API_URL).toBeUndefined();
+    }
+  });
+
+  describe('en producción', () => {
+    const PRODUCCION = {
+      DATABASE_URL: DB,
+      NODE_ENV: 'production',
+      SEGURIDAD_API_URL: 'https://seguridad.ejemplo.com',
+      SUPABASE_URL: 'https://ref.supabase.co',
+      SUPABASE_SECRET_KEY: 'sb_secret_de_prueba',
+      ASISCO_API_URL: 'https://asisco.ejemplo.com',
+    };
+
+    it('arranca con las cuatro variables', () => {
+      expect(validateEnv(PRODUCCION).NODE_ENV).toBe('production');
+    });
+
+    it.each(VARIABLES_OBLIGATORIAS_EN_PRODUCCION)(
+      'sin %s no arranca',
+      (nombre) => {
+        expect(() =>
+          validateEnv({ ...PRODUCCION, [nombre]: undefined }),
+        ).toThrow(`${nombre} es obligatoria en producción`);
+      },
+    );
+
+    it('vacía cuenta como faltante, y avisa de todas a la vez', () => {
+      expect(() =>
+        validateEnv({ ...PRODUCCION, SUPABASE_SECRET_KEY: '  ' }),
+      ).toThrow('SUPABASE_SECRET_KEY es obligatoria en producción');
+      let mensaje = '';
+      try {
+        validateEnv({ DATABASE_URL: DB, NODE_ENV: 'production' });
+      } catch (error) {
+        mensaje = (error as Error).message;
+      }
+      for (const nombre of VARIABLES_OBLIGATORIAS_EN_PRODUCCION) {
+        expect(mensaje).toContain(`${nombre} es obligatoria en producción`);
+      }
+    });
   });
 });

@@ -144,6 +144,17 @@ export class EnvironmentVariables {
   CONSENTIMIENTO_SIMULADO: boolean = false;
 
   /**
+   * Segundos que se recuerda la respuesta de ASISCO UP sobre el
+   * consentimiento de voz (0 = sin caché, máximo 5 minutos). Un retiro de la
+   * autorización tarda hasta este plazo en aplicarse. Las respuestas
+   * "no verificable" (ASISCO UP caído) nunca se guardan.
+   */
+  @IsInt()
+  @Min(0)
+  @Max(300)
+  CONSENTIMIENTO_CACHE_SEG: number = 120;
+
+  /**
    * Cada cuántos minutos se borran de Storage las grabaciones ya validadas
    * que falten y las que vencieron (30 días sin validar). 0 la desactiva
    * (también corre al arrancar y tras cada validación).
@@ -152,6 +163,43 @@ export class EnvironmentVariables {
   @Min(0)
   @Max(1440)
   LIMPIEZA_GRABACIONES_MIN: number = 30;
+
+  // ---------- Límite de peticiones (@nestjs/throttler) ----------
+  // En la fundación muchos celulares salen con la misma IP (misma Wi-Fi):
+  // el límite global es holgado y el del login va por IP + correo.
+
+  /** Peticiones por IP en cada ventana global (todas las rutas menos health). */
+  @IsInt()
+  @Min(1)
+  @Max(100000)
+  THROTTLE_GLOBAL_LIMITE: number = 600;
+
+  @IsInt()
+  @Min(1)
+  @Max(3600)
+  THROTTLE_GLOBAL_VENTANA_SEG: number = 60;
+
+  /** Intentos de login por IP + correo en cada ventana. */
+  @IsInt()
+  @Min(1)
+  @Max(10000)
+  THROTTLE_LOGIN_LIMITE: number = 10;
+
+  @IsInt()
+  @Min(1)
+  @Max(3600)
+  THROTTLE_LOGIN_VENTANA_SEG: number = 60;
+
+  /** Intentos de login por IP (cualquier correo) en cada ventana. */
+  @IsInt()
+  @Min(1)
+  @Max(100000)
+  THROTTLE_LOGIN_IP_LIMITE: number = 100;
+
+  @IsInt()
+  @Min(1)
+  @Max(3600)
+  THROTTLE_LOGIN_IP_VENTANA_SEG: number = 60;
 }
 
 /**
@@ -164,6 +212,14 @@ function booleanoEstricto(valor: unknown): unknown {
   if (valor === true || valor === 'true') return true;
   return valor;
 }
+
+/** Opcionales en desarrollo y pruebas; obligatorias con NODE_ENV=production. */
+export const VARIABLES_OBLIGATORIAS_EN_PRODUCCION = [
+  'SEGURIDAD_API_URL',
+  'SUPABASE_URL',
+  'SUPABASE_SECRET_KEY',
+  'ASISCO_API_URL',
+] as const satisfies ReadonlyArray<keyof EnvironmentVariables>;
 
 export function validateEnv(config: Record<string, unknown>) {
   const env = plainToInstance(EnvironmentVariables, config, {
@@ -183,6 +239,17 @@ export function validateEnv(config: Record<string, unknown>) {
     env.CONSENTIMIENTO_SIMULADO === true
   ) {
     messages.push('CONSENTIMIENTO_SIMULADO no se puede activar en producción');
+  }
+  if (env.NODE_ENV === Environment.Production) {
+    // Sin ellas la app arrancaría "sana" pero rota: nadie podría entrar
+    // (SEGURIDAD_API_URL), no se guardaría ningún audio ni contenido
+    // (SUPABASE_*) o no se podría verificar el consentimiento (ASISCO_API_URL).
+    for (const nombre of VARIABLES_OBLIGATORIAS_EN_PRODUCCION) {
+      const valor = env[nombre];
+      if (typeof valor !== 'string' || valor.trim() === '') {
+        messages.push(`${nombre} es obligatoria en producción`);
+      }
+    }
   }
   if (typeof env.ALTA_AUTOMATICA_ROLES === 'string') {
     const lectura = leerRolesAltaAutomatica(env.ALTA_AUTOMATICA_ROLES);

@@ -54,3 +54,36 @@ describe('Health (e2e)', () => {
     expect(res.headers['access-control-allow-origin']).toBeUndefined();
   });
 });
+
+describe('Health con la base caída (e2e)', () => {
+  let app: INestApplication<App>;
+
+  beforeAll(async () => {
+    const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
+      .overrideProvider(PrismaService)
+      .useValue({ checkConnection: async () => 'error' })
+      .overrideProvider(SupabaseService)
+      .useValue({ checkConnection: async () => 'conectado' })
+      .compile();
+
+    app = moduleRef.createNestApplication({ logger: false });
+    configureApp(app);
+    await app.init();
+  });
+
+  afterAll(async () => {
+    await app.close();
+  });
+
+  it('GET /api/v1/health responde 503 con el mismo cuerpo (status "error")', async () => {
+    const res = await request(app.getHttpServer())
+      .get('/api/v1/health')
+      .expect(503);
+    expect(res.body).toMatchObject({
+      status: 'error',
+      service: 'gameup-backend',
+      database: 'error',
+      supabase: 'conectado',
+    });
+  });
+});

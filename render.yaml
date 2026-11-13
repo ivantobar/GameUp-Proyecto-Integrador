@@ -2,6 +2,8 @@
 # Render lo detecta al crear "New > Blueprint" con este repositorio.
 # Los secretos (DATABASE_URL, SUPABASE_SECRET_KEY) NO van aquí: Render los
 # pide al crear el servicio (sync: false) y se guardan solo en Render.
+# Con NODE_ENV=production la app NO arranca si falta SEGURIDAD_API_URL,
+# SUPABASE_URL, SUPABASE_SECRET_KEY o ASISCO_API_URL.
 services:
   - type: web
     name: gameup-backend
@@ -50,12 +52,30 @@ services:
         value: "https://proyecto-asiscoup-g1-jvaz.onrender.com"
       - key: ASISCO_API_TIMEOUT_MS
         value: "15000"
+      # Caché del consentimiento de voz (segundos, máx. 300). Un retiro de la
+      # autorización tarda hasta este plazo en aplicarse.
+      - key: CONSENTIMIENTO_CACHE_SEG
+        value: "120"
       # Nunca true en producción (la app no arrancaría).
       - key: CONSENTIMIENTO_SIMULADO
         value: "false"
       # Limpieza de grabaciones de voz (minutos; 0 la desactiva).
       - key: LIMPIEZA_GRABACIONES_MIN
         value: "30"
+      # Límite de peticiones (429). Ventanas en segundos. Global holgado por
+      # IP porque los celulares de la fundación comparten la Wi-Fi.
+      - key: THROTTLE_GLOBAL_LIMITE
+        value: "600"
+      - key: THROTTLE_GLOBAL_VENTANA_SEG
+        value: "60"
+      - key: THROTTLE_LOGIN_LIMITE
+        value: "10"
+      - key: THROTTLE_LOGIN_VENTANA_SEG
+        value: "60"
+      - key: THROTTLE_LOGIN_IP_LIMITE
+        value: "100"
+      - key: THROTTLE_LOGIN_IP_VENTANA_SEG
+        value: "60"
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_SECRET_KEY

@@ -20,6 +20,7 @@ import {
   UsuarioActual,
 } from '../../../common/auth/decoradores.js';
 import type { UsuarioAutenticado } from '../../../common/auth/usuario-autenticado.js';
+import { LimiteDeLogin } from '../../../common/limites/limites.js';
 import type { IdentidadExterna } from '../../../common/auth/verificador-token.js';
 import { ApiErrores } from '../../../docs/api-errores.js';
 import { BEARER_AUTH } from '../../../docs/swagger.js';
@@ -37,6 +38,8 @@ export class AuthController {
   constructor(private readonly auth: AuthService) {}
 
   @Public()
+  // Además del límite global: por IP + correo y por IP (THROTTLE_LOGIN_*).
+  @LimiteDeLogin()
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
@@ -67,6 +70,9 @@ export class AuthController {
     503:
       'La API de seguridad no responde o no está configurada, o ASISCO UP no responde ' +
       'durante el alta de un estudiante («Espera un momento e inténtalo otra vez»)',
+    429:
+      'Demasiados intentos: 10 por minuto con el mismo correo desde una IP, o 100 por ' +
+      'minuto desde una IP (THROTTLE_LOGIN_*). La cabecera Retry-After dice cuántos segundos esperar.',
   })
   async login(@Body() dto: LoginDto): Promise<LoginRespuestaDto> {
     const sesion = await this.auth.iniciarSesion(dto.correo, dto.contrasena);

@@ -3,6 +3,7 @@ import request from 'supertest';
 import type { App } from 'supertest/types.js';
 import { RELOJ, RelojFijo } from '../src/common/reloj/reloj.js';
 import { CONSULTA_CONSENTIMIENTO } from '../src/modules/consentimiento/domain/consulta-consentimiento.js';
+import { SOLO_DIRECTORA_SUBE } from '../src/modules/niveles-juego/domain/nivel-juego.js';
 import { crearAppDePrueba } from './dobles/app-de-prueba.js';
 import {
   MODULO_ESCALERA,
@@ -455,8 +456,8 @@ describe('Escalera de niveles por juego (e2e)', () => {
   });
 
   describe('ajuste manual', () => {
-    it('la tallerista a cargo pone el nivel con motivo; queda en el historial', async () => {
-      const res = await tallerista()
+    it('la directora sube con motivo; queda en el historial y no avisa', async () => {
+      const res = await como('directora')
         .put('/estudiantes/10/niveles-juego/MEMORIA', {
           nivel: 4,
           motivo: '  Ya domina las parejas  ',
@@ -474,19 +475,55 @@ describe('Escalera de niveles por juego (e2e)', () => {
           origen: 'AJUSTE',
           nivelAnterior: 1,
           nivelNuevo: 4,
-          cambiadoPor: 2n,
+          cambiadoPor: 1n,
           motivo: 'Ya domina las parejas',
         }),
       ]);
       expect(e.nivelesJuego.avisos).toEqual([]); // el ajuste no avisa
-      // La directora puede bajarlo.
+      // La directora también puede bajarlo.
       await como('directora')
         .put('/estudiantes/10/niveles-juego/MEMORIA', {
-          nivel: 2,
+          nivel: 3,
           motivo: 'Repasar',
         })
         .expect(200);
+      expect(await nivelDe('MEMORIA')).toMatchObject({ nivelActual: 3 });
+    });
+
+    it('la tallerista a cargo solo baja: subir a mano → 403 y no cambia nada', async () => {
+      await como('directora')
+        .put('/estudiantes/10/niveles-juego/MEMORIA', {
+          nivel: 4,
+          motivo: 'Punto de partida',
+        })
+        .expect(200);
+
+      const res = await tallerista()
+        .put('/estudiantes/10/niveles-juego/MEMORIA', {
+          nivel: 5,
+          motivo: 'Quiero subirlo',
+        })
+        .expect(403);
+      expect(res.body).toEqual({
+        statusCode: 403,
+        error: 'Forbidden',
+        message: SOLO_DIRECTORA_SUBE,
+      });
+      expect(await nivelDe('MEMORIA')).toMatchObject({ nivelActual: 4 });
+
+      await tallerista()
+        .put('/estudiantes/10/niveles-juego/MEMORIA', {
+          nivel: 2,
+          motivo: 'Repasar las parejas',
+        })
+        .expect(200);
       expect(await nivelDe('MEMORIA')).toMatchObject({ nivelActual: 2 });
+      expect(e.nivelesJuego.historial.at(-1)).toMatchObject({
+        nivelAnterior: 4,
+        nivelNuevo: 2,
+        cambiadoPor: 2n,
+        motivo: 'Repasar las parejas',
+      });
     });
 
     it('motivo obligatorio, nivel válido, distinto del actual y solo juegos con escalera', async () => {

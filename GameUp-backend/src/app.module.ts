@@ -3,6 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { APP_FILTER } from '@nestjs/core';
 import { AlmacenamientoModule } from './common/almacenamiento/almacenamiento.module.js';
 import { FiltroErroresGlobal } from './common/errors/filtro-errores.filter.js';
+import { LimitesModule } from './common/limites/limites.module.js';
 import { RelojModule } from './common/reloj/reloj.module.js';
 import { validateEnv } from './config/env.validation.js';
 import { HealthModule } from './health/health.module.js';
@@ -34,6 +35,8 @@ import { SupabaseModule } from './supabase/supabase.module.js';
     RelojModule,
     // Archivos en Storage (puerto AlmacenArchivos).
     AlmacenamientoModule,
+    // Límite de peticiones (opciones del throttler; el guard va en AuthModule).
+    LimitesModule,
     // Autenticación global: toda ruta exige token salvo las @Public().
     AuthModule,
     HealthModule,

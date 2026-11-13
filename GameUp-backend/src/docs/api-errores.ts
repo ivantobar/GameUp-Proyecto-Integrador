@@ -5,13 +5,14 @@ import {
   ApiForbiddenResponse,
   ApiNotFoundResponse,
   ApiServiceUnavailableResponse,
+  ApiTooManyRequestsResponse,
   ApiUnauthorizedResponse,
   ApiUnprocessableEntityResponse,
 } from '@nestjs/swagger';
 import { ErrorRespuestaDto } from '../common/errors/error-respuesta.dto.js';
 
 /** Códigos de error que puede documentar un endpoint. */
-export type CodigoError = 400 | 401 | 403 | 404 | 409 | 422 | 503;
+export type CodigoError = 400 | 401 | 403 | 404 | 409 | 422 | 429 | 503;
 
 const DECORADOR: Record<
   CodigoError,
@@ -26,6 +27,7 @@ const DECORADOR: Record<
   404: ApiNotFoundResponse,
   409: ApiConflictResponse,
   422: ApiUnprocessableEntityResponse,
+  429: ApiTooManyRequestsResponse,
   503: ApiServiceUnavailableResponse,
 };
 
@@ -36,6 +38,7 @@ const DESCRIPCION_POR_DEFECTO: Record<CodigoError, string> = {
   404: 'El recurso no existe (o no te corresponde)',
   409: 'Choca con el estado actual',
   422: 'Rompe una regla de negocio',
+  429: 'Demasiadas peticiones: espera los segundos que indica Retry-After',
   503: 'Una API externa no está disponible',
 };
 
