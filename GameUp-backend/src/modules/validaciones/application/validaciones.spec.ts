@@ -14,9 +14,11 @@ import {
 import { escenarioValidaciones } from '../../../../test/dobles/validaciones-en-memoria.js';
 import type { ConfigService } from '@nestjs/config';
 import {
+  AccesoDenegadoError,
   ConflictoError,
   RecursoNoEncontradoError,
   ReglaNegocioError,
+  ServicioExternoNoDisponibleError,
 } from '../../../common/errors/dominio.errors.js';
 import { RelojFijo } from '../../../common/reloj/reloj.js';
 import type { EnvironmentVariables } from '../../../config/env.validation.js';
@@ -30,7 +32,12 @@ import { ContextoIntentoService } from '../../intentos/application/contexto-inte
 import { HablaConmigoService } from '../../intentos/application/habla-conmigo.service.js';
 import { IntentoService } from '../../intentos/application/intento.service.js';
 import { RegistroEscuchaEnMemoria } from '../infrastructure/registro-escucha-en-memoria.js';
-import { ESCUCHA_OBLIGATORIA, GrabacionService } from './grabacion.service.js';
+import {
+  AUTORIZACION_NO_VERIFICABLE,
+  AUTORIZACION_RETIRADA,
+  ESCUCHA_OBLIGATORIA,
+  GrabacionService,
+} from './grabacion.service.js';
 import { LimpiezaGrabaciones } from './limpieza-grabaciones.js';
 import { ValidacionService } from './validacion.service.js';
 
@@ -85,6 +92,8 @@ describe('Validación, audio y progreso', () => {
       reloj,
       intentos,
       new RegistroEscuchaEnMemoria(reloj),
+      consentimiento,
+      acceso,
     );
     vi.spyOn(grabaciones['logger'], 'warn').mockImplementation(() => undefined);
     vi.spyOn(grabaciones['logger'], 'log').mockImplementation(() => undefined);
@@ -198,6 +207,115 @@ describe('Validación, audio y progreso', () => {
       await expect(grabaciones.urlAudio(TALLERISTA_2, juego)).rejects.toThrow(
         /no está disponible/,
       );
+    });
+
+    it('vuelve a consultar el consentimiento antes de entregar el audio', async () => {
+      const antes = e.consentimiento.consultados.length;
+      await grabaciones.urlAudio(TALLERISTA_2, voz);
+      expect(e.consentimiento.consultados.length).toBe(antes + 1);
+      expect(e.consentimiento.consultados.at(-1)).toMatchObject({
+        idEstudianteExterno: expect.any(BigInt),
+      });
+    });
+
+    it('autorización retirada → 403, no entrega el audio y NO lo borra', async () => {
+      e.consentimiento.respuesta = {
+        aceptaTratamiento: false,
+        codigoVersion: 'TERMINOS-2026-01',
+      };
+      await expect(grabaciones.urlAudio(TALLERISTA_2, voz)).rejects.toThrow(
+        new AccesoDenegadoError(AUTORIZACION_RETIRADA),
+      );
+      // Sin consentimiento vigente alguno (null) es lo mismo.
+      e.consentimiento.respuesta = null;
+      await expect(grabaciones.urlAudio(DIRECTORA, voz)).rejects.toThrow(
+        AUTORIZACION_RETIRADA,
+      );
+      expect(audioEnStorage()).toHaveLength(1);
+      expect(
+        (await e.validaciones.buscarPorIntento(voz))?.eliminadaEn,
+      ).toBeNull();
+      // No cuenta como escuchado: validar sigue exigiendo la escucha.
+      await expect(
+        servicio.validar(TALLERISTA_2, voz, 'APROBADO', null),
+      ).rejects.toThrow(ESCUCHA_OBLIGATORIA);
+    });
+
+    it('ASISCO UP caído → 503 (falla cerrado) y no borra nada', async () => {
+      e.consentimiento.respuesta = 'CAIDA';
+      await expect(grabaciones.urlAudio(TALLERISTA_2, voz)).rejects.toThrow(
+        new ServicioExternoNoDisponibleError(AUTORIZACION_NO_VERIFICABLE),
+      );
+      expect(audioEnStorage()).toHaveLength(1);
+    });
+
+    it('el estudiante ajeno sigue dando 404 antes de consultar ASISCO UP', async () => {
+      const antes = e.consentimiento.consultados.length;
+      await expect(grabaciones.urlAudio(TALLERISTA_3, voz)).rejects.toThrow(
+        RecursoNoEncontradoError,
+      );
+      expect(e.consentimiento.consultados.length).toBe(antes);
+    });
+  });
+
+  describe('borrado a pedido de la directora (supresión)', () => {
+    it('borra todas las grabaciones del estudiante y deja validar sin escuchar', async () => {
+      const otra = (
+        await habla.registrar(
+          ESTUDIANTE_10,
+          e.ids.hablaE,
+          2,
+          await archivoTemporal(ARCHIVOS.m4a, 'audio/mp4'),
+        )
+      ).intento.id;
+      expect(audioEnStorage()).toHaveLength(2);
+
+      await expect(
+        grabaciones.borrarDeEstudiante(DIRECTORA, 10n),
+      ).resolves.toEqual({ borradas: 2 });
+      expect(audioEnStorage()).toEqual([]);
+      for (const id of [voz, otra]) {
+        expect(
+          (await e.validaciones.buscarPorIntento(id))?.eliminadaEn,
+        ).toEqual(AHORA);
+      }
+      // El audio ya no se entrega y se puede validar sin escucharlo.
+      await expect(grabaciones.urlAudio(TALLERISTA_2, voz)).rejects.toThrow(
+        /no está disponible/,
+      );
+      await expect(
+        servicio.validar(TALLERISTA_2, voz, 'APROBADO', null),
+      ).resolves.toMatchObject({
+        intento: { validacion: { resultado: 'APROBADO' } },
+      });
+    });
+
+    it('es idempotente: la segunda vez borra 0 y no llama a Storage', async () => {
+      await grabaciones.borrarDeEstudiante(DIRECTORA, 10n);
+      e.almacen.caido = true;
+      await expect(
+        grabaciones.borrarDeEstudiante(DIRECTORA, 10n),
+      ).resolves.toEqual({ borradas: 0 });
+    });
+
+    it('si Storage falla → 503 y no marca nada (se puede repetir)', async () => {
+      e.almacen.caido = true;
+      await expect(
+        grabaciones.borrarDeEstudiante(DIRECTORA, 10n),
+      ).rejects.toThrow(ServicioExternoNoDisponibleError);
+      expect(
+        (await e.validaciones.buscarPorIntento(voz))?.eliminadaEn,
+      ).toBeNull();
+      e.almacen.caido = false;
+      await expect(
+        grabaciones.borrarDeEstudiante(DIRECTORA, 10n),
+      ).resolves.toEqual({ borradas: 1 });
+    });
+
+    it('estudiante inexistente → 404', async () => {
+      await expect(
+        grabaciones.borrarDeEstudiante(DIRECTORA, 999n),
+      ).rejects.toThrow(RecursoNoEncontradoError);
     });
   });
 

@@ -2,7 +2,10 @@ import { Logger, Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { EnvironmentVariables } from '../../config/env.validation.js';
 import { EstudiantesModule } from '../estudiantes/estudiantes.module.js';
-import { ConsentimientoService } from './application/consentimiento.service.js';
+import {
+  ConsentimientoService,
+  DURACION_CACHE_CONSENTIMIENTO,
+} from './application/consentimiento.service.js';
 import {
   CONSULTA_CONSENTIMIENTO,
   type ConsultaConsentimiento,
@@ -49,6 +52,12 @@ export function crearConsultaConsentimiento(
   controllers: [ConsentimientoController],
   providers: [
     ConsentimientoService,
+    {
+      provide: DURACION_CACHE_CONSENTIMIENTO,
+      inject: [ConfigService],
+      useFactory: (config: ConfigService<EnvironmentVariables, true>) =>
+        config.get('CONSENTIMIENTO_CACHE_SEG', { infer: true }),
+    },
     {
       provide: CONSULTA_CONSENTIMIENTO,
       inject: [ConfigService],

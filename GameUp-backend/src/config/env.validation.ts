@@ -144,6 +144,17 @@ export class EnvironmentVariables {
   CONSENTIMIENTO_SIMULADO: boolean = false;
 
   /**
+   * Segundos que se recuerda la respuesta de ASISCO UP sobre el
+   * consentimiento de voz (0 = sin caché, máximo 5 minutos). Un retiro de la
+   * autorización tarda hasta este plazo en aplicarse. Las respuestas
+   * "no verificable" (ASISCO UP caído) nunca se guardan.
+   */
+  @IsInt()
+  @Min(0)
+  @Max(300)
+  CONSENTIMIENTO_CACHE_SEG: number = 120;
+
+  /**
    * Cada cuántos minutos se borran de Storage las grabaciones ya validadas
    * que falten y las que vencieron (30 días sin validar). 0 la desactiva
    * (también corre al arrancar y tras cada validación).

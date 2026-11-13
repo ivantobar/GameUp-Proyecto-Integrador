@@ -50,6 +50,10 @@ services:
         value: "https://proyecto-asiscoup-g1-jvaz.onrender.com"
       - key: ASISCO_API_TIMEOUT_MS
         value: "15000"
+      # Caché del consentimiento de voz (segundos, máx. 300). Un retiro de la
+      # autorización tarda hasta este plazo en aplicarse.
+      - key: CONSENTIMIENTO_CACHE_SEG
+        value: "120"
       # Nunca true en producción (la app no arrancaría).
       - key: CONSENTIMIENTO_SIMULADO
         value: "false"

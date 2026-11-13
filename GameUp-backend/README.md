@@ -139,6 +139,7 @@ Si al actualizar Prisma npm avisa de scripts bloqueados:
 | `ASISCO_API_TIMEOUT_MS` | No | `5000` | Espera máxima por llamada a ASISCO UP (500 a 30000) |
 | `ALTA_AUTOMATICA_ROLES` | No | `ESTUDIANTE,ACUDIENTE,TALLERISTA,DIRECTORA` | Roles de GameUP cuya cuenta se crea sola en el primer inicio de sesión (separados por comas). Vacía = apagada: sin cuenta, 403 y alta manual con `POST /usuarios`. El ESTUDIANTE además necesita `ASISCO_API_URL` |
 | `LIMPIEZA_GRABACIONES_MIN` | No | `30` | Cada cuántos minutos se borran de Storage las grabaciones validadas pendientes y las vencidas (30 días). `0` la desactiva |
+| `CONSENTIMIENTO_CACHE_SEG` | No | `120` | Segundos que se recuerda la respuesta de ASISCO UP sobre el consentimiento de voz (0 a 300; 0 = sin caché). Un retiro de la autorización tarda hasta este plazo en aplicarse. Nunca se guarda un «no verificable» |
 | `CONSENTIMIENTO_SIMULADO` | No | `false` | **Solo desarrollo**: todos los estudiantes figuran con consentimiento de voz. Prohibido en producción |
 | `THROTTLE_GLOBAL_LIMITE` / `THROTTLE_GLOBAL_VENTANA_SEG` | No | `600` / `60` | Peticiones por IP en cada ventana, sumando todas las rutas (menos `/health`) |
 | `THROTTLE_LOGIN_LIMITE` / `THROTTLE_LOGIN_VENTANA_SEG` | No | `10` / `60` | Intentos de login por IP + correo en cada ventana |
@@ -283,14 +284,19 @@ tallerista a cargo o la directora **aprueba** un intento del nivel actual.
 | Método y ruta | Quién | Notas |
 |---|---|---|
 | `GET /revisiones/pendientes?estudianteId&page&limit` | T (sus estudiantes), D | Bandeja «Por escuchar», del más antiguo al más reciente |
-| `GET /intentos/:id/grabacion` | T a cargo, D | URL firmada del audio, **10 minutos**. 404 si no hay audio, venció o ya se validó |
+| `GET /intentos/:id/grabacion` | T a cargo, D | URL firmada del audio, **10 minutos**. 404 si no hay audio, venció o ya se validó. Antes vuelve a consultar el consentimiento en ASISCO UP: retirado → **403** «El acudiente retiró la autorización de grabar la voz»; ASISCO UP caído → **503**. Nunca borra el audio por eso |
+| `DELETE /estudiantes/:id/grabaciones` | D | Borra de Storage **todas** las grabaciones del estudiante (derecho de supresión, Ley 1581). `{ borradas }`; idempotente. Los intentos quedan sin audio y se validan sin escucharlo. Storage caído → 503 sin marcar nada |
 | `POST /intentos/:id/validacion` | T a cargo, D | `{ resultado: APROBADO \| RECHAZADO, retroalimentacion? }`. RECHAZADO exige retroalimentación. 409 si ya está validado. Si el intento de voz tiene audio, antes hay que pedir su URL firmada (si no, 422) |
 | `POST /validaciones/lote` | T a cargo, D | `{ intentoIds: [...] }` (1-50): aprueba juegos **sin voz**, todos o ninguno |
 | `GET /estudiantes/:id/progreso`, `GET /estudiantes/me/progreso` | D, T, A / E | Por módulo: `validadas` de `total` y `progreso` (de la base); las pendientes, aparte |
 
 - **Borrado del audio:** al validarse el intento (APROBADO o RECHAZADO) se
   borra de Storage y se marca `eliminada_en`. Las nunca validadas se borran a
-  los **30 días** (la bandeja muestra `vencido: true`). Si Storage falla, se
+  los **30 días** (la bandeja muestra `vencido: true`, también para las que
+  borró la directora a pedido). Si el acudiente retira la autorización, el
+  audio deja de entregarse (403) pero **no se borra solo**: lo borra la
+  directora con `DELETE /estudiantes/:id/grabaciones` (o el plazo de 30 días),
+  y después la tallerista puede validar esos intentos sin escucharlos. Si Storage falla, se
   reintenta: al arrancar, cada `LIMPIEZA_GRABACIONES_MIN` minutos y con la
   vista `grabacion_por_eliminar`.
 - La base recalcula el progreso con cada validación (solo actividades activas

@@ -147,6 +147,19 @@ describe('validateEnv', () => {
     ).toThrow(/inválidas/);
   });
 
+  it('caché del consentimiento: 120 s por defecto, máximo 300', () => {
+    expect(validateEnv({ DATABASE_URL: DB }).CONSENTIMIENTO_CACHE_SEG).toBe(
+      120,
+    );
+    expect(
+      validateEnv({ DATABASE_URL: DB, CONSENTIMIENTO_CACHE_SEG: '0' })
+        .CONSENTIMIENTO_CACHE_SEG,
+    ).toBe(0);
+    expect(() =>
+      validateEnv({ DATABASE_URL: DB, CONSENTIMIENTO_CACHE_SEG: '301' }),
+    ).toThrow(/inválidas/);
+  });
+
   it('Supabase es opcional', () => {
     const env = validateEnv({ DATABASE_URL: DB, NODE_ENV: 'production' });
     expect(env.SUPABASE_URL).toBeUndefined();

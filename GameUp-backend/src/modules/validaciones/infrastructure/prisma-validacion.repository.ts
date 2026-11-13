@@ -328,6 +328,16 @@ export class PrismaValidacionRepository
     return filas.map(aGrabacion);
   }
 
+  async activasDeEstudiante(
+    estudianteId: bigint,
+  ): Promise<GrabacionGuardada[]> {
+    const filas = await this.prisma.grabacion_estudiante.findMany({
+      where: { eliminada_en: null, intento: { estudiante_id: estudianteId } },
+      orderBy: { creada_en: 'asc' },
+    });
+    return filas.map(aGrabacion);
+  }
+
   async marcarEliminadas(ids: bigint[], fecha: Date): Promise<void> {
     if (ids.length === 0) return;
     await this.prisma.grabacion_estudiante.updateMany({

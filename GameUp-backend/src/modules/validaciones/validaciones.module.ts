@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { ConsentimientoModule } from '../consentimiento/consentimiento.module.js';
+import { EstudiantesModule } from '../estudiantes/estudiantes.module.js';
 import { IntentosModule } from '../intentos/intentos.module.js';
 import { GrabacionService } from './application/grabacion.service.js';
 import { LimpiezaGrabaciones } from './application/limpieza-grabaciones.js';
@@ -15,11 +17,13 @@ import { ValidacionController } from './presentation/validacion.controller.js';
 
 /**
  * Validación de intentos (la de voz exige haber pedido el audio antes),
- * entrega del audio con URL firmada y su borrado (al validar y a los 30
- * días), con limpieza periódica.
+ * entrega del audio con URL firmada (si el consentimiento sigue vigente) y
+ * su borrado (al validar, a los 30 días y a pedido de la directora), con
+ * limpieza periódica.
  */
 @Module({
-  imports: [IntentosModule],
+  // Consentimiento: el audio solo se entrega si sigue vigente en ASISCO UP.
+  imports: [IntentosModule, EstudiantesModule, ConsentimientoModule],
   controllers: [ValidacionController],
   providers: [
     ValidacionService,
