@@ -140,6 +140,9 @@ Si al actualizar Prisma npm avisa de scripts bloqueados:
 | `ALTA_AUTOMATICA_ROLES` | No | `ESTUDIANTE,ACUDIENTE,TALLERISTA,DIRECTORA` | Roles de GameUP cuya cuenta se crea sola en el primer inicio de sesión (separados por comas). Vacía = apagada: sin cuenta, 403 y alta manual con `POST /usuarios`. El ESTUDIANTE además necesita `ASISCO_API_URL` |
 | `LIMPIEZA_GRABACIONES_MIN` | No | `30` | Cada cuántos minutos se borran de Storage las grabaciones validadas pendientes y las vencidas (30 días). `0` la desactiva |
 | `CONSENTIMIENTO_SIMULADO` | No | `false` | **Solo desarrollo**: todos los estudiantes figuran con consentimiento de voz. Prohibido en producción |
+| `THROTTLE_GLOBAL_LIMITE` / `THROTTLE_GLOBAL_VENTANA_SEG` | No | `600` / `60` | Peticiones por IP en cada ventana, sumando todas las rutas (menos `/health`) |
+| `THROTTLE_LOGIN_LIMITE` / `THROTTLE_LOGIN_VENTANA_SEG` | No | `10` / `60` | Intentos de login por IP + correo en cada ventana |
+| `THROTTLE_LOGIN_IP_LIMITE` / `THROTTLE_LOGIN_IP_VENTANA_SEG` | No | `100` / `60` | Intentos de login por IP (cualquier correo) en cada ventana |
 
 Se validan al arrancar (`src/config/env.validation.ts`). Si falta
 `DATABASE_URL` o algo es inválido, la app no inicia y muestra el error.
@@ -177,6 +180,13 @@ y en los DTO, `@ApiProperty({ example: ... })` en cada campo.
     (ver «Alta automática al primer inicio de sesión»);
   - el mapeo de roles (ADMIN → DIRECTORA, TALLERISTA, ACUDIENTE, ESTUDIANTE)
     vive solo en `src/modules/auth/domain/mapeador-roles.ts`.
+- **Límite de peticiones** (`src/common/limites/`): un guard global que corre
+  **antes** de `AuthGuard`, así una ráfaga de tokens inventados recibe 429 sin
+  llegar a la API central. Tres reglas: global por IP (holgado, porque los
+  celulares de la fundación comparten la Wi-Fi), login por IP + correo
+  normalizado y login por IP. `GET /health` no tiene límite. Los contadores
+  viven en memoria (Render corre una sola instancia); con varias instancias
+  habría que usar un almacenamiento compartido. Valores en «Variables de entorno».
 - **Dos niveles de autorización:** `@Roles('DIRECTORA', ...)` en la ruta
   (`RolesGuard`) y, en el servicio, la relación con el estudiante
   (tallerista a cargo, acudiente vinculado, el propio estudiante). Si el
@@ -194,6 +204,7 @@ y en los DTO, `@ApiProperty({ example: ... })` en cada campo.
 | `ReglaNegocioError` | 422 |
 | `ConflictoError` | 409 |
 | `NoAutenticadoError` | 401 |
+| Límite de peticiones (`@nestjs/throttler`) | 429 + `Retry-After` |
 | `ServicioExternoNoDisponibleError` | 503 |
 | Base: único (23505) / FK (23503) / CHECK o trigger (23514) / vínculo (42501) | 409 / 422 / 422 / 403 |
 | Cualquier otro | 500 genérico (sin traza ni SQL) |

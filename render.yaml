@@ -56,6 +56,20 @@ services:
       # Limpieza de grabaciones de voz (minutos; 0 la desactiva).
       - key: LIMPIEZA_GRABACIONES_MIN
         value: "30"
+      # Límite de peticiones (429). Ventanas en segundos. Global holgado por
+      # IP porque los celulares de la fundación comparten la Wi-Fi.
+      - key: THROTTLE_GLOBAL_LIMITE
+        value: "600"
+      - key: THROTTLE_GLOBAL_VENTANA_SEG
+        value: "60"
+      - key: THROTTLE_LOGIN_LIMITE
+        value: "10"
+      - key: THROTTLE_LOGIN_VENTANA_SEG
+        value: "60"
+      - key: THROTTLE_LOGIN_IP_LIMITE
+        value: "100"
+      - key: THROTTLE_LOGIN_IP_VENTANA_SEG
+        value: "60"
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_SECRET_KEY

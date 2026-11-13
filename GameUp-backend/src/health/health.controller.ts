@@ -1,5 +1,6 @@
 import { Controller, Get } from '@nestjs/common';
 import { ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { SkipThrottle } from '@nestjs/throttler';
 import { Public } from '../common/auth/decoradores.js';
 import {
   PrismaService,
@@ -25,6 +26,8 @@ export interface HealthResponse {
 @ApiTags('health')
 // Sin token: Render y el celular lo usan para saber si la API está viva.
 @Public()
+// Sin límite de peticiones: Render lo consulta seguido.
+@SkipThrottle()
 @Controller('health')
 export class HealthController {
   constructor(

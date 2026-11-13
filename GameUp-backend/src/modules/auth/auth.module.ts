@@ -10,6 +10,7 @@ import {
 import type { RolGameUp } from '../../common/auth/usuario-autenticado.js';
 import type { EnvironmentVariables } from '../../config/env.validation.js';
 import { RolesGuard } from '../../common/auth/roles.guard.js';
+import { LimitePeticionesGuard } from '../../common/limites/limite-peticiones.guard.js';
 import { VerificadorTokenPerfil } from '../../common/auth/seguridad-api/verificador-token-perfil.js';
 import {
   INVALIDADOR_TOKEN,
@@ -50,6 +51,7 @@ export function crearRolesAltaAutomatica(
 
 /**
  * Autenticación. Registra los guards globales (en este orden):
+ *   LimitePeticionesGuard → límite de peticiones (429)
  *   AuthGuard  → token válido + cuenta de GameUP (401/403/503)
  *   RolesGuard → @Roles(...) de la ruta (403)
  * las rutas /auth/login (pública), /auth/me y /auth/logout, y el alta de la
@@ -74,6 +76,9 @@ export function crearRolesAltaAutomatica(
     { provide: AUTENTICADOR_EXTERNO, useClass: AutenticadorSeguridadHttp },
     { provide: CUENTA_REPOSITORY, useClass: PrismaCuentaRepository },
     { provide: RESOLUTOR_USUARIO, useClass: ResolutorUsuarioService },
+    // Orden de los guards globales: primero el límite de peticiones (429
+    // antes de gastar una llamada a la API central), luego token y rol.
+    { provide: APP_GUARD, useClass: LimitePeticionesGuard },
     { provide: APP_GUARD, useClass: AuthGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
   ],

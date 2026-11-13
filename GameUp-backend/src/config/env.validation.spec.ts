@@ -124,6 +124,29 @@ describe('validateEnv', () => {
     });
   });
 
+  it('límite de peticiones: valores por defecto', () => {
+    const env = validateEnv({ DATABASE_URL: DB });
+    expect(env.THROTTLE_GLOBAL_LIMITE).toBe(600);
+    expect(env.THROTTLE_GLOBAL_VENTANA_SEG).toBe(60);
+    expect(env.THROTTLE_LOGIN_LIMITE).toBe(10);
+    expect(env.THROTTLE_LOGIN_VENTANA_SEG).toBe(60);
+    expect(env.THROTTLE_LOGIN_IP_LIMITE).toBe(100);
+    expect(env.THROTTLE_LOGIN_IP_VENTANA_SEG).toBe(60);
+  });
+
+  it('límite de peticiones: se ajusta por variable y rechaza 0 o texto', () => {
+    expect(
+      validateEnv({ DATABASE_URL: DB, THROTTLE_LOGIN_LIMITE: '5' })
+        .THROTTLE_LOGIN_LIMITE,
+    ).toBe(5);
+    expect(() =>
+      validateEnv({ DATABASE_URL: DB, THROTTLE_GLOBAL_LIMITE: '0' }),
+    ).toThrow(/inválidas/);
+    expect(() =>
+      validateEnv({ DATABASE_URL: DB, THROTTLE_LOGIN_VENTANA_SEG: 'abc' }),
+    ).toThrow(/inválidas/);
+  });
+
   it('Supabase es opcional', () => {
     const env = validateEnv({ DATABASE_URL: DB, NODE_ENV: 'production' });
     expect(env.SUPABASE_URL).toBeUndefined();

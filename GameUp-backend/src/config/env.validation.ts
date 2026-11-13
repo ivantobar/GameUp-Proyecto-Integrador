@@ -152,6 +152,43 @@ export class EnvironmentVariables {
   @Min(0)
   @Max(1440)
   LIMPIEZA_GRABACIONES_MIN: number = 30;
+
+  // ---------- Límite de peticiones (@nestjs/throttler) ----------
+  // En la fundación muchos celulares salen con la misma IP (misma Wi-Fi):
+  // el límite global es holgado y el del login va por IP + correo.
+
+  /** Peticiones por IP en cada ventana global (todas las rutas menos health). */
+  @IsInt()
+  @Min(1)
+  @Max(100000)
+  THROTTLE_GLOBAL_LIMITE: number = 600;
+
+  @IsInt()
+  @Min(1)
+  @Max(3600)
+  THROTTLE_GLOBAL_VENTANA_SEG: number = 60;
+
+  /** Intentos de login por IP + correo en cada ventana. */
+  @IsInt()
+  @Min(1)
+  @Max(10000)
+  THROTTLE_LOGIN_LIMITE: number = 10;
+
+  @IsInt()
+  @Min(1)
+  @Max(3600)
+  THROTTLE_LOGIN_VENTANA_SEG: number = 60;
+
+  /** Intentos de login por IP (cualquier correo) en cada ventana. */
+  @IsInt()
+  @Min(1)
+  @Max(100000)
+  THROTTLE_LOGIN_IP_LIMITE: number = 100;
+
+  @IsInt()
+  @Min(1)
+  @Max(3600)
+  THROTTLE_LOGIN_IP_VENTANA_SEG: number = 60;
 }
 
 /**
