@@ -393,6 +393,16 @@ de seguridad da acceso, el backend crea su cuenta
 
 Para volver al alta manual, deja `ALTA_AUTOMATICA_ROLES` vacía.
 
+> **Riesgo aceptado (auditoría de producción, 2026-11-12): ADMIN en la API
+> central = DIRECTORA en GameUP.** Con DIRECTORA en `ALTA_AUTOMATICA_ROLES`,
+> cualquier persona con el rol ADMIN en la API central entra a GameUP como
+> directora en su primer inicio de sesión y ve a **todos** los estudiantes,
+> sus observaciones y sus grabaciones. Se acepta porque doña Consuelo es la
+> única directora y ella decide quién tiene el rol ADMIN en la API central.
+> Si eso cambia (otra persona administra la API central, o hay ADMIN de otros
+> sistemas), quita DIRECTORA de `ALTA_AUTOMATICA_ROLES` y da de alta a la
+> directora con `POST /usuarios` o con el script de «Primera directora».
+
 ### Primera directora
 
 Con el alta automática, la primera directora solo tiene que iniciar sesión
@@ -421,6 +431,18 @@ En Render: **New > Blueprint**, elegir el repositorio y completar
 
 En el plan gratuito el servicio se duerme tras 15 minutos sin uso; la primera
 petición después tarda cerca de un minuto.
+
+### Antes de producción
+
+Pendientes que no se resuelven con código:
+
+- [ ] **Limpiar las cuentas ADMIN de prueba de la API central.** Cada cuenta
+  ADMIN que quede viva entra a GameUP como DIRECTORA (ver «Riesgo aceptado»
+  en «Alta automática al primer inicio de sesión»). Revisa también si alguna
+  ya tiene cuenta en GameUP y desactívala con `PATCH /usuarios/{id}/estado`.
+- [ ] **Recordar que ADMIN en la API central = DIRECTORA en GameUP.** Antes
+  de dar el rol ADMIN a alguien en la API central, confirma con doña
+  Consuelo que esa persona debe ver a todos los estudiantes.
 
 ## 10. Diferencias con `proyecto-integrador-backend`
 
