@@ -1,6 +1,11 @@
 import type { ApiClient } from '@/services/api';
-import { ForbiddenError, ServerError } from '@/services/apiErrors';
+import {
+  ForbiddenError,
+  NotFoundError,
+  ServerError,
+} from '@/services/apiErrors';
 import type { ReviewRepository } from '../repositories';
+import { StudentAccessError } from '../studentErrors';
 import {
   BACKEND_AUTORIZACION_RETIRADA,
   ListenFirstError,
@@ -16,7 +21,7 @@ import type {
   ValidarIntentoDto,
 } from './dto/revisiones';
 import { toLevelUp } from './mappers/levelMapper';
-import { requireList, requireText } from './mappers/responseShape';
+import { requireList, requireText, unexpected } from './mappers/responseShape';
 import { toPendingSummary, toReviewItem } from './mappers/reviewMapper';
 
 /** La bandeja trae hasta 50 intentos (el máximo de la paginación del backend). */
@@ -149,5 +154,29 @@ export function createHttpReviewRepository(api: ApiClient): ReviewRepository {
 
     saveFamilyVoiceNote: () =>
       Promise.reject(new NotAvailableError('nota de voz para la familia')),
+
+    async deleteStudentRecordings(studentId) {
+      let dto: { borradas?: unknown };
+      try {
+        dto = await api.delete<{ borradas?: unknown }>(
+          `/estudiantes/${encodeURIComponent(studentId)}/grabaciones`,
+        );
+      } catch (error: unknown) {
+        // 403 (no es la directora) o 404 (no existe): no le corresponde.
+        if (error instanceof ForbiddenError || error instanceof NotFoundError) {
+          throw new StudentAccessError();
+        }
+        throw error;
+      }
+      const borradas = dto?.borradas;
+      if (
+        typeof borradas !== 'number' ||
+        !Number.isInteger(borradas) ||
+        borradas < 0
+      ) {
+        throw unexpected('borradas');
+      }
+      return borradas;
+    },
   };
 }

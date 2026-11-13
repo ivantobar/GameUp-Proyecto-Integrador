@@ -6,6 +6,7 @@ import {
   type FakeHandler,
 } from '@/test-utils/fakeFetch';
 import { ForbiddenError, ServerError } from '@/services/apiErrors';
+import { StudentAccessError } from '../../studentErrors';
 import {
   ListenFirstError,
   RecordingConsentWithdrawnError,
@@ -316,6 +317,39 @@ describe('ReviewRepository (HTTP)', () => {
       .catch((e: unknown) => e);
     expect(error).toBeInstanceOf(ServerError);
     expect(error).not.toBeInstanceOf(RecordingUnavailableError);
+  });
+
+  it('borrar las grabaciones de un estudiante: DELETE y cuántas borró', async () => {
+    const { reviews, requests } = setup(() =>
+      jsonResponse(200, { borradas: 3 }),
+    );
+    await expect(reviews.deleteStudentRecordings('5')).resolves.toBe(3);
+    expect(requests[0]).toMatchObject({
+      url: `${BASE}/estudiantes/5/grabaciones`,
+      method: 'DELETE',
+    });
+  });
+
+  it('borrar: 403 o 404 → StudentAccessError; 503 sigue como error del servidor', async () => {
+    for (const status of [403, 404]) {
+      const { reviews } = setup(() => errorResponse(status, 'No'));
+      await expect(reviews.deleteStudentRecordings('5')).rejects.toBeInstanceOf(
+        StudentAccessError,
+      );
+    }
+    const { reviews } = setup(() =>
+      errorResponse(503, 'No se pudieron borrar las grabaciones.'),
+    );
+    await expect(reviews.deleteStudentRecordings('5')).rejects.toBeInstanceOf(
+      ServerError,
+    );
+  });
+
+  it('borrar: una respuesta sin un número válido es inesperada', async () => {
+    const { reviews } = setup(() => jsonResponse(200, { borradas: 'tres' }));
+    await expect(reviews.deleteStudentRecordings('5')).rejects.toBeInstanceOf(
+      ServerError,
+    );
   });
 
   it('nota para la familia: observación visible para el acudiente', async () => {

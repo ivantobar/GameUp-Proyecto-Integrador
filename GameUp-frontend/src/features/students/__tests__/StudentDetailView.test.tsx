@@ -158,6 +158,27 @@ describe('detalle del estudiante', () => {
     expect(screen.getByLabelText('Memoria: Nivel 3')).toBeOnTheScreen();
   });
 
+  it('«Grabaciones de voz» solo aparece si se pide (la ruta de la directora)', async () => {
+    await renderDetail(createMockRepositories({ delayMs: 0 }));
+    expect(screen.queryByText('Grabaciones de voz')).toBeNull();
+
+    await render(
+      <RepositoryProvider repositories={createMockRepositories({ delayMs: 0 })}>
+        <StudentDetailView
+          studentId={mockStudent.id}
+          routes={directorRoutes}
+          manageRecordings
+        />
+      </RepositoryProvider>,
+    );
+    await settle();
+    expect(
+      screen.getByRole('button', {
+        name: 'Borrar todas sus grabaciones de voz',
+      }),
+    ).toBeOnTheScreen();
+  });
+
   it('quitar pide confirmación y, al confirmar, actualiza la lista', async () => {
     const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
     const repos = createMockRepositories({ delayMs: 0 });

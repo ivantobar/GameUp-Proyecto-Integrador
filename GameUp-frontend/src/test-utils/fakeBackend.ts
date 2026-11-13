@@ -181,6 +181,8 @@ export function createFakeBackend() {
   let practicadoHoy = false;
   // Nivel del estudiante en cada juego de la escalera (empieza en 1).
   const niveles = new Map<LadderGameId, number>();
+  // Grabaciones de voz del estudiante de prueba que aún están en Storage.
+  let grabacionesGuardadas = 2;
   const nivelDe = (gameId: LadderGameId) => niveles.get(gameId) ?? 1;
   const nivelesDto = () =>
     LADDER_GAMES.map((gameId) => ({
@@ -670,6 +672,21 @@ export function createFakeBackend() {
       return path === `/estudiantes/${mockStudent.id}/niveles-juego`
         ? jsonResponse(200, nivelesDto())
         : errorResponse(404, 'El estudiante no existe');
+    }
+    const borrarGrabaciones = /^\/estudiantes\/([\w-]+)\/grabaciones$/.exec(
+      path,
+    );
+    if (method === 'DELETE' && borrarGrabaciones) {
+      // Como el backend: solo la directora; idempotente.
+      if (session.role !== 'director') {
+        return errorResponse(403, 'Tu rol no tiene acceso a esta acción.');
+      }
+      if (borrarGrabaciones[1] !== mockStudent.id) {
+        return errorResponse(404, 'El estudiante no existe.');
+      }
+      const borradas = grabacionesGuardadas;
+      grabacionesGuardadas = 0;
+      return jsonResponse(200, { borradas });
     }
     const ajusteNivel = /^\/estudiantes\/([\w-]+)\/niveles-juego\/(\w+)$/.exec(
       path,

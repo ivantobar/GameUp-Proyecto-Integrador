@@ -669,6 +669,22 @@ export function createMockRepositories({
         };
         return respond(undefined);
       },
+      // Como el backend: solo la directora; borra el audio de todos sus
+      // intentos y quedan como «vencidos» (se validan sin escucharlos).
+      deleteStudentRecordings: (studentId) => {
+        if (!isDirector() || !(studentId in mockStudentSummaries)) {
+          return rejectWith(new StudentAccessError());
+        }
+        let borradas = 0;
+        for (const review of state.reviews) {
+          if (review.student.id === studentId && review.speech?.audioUri) {
+            review.speech.audioUri = null;
+            review.speech.audioExpired = true;
+            borradas += 1;
+          }
+        }
+        return respond(borradas);
+      },
       saveFamilyVoiceNote: (studentId, audioUri) => {
         const note = state.teacherNotes[studentId];
         state.teacherNotes[studentId] = {

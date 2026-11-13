@@ -37,6 +37,7 @@ import type { StaffRoutes } from '../staffRoutes';
 import { useStudentDetail } from '../useStudentDetail';
 import { useStudentTeachers } from '../useStudentTeachers';
 import { Section } from './Section';
+import { StudentRecordingsSection } from './StudentRecordingsSection';
 import { StudentTeachersSection } from './StudentTeachersSection';
 
 interface StudentDetailViewProps {
@@ -47,17 +48,23 @@ interface StudentDetailViewProps {
    * backend no deja al docente.
    */
   manageTeachers?: boolean;
+  /**
+   * Muestra «Grabaciones de voz» (borrar todas las del estudiante). Solo la
+   * directora: el backend no deja al docente.
+   */
+  manageRecordings?: boolean;
 }
 
 /**
  * Detalle de un estudiante (docente y directora): progreso oficial por
  * módulo, niveles por juego, asignaciones y «Asignar actividad». La
- * directora ve además «Tallerista a cargo».
+ * directora ve además «Tallerista a cargo» y «Grabaciones de voz».
  */
 export function StudentDetailView({
   studentId,
   routes,
   manageTeachers = false,
+  manageRecordings = false,
 }: StudentDetailViewProps) {
   const detail = useStudentDetail(studentId);
   const { resource, reload, refresh, message, showAssignedNotice, showNotice } =
@@ -221,6 +228,10 @@ export function StudentDetailView({
                 onPress={() => router.push(routes.levels(studentId))}
               />
             </>
+          ) : null}
+
+          {manageRecordings ? (
+            <StudentRecordingsSection studentId={studentId} />
           ) : null}
 
           <Section title="Asignaciones">

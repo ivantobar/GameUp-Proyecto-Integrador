@@ -513,6 +513,24 @@ describe.each(implementations)('contrato de la versión %s', (_name, create) => 
       await signInAs('directora@gameup.test');
     });
 
+    it('borra las grabaciones de un estudiante: un número; la segunda vez, 0', async () => {
+      const primera = await settle(
+        repos.reviews.deleteStudentRecordings(mockStudent.id),
+      );
+      expect(Number.isInteger(primera)).toBe(true);
+      expect(primera).toBeGreaterThanOrEqual(0);
+      await expect(
+        settle(repos.reviews.deleteStudentRecordings(mockStudent.id)),
+      ).resolves.toBe(0);
+    });
+
+    it('la docente no puede borrar grabaciones: StudentAccessError', async () => {
+      await signInAs('docente@gameup.test');
+      await expect(
+        settle(repos.reviews.deleteStudentRecordings(mockStudent.id)),
+      ).rejects.toBeInstanceOf(StudentAccessError);
+    });
+
     it('la sesión es un StaffProfile, aunque no sea docente', async () => {
       const staff = await settle(repos.staff.getCurrentStaff());
       expect(Object.keys(staff).sort()).toEqual(['displayName', 'id']);
