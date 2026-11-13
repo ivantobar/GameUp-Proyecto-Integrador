@@ -99,7 +99,7 @@ export function setupSwagger(app: INestApplication, publicUrl?: string): void {
   SwaggerModule.setup(SWAGGER_PATH, app, document, {
     jsonDocumentUrl: `${SWAGGER_PATH}.json`,
     customSiteTitle: 'Docs API GameUP',
-    // Conserva el token al recargar la página.
-    swaggerOptions: { persistAuthorization: true },
+    // Sin persistAuthorization: el JWT no se guarda en el navegador
+    // (localStorage) y se olvida al cerrar o recargar la página.
   });
 }
