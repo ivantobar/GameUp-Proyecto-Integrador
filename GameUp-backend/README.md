@@ -65,8 +65,14 @@ Abre <http://localhost:3000/api/v1/health>. Respuesta esperada:
 { "status": "ok", "service": "gameup-backend", "timestamp": "...", "database": "conectada", "supabase": "no_configurado" }
 ```
 
-Si `database` dice `"error"`, revisa `DATABASE_URL` y que PostgreSQL esté
-encendido. La consola también lo indica al arrancar.
+Si `database` dice `"error"`, el health responde **503** (con el mismo cuerpo
+y `"status": "error"`): revisa `DATABASE_URL` y que PostgreSQL esté
+encendido. La consola también lo indica al arrancar. Así Render no da por
+bueno un despliegue sin base.
+
+`supabase` es solo informativo (nunca cambia el código): lee los datos del
+bucket privado `grabaciones` y da `"error"` si Storage no responde **o si ese
+bucket es público**. El resultado se recuerda 60 segundos.
 
 ### Conectar la app móvil (Expo Go)
 

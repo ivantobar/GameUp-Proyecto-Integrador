@@ -9,6 +9,12 @@ import type { EnvironmentVariables } from '../config/env.validation.js';
 
 export type SupabaseStatus = 'no_configurado' | 'conectado' | 'error';
 
+/** Bucket que se consulta en el health: el de las grabaciones de voz. */
+export const BUCKET_REVISADO = 'grabaciones';
+
+/** Milisegundos que se recuerda el resultado (el health es público y frecuente). */
+export const DURACION_CACHE_ESTADO_MS = 60_000;
+
 /**
  * Cliente de Supabase del lado del servidor.
  *
@@ -20,6 +26,8 @@ export type SupabaseStatus = 'no_configurado' | 'conectado' | 'error';
 export class SupabaseService {
   private readonly logger = new Logger(SupabaseService.name);
   private readonly client: SupabaseClient | null;
+  private estadoEnCache: { estado: SupabaseStatus; venceEn: number } | null =
+    null;
 
   constructor(config: ConfigService<EnvironmentVariables, true>) {
     const url = config.get('SUPABASE_URL', { infer: true });
@@ -49,21 +57,46 @@ export class SupabaseService {
     return this.client;
   }
 
-  /** Comprueba que la URL y la clave secreta funcionan, sin leer datos personales. */
+  /**
+   * Comprueba que la URL y la clave secreta funcionan leyendo los datos del
+   * bucket `grabaciones` (no toca usuarios ni archivos). Devuelve `error` si
+   * no responde o si el bucket es PÚBLICO: las voces de los niños solo
+   * pueden salir con URL firmada. El resultado se recuerda 60 s, porque el
+   * health es público y Render lo consulta seguido.
+   */
   async checkConnection(): Promise<SupabaseStatus> {
     if (!this.client) return 'no_configurado';
+    const ahora = Date.now();
+    if (this.estadoEnCache && this.estadoEnCache.venceEn > ahora) {
+      return this.estadoEnCache.estado;
+    }
+    const estado = await this.consultarBucket(this.client);
+    this.estadoEnCache = { estado, venceEn: ahora + DURACION_CACHE_ESTADO_MS };
+    return estado;
+  }
+
+  private async consultarBucket(
+    client: SupabaseClient,
+  ): Promise<SupabaseStatus> {
     try {
-      const { error } = await this.client.auth.admin.listUsers({
-        page: 1,
-        perPage: 1,
-      });
-      if (error) {
-        this.logger.error(`Error al conectar con Supabase: ${error.message}`);
+      const { data, error } = await client.storage.getBucket(BUCKET_REVISADO);
+      if (error || !data) {
+        this.logger.error(
+          `Error al conectar con Supabase Storage: ${error?.message ?? 'sin datos'}`,
+        );
+        return 'error';
+      }
+      if (data.public) {
+        this.logger.error(
+          `El bucket ${BUCKET_REVISADO} es PÚBLICO: debe ser privado (las grabaciones solo salen con URL firmada).`,
+        );
         return 'error';
       }
       return 'conectado';
     } catch (err) {
-      this.logger.error(`Error al conectar con Supabase: ${String(err)}`);
+      this.logger.error(
+        `Error al conectar con Supabase Storage: ${err instanceof Error ? err.name : 'desconocido'}`,
+      );
       return 'error';
     }
   }
