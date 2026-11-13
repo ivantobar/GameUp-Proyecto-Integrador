@@ -1,4 +1,8 @@
 import { act, render, screen, userEvent } from '@testing-library/react-native';
+import {
+  RecordingConsentWithdrawnError,
+  RecordingUnavailableError,
+} from '@/data/reviewErrors';
 import type { ReviewItem } from '@/data/types';
 import { ReviewCard } from '../components/ReviewCard';
 
@@ -66,6 +70,87 @@ describe('revisión con la API', () => {
     expect(props.loadRecording).toHaveBeenCalledTimes(1);
     expect(screen.getByRole('button', { name: 'Lo logró' })).toBeEnabled();
     expect(screen.getByRole('button', { name: 'Practicar más' })).toBeEnabled();
+  });
+
+  const escuchar = () =>
+    screen.getByRole('button', {
+      name: 'Escuchar: Voz de Estrella · intento 1 de 1',
+    });
+  const settle = () =>
+    act(async () => {
+      await jest.runAllTimersAsync();
+    });
+
+  it('autorización retirada (403 del backend): lo explica, sin «Reintentar», y sigue sin poder decidir', async () => {
+    const loadRecording = jest.fn(() =>
+      Promise.reject(new RecordingConsentWithdrawnError()),
+    );
+    await renderCard({ loadRecording });
+    const user = userEvent.setup();
+
+    await user.press(escuchar());
+    await settle();
+
+    expect(
+      screen.getByText('El acudiente retiró la autorización de grabar la voz'),
+    ).toBeOnTheScreen();
+    expect(
+      screen.getByText(
+        'Para validar este intento, pide a la directora que borre sus grabaciones.',
+      ),
+    ).toBeOnTheScreen();
+    expect(
+      screen.queryByRole('button', { name: 'Reintentar traer la grabación' }),
+    ).toBeNull();
+    expect(screen.getByRole('button', { name: 'Lo logró' })).toBeDisabled();
+  });
+
+  it('el servidor no pudo traerlo (503): mensaje y «Reintentar», que lo vuelve a pedir', async () => {
+    const loadRecording = jest
+      .fn<Promise<string>, []>()
+      .mockRejectedValueOnce(new RecordingUnavailableError())
+      .mockResolvedValueOnce('https://storage.prueba/voz.m4a?firma=x');
+    await renderCard({ loadRecording });
+    const user = userEvent.setup();
+
+    await user.press(escuchar());
+    await settle();
+
+    expect(
+      screen.getByText(
+        'No se pudo traer el audio en este momento. Intenta de nuevo',
+      ),
+    ).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: 'Lo logró' })).toBeDisabled();
+
+    await user.press(
+      screen.getByRole('button', { name: 'Reintentar traer la grabación' }),
+    );
+    await settle();
+
+    expect(loadRecording).toHaveBeenCalledTimes(2);
+    expect(
+      screen.queryByText(
+        'No se pudo traer el audio en este momento. Intenta de nuevo',
+      ),
+    ).toBeNull();
+    expect(screen.getByRole('button', { name: 'Lo logró' })).toBeEnabled();
+  });
+
+  it('sin conexión u otro error: el aviso de siempre, sin «Reintentar»', async () => {
+    const loadRecording = jest.fn(() => Promise.reject(new Error('red')));
+    await renderCard({ loadRecording });
+    const user = userEvent.setup();
+
+    await user.press(escuchar());
+    await settle();
+
+    expect(
+      screen.getByText(/No pudimos traer la grabación. Revisa la conexión/),
+    ).toBeOnTheScreen();
+    expect(
+      screen.queryByRole('button', { name: 'Reintentar traer la grabación' }),
+    ).toBeNull();
   });
 
   it('sin grabación (NO_VERIFICABLE): explica el motivo y no bloquea', async () => {

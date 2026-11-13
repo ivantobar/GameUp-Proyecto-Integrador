@@ -5,7 +5,12 @@ import {
   jsonResponse,
   type FakeHandler,
 } from '@/test-utils/fakeFetch';
-import { ListenFirstError } from '../../reviewErrors';
+import { ForbiddenError, ServerError } from '@/services/apiErrors';
+import {
+  ListenFirstError,
+  RecordingConsentWithdrawnError,
+  RecordingUnavailableError,
+} from '../../reviewErrors';
 import type { ItemRevisionDto } from '../dto/revisiones';
 import { createHttpReviewRepository } from '../httpReviewRepository';
 import { toReviewItem } from '../mappers/reviewMapper';
@@ -269,6 +274,48 @@ describe('ReviewRepository (HTTP)', () => {
       'https://storage.prueba/voz.m4a?firma=x',
     );
     expect(requests[0]?.url).toBe(`${BASE}/intentos/41/grabacion`);
+  });
+
+  it('403 con el texto de «autorización retirada» → RecordingConsentWithdrawnError', async () => {
+    const { reviews } = setup(() =>
+      errorResponse(
+        403,
+        'El acudiente retiró la autorización de grabar la voz.',
+      ),
+    );
+    await expect(reviews.getRecordingUrl('41')).rejects.toBeInstanceOf(
+      RecordingConsentWithdrawnError,
+    );
+  });
+
+  it('cualquier otro 403 sigue siendo un error normal', async () => {
+    const { reviews } = setup(() =>
+      errorResponse(403, 'Tu rol no tiene acceso a esta acción.'),
+    );
+    const error = await reviews.getRecordingUrl('41').catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(ForbiddenError);
+    expect(error).not.toBeInstanceOf(RecordingConsentWithdrawnError);
+  });
+
+  it('503 (ASISCO UP o Storage) → RecordingUnavailableError; otros códigos, igual', async () => {
+    const { reviews } = setup(() =>
+      errorResponse(
+        503,
+        'No se puede verificar la autorización de grabar la voz en este momento.',
+      ),
+    );
+    await expect(reviews.getRecordingUrl('41')).rejects.toBeInstanceOf(
+      RecordingUnavailableError,
+    );
+
+    const otro = setup(() =>
+      errorResponse(500, 'Ocurrió un error inesperado.'),
+    );
+    const error = await otro.reviews
+      .getRecordingUrl('41')
+      .catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(ServerError);
+    expect(error).not.toBeInstanceOf(RecordingUnavailableError);
   });
 
   it('nota para la familia: observación visible para el acudiente', async () => {

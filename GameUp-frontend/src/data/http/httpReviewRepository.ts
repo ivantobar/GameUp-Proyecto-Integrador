@@ -1,7 +1,12 @@
 import type { ApiClient } from '@/services/api';
-import { ServerError } from '@/services/apiErrors';
+import { ForbiddenError, ServerError } from '@/services/apiErrors';
 import type { ReviewRepository } from '../repositories';
-import { ListenFirstError } from '../reviewErrors';
+import {
+  BACKEND_AUTORIZACION_RETIRADA,
+  ListenFirstError,
+  RecordingConsentWithdrawnError,
+  RecordingUnavailableError,
+} from '../reviewErrors';
 import type {
   CrearObservacionDto,
   IntentoValidadoDto,
@@ -23,6 +28,25 @@ export class NotAvailableError extends Error {
     super(`Todavía no está disponible: ${what}`);
     this.name = 'NotAvailableError';
   }
+}
+
+/**
+ * Errores de `GET /intentos/:id/grabacion` que la pantalla explica:
+ * - 403 con el texto de «autorización retirada» (solo ese 403);
+ * - 503: ASISCO UP no confirmó la autorización o Storage no respondió.
+ * Cualquier otro error sigue igual.
+ */
+function recordingError(error: unknown): unknown {
+  if (
+    error instanceof ForbiddenError &&
+    error.message.trim() === BACKEND_AUTORIZACION_RETIRADA
+  ) {
+    return new RecordingConsentWithdrawnError();
+  }
+  if (error instanceof ServerError && error.status === 503) {
+    return new RecordingUnavailableError();
+  }
+  return error;
 }
 
 const path = (intentoId: string) =>
@@ -85,7 +109,12 @@ export function createHttpReviewRepository(api: ApiClient): ReviewRepository {
     },
 
     async getRecordingUrl(reviewId) {
-      const dto = await api.get<UrlFirmadaDto>(`${path(reviewId)}/grabacion`);
+      let dto: UrlFirmadaDto;
+      try {
+        dto = await api.get<UrlFirmadaDto>(`${path(reviewId)}/grabacion`);
+      } catch (error: unknown) {
+        throw recordingError(error);
+      }
       return requireText(dto.url, 'url');
     },
 

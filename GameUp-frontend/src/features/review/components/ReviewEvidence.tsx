@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { AudioClipRow } from '@/components/gameup';
-import { AppText, Notice } from '@/components/ui';
+import { AppText, Button, Notice } from '@/components/ui';
 import { firstName } from '@/data/studentName';
 import type { NoAudioReason, ReviewItem } from '@/data/types';
 import { useAttemptPlayback } from '@/features/speak/useAttemptPlayback';
@@ -66,13 +66,12 @@ function SpeechEvidence({
             }}
             playing={remote.playing || remote.state === 'loading'}
           />
-          {remote.state === 'error' ? (
-            <Notice
-              tone="warm"
-              icon="offline"
-              message="No pudimos traer la grabación. Revisa la conexión y tócala otra vez."
-            />
-          ) : null}
+          <RemoteRecordingProblem
+            state={remote.state}
+            onRetry={() => {
+              remote.retry().catch(() => {});
+            }}
+          />
         </>
       ) : (
         <Notice
@@ -84,6 +83,73 @@ function SpeechEvidence({
       )}
     </View>
   );
+}
+
+export const RECORDING_WITHDRAWN_TEXT =
+  'El acudiente retiró la autorización de grabar la voz';
+export const RECORDING_WITHDRAWN_HELP =
+  'Para validar este intento, pide a la directora que borre sus grabaciones.';
+export const RECORDING_UNAVAILABLE_TEXT =
+  'No se pudo traer el audio en este momento. Intenta de nuevo';
+
+interface RemoteRecordingProblemProps {
+  state: ReturnType<typeof useRemoteRecording>['state'];
+  onRetry: () => void;
+}
+
+/**
+ * Por qué no se pudo oír la grabación del servidor:
+ * - autorización retirada (403 del backend): no se puede oír ni reintentar;
+ * - el servidor no pudo traerla ahora (503): botón grande «Reintentar»;
+ * - sin conexión u otro error: se vuelve a tocar «Escuchar».
+ */
+function RemoteRecordingProblem({
+  state,
+  onRetry,
+}: RemoteRecordingProblemProps) {
+  if (state === 'withdrawn') {
+    return (
+      <View accessibilityLiveRegion="polite">
+        <Notice
+          tone="warm"
+          icon="mic"
+          title={RECORDING_WITHDRAWN_TEXT}
+          message={RECORDING_WITHDRAWN_HELP}
+        />
+      </View>
+    );
+  }
+  if (state === 'unavailable') {
+    return (
+      <View accessibilityLiveRegion="polite">
+        <Notice
+          tone="warm"
+          icon="offline"
+          message={RECORDING_UNAVAILABLE_TEXT}
+          action={
+            <Button
+              label="Reintentar"
+              icon="replay"
+              size="large"
+              variant="secondary"
+              accessibilityLabel="Reintentar traer la grabación"
+              onPress={onRetry}
+            />
+          }
+        />
+      </View>
+    );
+  }
+  if (state === 'error') {
+    return (
+      <Notice
+        tone="warm"
+        icon="offline"
+        message="No pudimos traer la grabación. Revisa la conexión y tócala otra vez."
+      />
+    );
+  }
+  return null;
 }
 
 /** Por qué no hay audio. Sin autorización, nunca se graba (regla 9). */
