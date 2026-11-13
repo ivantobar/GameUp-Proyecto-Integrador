@@ -2,6 +2,8 @@
 # Render lo detecta al crear "New > Blueprint" con este repositorio.
 # Los secretos (DATABASE_URL, SUPABASE_SECRET_KEY) NO van aquí: Render los
 # pide al crear el servicio (sync: false) y se guardan solo en Render.
+# Con NODE_ENV=production la app NO arranca si falta SEGURIDAD_API_URL,
+# SUPABASE_URL, SUPABASE_SECRET_KEY o ASISCO_API_URL.
 services:
   - type: web
     name: gameup-backend

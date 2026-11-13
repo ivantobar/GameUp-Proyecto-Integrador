@@ -213,6 +213,14 @@ function booleanoEstricto(valor: unknown): unknown {
   return valor;
 }
 
+/** Opcionales en desarrollo y pruebas; obligatorias con NODE_ENV=production. */
+export const VARIABLES_OBLIGATORIAS_EN_PRODUCCION = [
+  'SEGURIDAD_API_URL',
+  'SUPABASE_URL',
+  'SUPABASE_SECRET_KEY',
+  'ASISCO_API_URL',
+] as const satisfies ReadonlyArray<keyof EnvironmentVariables>;
+
 export function validateEnv(config: Record<string, unknown>) {
   const env = plainToInstance(EnvironmentVariables, config, {
     enableImplicitConversion: true,
@@ -231,6 +239,17 @@ export function validateEnv(config: Record<string, unknown>) {
     env.CONSENTIMIENTO_SIMULADO === true
   ) {
     messages.push('CONSENTIMIENTO_SIMULADO no se puede activar en producción');
+  }
+  if (env.NODE_ENV === Environment.Production) {
+    // Sin ellas la app arrancaría "sana" pero rota: nadie podría entrar
+    // (SEGURIDAD_API_URL), no se guardaría ningún audio ni contenido
+    // (SUPABASE_*) o no se podría verificar el consentimiento (ASISCO_API_URL).
+    for (const nombre of VARIABLES_OBLIGATORIAS_EN_PRODUCCION) {
+      const valor = env[nombre];
+      if (typeof valor !== 'string' || valor.trim() === '') {
+        messages.push(`${nombre} es obligatoria en producción`);
+      }
+    }
   }
   if (typeof env.ALTA_AUTOMATICA_ROLES === 'string') {
     const lectura = leerRolesAltaAutomatica(env.ALTA_AUTOMATICA_ROLES);

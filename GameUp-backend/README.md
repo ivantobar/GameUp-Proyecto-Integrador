@@ -130,12 +130,12 @@ Si al actualizar Prisma npm avisa de scripts bloqueados:
 | `CORS_ORIGINS` | No | — | Solo para probar en navegador (Expo web). La app móvil no lo usa |
 | `PUBLIC_URL` | No | — | URL pública del backend desplegado (servidor "Producción" en Swagger) |
 | `TRUST_PROXY_HOPS` | No | `0` | Proxies delante del backend (`1` en Render) |
-| `SUPABASE_URL` | No | — | URL del proyecto de Supabase (Auth/Storage) |
-| `SUPABASE_SECRET_KEY` | No | — | Clave secreta de Supabase (**solo backend**) |
-| `SEGURIDAD_API_URL` | No* | — | URL base de la API de seguridad (login y perfil). *Sin ella, el login y las rutas protegidas responden 503 |
+| `SUPABASE_URL` | **En producción** | — | URL del proyecto de Supabase (Auth/Storage) |
+| `SUPABASE_SECRET_KEY` | **En producción** | — | Clave secreta de Supabase (**solo backend**) |
+| `SEGURIDAD_API_URL` | **En producción*** | — | URL base de la API de seguridad (login y perfil). *Sin ella, el login y las rutas protegidas responden 503 |
 | `SEGURIDAD_API_TIMEOUT_MS` | No | `5000` | Espera máxima por llamada a la API de seguridad |
 | `AUTH_CACHE_TTL_SEG` | No | `300` | Segundos que se recuerda un token verificado (máx. 300 y nunca más que su `exp`) |
-| `ASISCO_API_URL` | No | — | URL base de ASISCO UP, sin `/api` (ej. `https://proyecto-asiscoup-g1-jvaz.onrender.com`). Activa la integración: consentimiento de voz (`autorizaGrabacionVoz`) y copia de los vínculos de acudientes al iniciar sesión. Sin ella, no se graba voz (falla cerrado) y la directora vincula acudientes a mano |
+| `ASISCO_API_URL` | **En producción** | — | URL base de ASISCO UP, sin `/api` (ej. `https://proyecto-asiscoup-g1-jvaz.onrender.com`). Activa la integración: consentimiento de voz (`autorizaGrabacionVoz`) y copia de los vínculos de acudientes al iniciar sesión. Sin ella, no se graba voz (falla cerrado) y la directora vincula acudientes a mano |
 | `ASISCO_API_TIMEOUT_MS` | No | `5000` | Espera máxima por llamada a ASISCO UP (500 a 30000) |
 | `ALTA_AUTOMATICA_ROLES` | No | `ESTUDIANTE,ACUDIENTE,TALLERISTA,DIRECTORA` | Roles de GameUP cuya cuenta se crea sola en el primer inicio de sesión (separados por comas). Vacía = apagada: sin cuenta, 403 y alta manual con `POST /usuarios`. El ESTUDIANTE además necesita `ASISCO_API_URL` |
 | `LIMPIEZA_GRABACIONES_MIN` | No | `30` | Cada cuántos minutos se borran de Storage las grabaciones validadas pendientes y las vencidas (30 días). `0` la desactiva |
@@ -147,6 +147,10 @@ Si al actualizar Prisma npm avisa de scripts bloqueados:
 
 Se validan al arrancar (`src/config/env.validation.ts`). Si falta
 `DATABASE_URL` o algo es inválido, la app no inicia y muestra el error.
+Con `NODE_ENV=production` también son obligatorias `SEGURIDAD_API_URL`,
+`SUPABASE_URL`, `SUPABASE_SECRET_KEY` y `ASISCO_API_URL`: sin ellas la app
+arrancaría «sana» pero rota. En Render, un despliegue al que le falte alguna
+falla y Render deja corriendo la versión anterior.
 
 ## 7. Documentación con Swagger
 
