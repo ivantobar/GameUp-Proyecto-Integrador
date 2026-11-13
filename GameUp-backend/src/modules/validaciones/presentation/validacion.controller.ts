@@ -106,7 +106,9 @@ export class ValidacionController {
   })
   @ApiOkResponse({ type: UrlFirmadaDto })
   @ApiErrores(400, 401, 404, {
-    403: 'Tu rol no tiene acceso, o el acudiente retiró la autorización de grabar la voz',
+    403:
+      'Tu rol no tiene acceso, o el acudiente retiró la autorización de grabar la voz ' +
+      '(en ese caso la respuesta trae `codigo: "CONSENTIMIENTO_RETIRADO"`)',
     503: 'ASISCO UP no responde (no se puede verificar la autorización) o Storage no está disponible',
   })
   async grabacion(

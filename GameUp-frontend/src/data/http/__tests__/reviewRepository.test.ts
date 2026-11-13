@@ -277,16 +277,29 @@ describe('ReviewRepository (HTTP)', () => {
     expect(requests[0]?.url).toBe(`${BASE}/intentos/41/grabacion`);
   });
 
-  it('403 con el texto de «autorización retirada» → RecordingConsentWithdrawnError', async () => {
+  it('403 con codigo CONSENTIMIENTO_RETIRADO → RecordingConsentWithdrawnError', async () => {
+    const { reviews } = setup(() =>
+      errorResponse(
+        403,
+        'El acudiente retiró la autorización de grabar la voz.',
+        'CONSENTIMIENTO_RETIRADO',
+      ),
+    );
+    await expect(reviews.getRecordingUrl('41')).rejects.toBeInstanceOf(
+      RecordingConsentWithdrawnError,
+    );
+  });
+
+  it('un 403 con el mismo texto pero sin el código es un error normal', async () => {
     const { reviews } = setup(() =>
       errorResponse(
         403,
         'El acudiente retiró la autorización de grabar la voz.',
       ),
     );
-    await expect(reviews.getRecordingUrl('41')).rejects.toBeInstanceOf(
-      RecordingConsentWithdrawnError,
-    );
+    const error = await reviews.getRecordingUrl('41').catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(ForbiddenError);
+    expect(error).not.toBeInstanceOf(RecordingConsentWithdrawnError);
   });
 
   it('cualquier otro 403 sigue siendo un error normal', async () => {

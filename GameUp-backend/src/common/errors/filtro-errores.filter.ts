@@ -26,6 +26,8 @@ export interface RespuestaError {
   error: string;
   /** Texto para la persona. Los errores de validación (400) traen una lista. */
   message: string | string[];
+  /** Solo si el error lo trae (ej.: CONSENTIMIENTO_RETIRADO). */
+  codigo?: string;
 }
 
 const NOMBRE_ESTADO: Record<number, string> = {
@@ -95,10 +97,14 @@ export class FiltroErroresGlobal implements ExceptionFilter {
           ([clase]) => exception instanceof clase,
         )?.[1] ?? 500;
       if (estado === 500) this.registrar(exception);
-      return respuesta(
+      const cuerpo = respuesta(
         estado,
         estado === 500 ? MENSAJE_INESPERADO : exception.message,
       );
+      // El código fijo solo sale si el error lo trae (y nunca en un 500).
+      return exception.codigo && estado !== 500
+        ? { ...cuerpo, codigo: exception.codigo }
+        : cuerpo;
     }
 
     if (exception instanceof HttpException) {

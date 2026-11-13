@@ -153,6 +153,29 @@ describe('revisión con la API', () => {
     ).toBeNull();
   });
 
+  it('audio que ya no está (vencido o borrado por la directora): lo dice y no bloquea', async () => {
+    const { props } = await renderCard({
+      item: {
+        ...speechItem,
+        speech: {
+          ...speechItem.speech!,
+          remoteAudio: false,
+          audioExpired: true,
+        },
+      },
+    });
+
+    expect(
+      screen.getByText(
+        'La grabación ya no está disponible. Puedes decidir igual o escucharlo en la próxima sesión.',
+      ),
+    ).toBeOnTheScreen();
+    expect(screen.queryByText(/30 días/)).toBeNull();
+    const user = userEvent.setup();
+    await user.press(screen.getByRole('button', { name: 'Lo logró' }));
+    expect(props.onValidate).toHaveBeenCalledTimes(1);
+  });
+
   it('sin grabación (NO_VERIFICABLE): explica el motivo y no bloquea', async () => {
     const { props } = await renderCard({
       item: {

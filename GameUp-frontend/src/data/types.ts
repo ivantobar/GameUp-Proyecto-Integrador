@@ -332,7 +332,10 @@ export interface ReviewItem {
      * oírlo antes de decidir (lo exige el backend).
      */
     remoteAudio?: boolean;
-    /** Había audio, pero se borró a los 30 días sin revisar. */
+    /**
+     * Había audio, pero ya no está: se borró a los 30 días sin revisar o lo
+     * borró la directora (el backend no distingue los dos casos).
+     */
     audioExpired?: boolean;
     /** Por qué no hay audio, si se sabe. */
     noAudioReason?: NoAudioReason;

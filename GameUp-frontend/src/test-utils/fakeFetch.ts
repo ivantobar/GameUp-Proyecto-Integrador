@@ -27,8 +27,17 @@ export function jsonResponse(status: number, body?: unknown): Response {
 }
 
 /** Error como lo responde el backend: `{ statusCode, error, message }`. */
-export function errorResponse(status: number, message: string): Response {
-  return jsonResponse(status, { statusCode: status, error: 'Error', message });
+export function errorResponse(
+  status: number,
+  message: string,
+  codigo?: string,
+): Response {
+  return jsonResponse(status, {
+    statusCode: status,
+    error: 'Error',
+    message,
+    ...(codigo ? { codigo } : {}),
+  });
 }
 
 export function createFakeFetch(handler: FakeHandler) {

@@ -4,6 +4,13 @@
  * los hooks deciden qué mensaje amable mostrar. Nunca llevan el token.
  */
 export class ApiError extends Error {
+  /**
+   * Código fijo que algunos errores del backend traen en `codigo` (ej.:
+   * CONSENTIMIENTO_RETIRADO), para reconocer el caso sin leer el texto.
+   * `null` si no vino. Lo pone el cliente HTTP al recibir la respuesta.
+   */
+  code: string | null = null;
+
   constructor(
     message: string,
     /** Código HTTP, o `null` si no hubo respuesta del servidor. */

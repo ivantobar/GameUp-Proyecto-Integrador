@@ -175,7 +175,8 @@ const NO_AUDIO_REASON: Record<NoAudioReason, string> = {
 
 export function noAudioText(speech: Speech): string {
   if (speech.audioExpired) {
-    return 'La grabación se borró a los 30 días sin revisar. Puedes decidir igual o escucharlo en la próxima sesión.';
+    // Vale para las dos causas: el plazo de 30 días y el borrado de la directora.
+    return 'La grabación ya no está disponible. Puedes decidir igual o escucharlo en la próxima sesión.';
   }
   if (speech.noAudioReason) return NO_AUDIO_REASON[speech.noAudioReason];
   return noAudioMessage(speech.voiceConsent);

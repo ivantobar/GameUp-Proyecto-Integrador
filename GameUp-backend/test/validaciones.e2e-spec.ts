@@ -223,6 +223,7 @@ describe('Validación y progreso (e2e)', () => {
         statusCode: 403,
         error: 'Forbidden',
         message: AUTORIZACION_RETIRADA,
+        codigo: 'CONSENTIMIENTO_RETIRADO',
       });
       expect(e.almacen.rutas('grabaciones')).toHaveLength(1);
     });
@@ -255,7 +256,11 @@ describe('Validación y progreso (e2e)', () => {
     });
 
     it('solo la directora: tallerista, acudiente y estudiante → 403; sin sesión → 401', async () => {
-      await como('tallerista2').del('/estudiantes/10/grabaciones').expect(403);
+      const negado = await como('tallerista2')
+        .del('/estudiantes/10/grabaciones')
+        .expect(403);
+      // Un 403 cualquiera no trae código.
+      expect(negado.body).not.toHaveProperty('codigo');
       await como('acudiente4').del('/estudiantes/10/grabaciones').expect(403);
       await como('estudiante10').del('/estudiantes/10/grabaciones').expect(403);
       await como(null).del('/estudiantes/10/grabaciones').expect(401);

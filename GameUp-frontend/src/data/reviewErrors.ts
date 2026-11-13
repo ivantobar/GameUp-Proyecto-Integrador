@@ -10,13 +10,13 @@ export class ListenFirstError extends Error {
 }
 
 /**
- * Texto con el que el backend responde 403 en `GET /intentos/:id/grabacion`
+ * `codigo` con el que el backend marca el 403 de `GET /intentos/:id/grabacion`
  * cuando el acudiente retiró la autorización en ASISCO UP
- * (`AUTORIZACION_RETIRADA` en GameUp-backend, grabacion.service.ts). Solo ese
- * 403 significa «autorización retirada»; cualquier otro 403 es un error normal.
+ * (`CODIGO_CONSENTIMIENTO_RETIRADO` en GameUp-backend, dominio.errors.ts).
+ * Solo ese 403 significa «autorización retirada»; cualquier otro 403 (aunque
+ * diga lo mismo) es un error normal.
  */
-export const BACKEND_AUTORIZACION_RETIRADA =
-  'El acudiente retiró la autorización de grabar la voz.';
+export const CODIGO_CONSENTIMIENTO_RETIRADO = 'CONSENTIMIENTO_RETIRADO';
 
 /** 403 marcado por el backend: el acudiente ya no autoriza oír la voz. */
 export class RecordingConsentWithdrawnError extends Error {

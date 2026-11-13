@@ -7,7 +7,7 @@ import {
 import type { ReviewRepository } from '../repositories';
 import { StudentAccessError } from '../studentErrors';
 import {
-  BACKEND_AUTORIZACION_RETIRADA,
+  CODIGO_CONSENTIMIENTO_RETIRADO,
   ListenFirstError,
   RecordingConsentWithdrawnError,
   RecordingUnavailableError,
@@ -37,14 +37,14 @@ export class NotAvailableError extends Error {
 
 /**
  * Errores de `GET /intentos/:id/grabacion` que la pantalla explica:
- * - 403 con el texto de «autorización retirada» (solo ese 403);
+ * - 403 con `codigo: CONSENTIMIENTO_RETIRADO` (solo ese 403; no se mira el texto);
  * - 503: ASISCO UP no confirmó la autorización o Storage no respondió.
  * Cualquier otro error sigue igual.
  */
 function recordingError(error: unknown): unknown {
   if (
     error instanceof ForbiddenError &&
-    error.message.trim() === BACKEND_AUTORIZACION_RETIRADA
+    error.code === CODIGO_CONSENTIMIENTO_RETIRADO
   ) {
     return new RecordingConsentWithdrawnError();
   }

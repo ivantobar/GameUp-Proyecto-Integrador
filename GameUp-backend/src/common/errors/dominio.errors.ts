@@ -4,13 +4,24 @@
  *
  * El mensaje se muestra tal cual a la app: escríbelo en español claro y
  * NUNCA incluyas ids internos, nombres ni datos de otros estudiantes.
+ *
+ * `codigo` (opcional): un identificador fijo, en MAYÚSCULAS, para los casos
+ * que la app debe reconocer sin depender del texto (por ejemplo,
+ * CONSENTIMIENTO_RETIRADO). Sale en la respuesta como `codigo`; si no hay,
+ * la respuesta no lo trae.
  */
 export abstract class ErrorDominio extends Error {
-  protected constructor(message: string) {
+  protected constructor(
+    message: string,
+    readonly codigo: string | null = null,
+  ) {
     super(message);
     this.name = new.target.name;
   }
 }
+
+/** 403 de `GET /intentos/:id/grabacion`: el acudiente retiró la autorización de voz. */
+export const CODIGO_CONSENTIMIENTO_RETIRADO = 'CONSENTIMIENTO_RETIRADO';
 
 /** 404. También se usa cuando el recurso existe pero no le corresponde a quien lo pide. */
 export class RecursoNoEncontradoError extends ErrorDominio {
@@ -21,8 +32,11 @@ export class RecursoNoEncontradoError extends ErrorDominio {
 
 /** 403: el rol o la cuenta no permiten la operación. */
 export class AccesoDenegadoError extends ErrorDominio {
-  constructor(message = 'No tienes permiso para hacer esto.') {
-    super(message);
+  constructor(
+    message = 'No tienes permiso para hacer esto.',
+    codigo: string | null = null,
+  ) {
+    super(message, codigo);
   }
 }
 
