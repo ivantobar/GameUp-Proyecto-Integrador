@@ -17,7 +17,9 @@ import {
 } from '../../modulos/domain/modulo.repository.js';
 import {
   ajusteManual,
+  esSubida,
   normalizarMotivo,
+  SOLO_DIRECTORA_SUBE,
   type NivelJuego,
 } from '../domain/nivel-juego.js';
 import {
@@ -105,6 +107,9 @@ export class NivelJuegoService {
   /**
    * Ajuste manual (directora o tallerista a cargo; si no, 404). Motivo
    * obligatorio; queda en el historial. No avisa al acudiente.
+   * La tallerista solo puede BAJAR (o repetir un juego completado): subir de
+   * nivel a mano es solo de la directora (403). La tallerista sube al niño
+   * con una validación aprobada.
    */
   async ajustar(
     actual: UsuarioAutenticado,
@@ -126,6 +131,9 @@ export class NivelJuegoService {
     );
     if (!estado) throw new RecursoNoEncontradoError(MENSAJE_JUEGO_SIN_ESCALERA);
     const cambio = ajusteManual(estado, nivel);
+    if (actual.rol !== 'DIRECTORA' && esSubida(estado, nivel)) {
+      throw new AccesoDenegadoError(SOLO_DIRECTORA_SUBE);
+    }
     const nuevo = await this.repo.ajustar(
       estudianteId,
       juego,

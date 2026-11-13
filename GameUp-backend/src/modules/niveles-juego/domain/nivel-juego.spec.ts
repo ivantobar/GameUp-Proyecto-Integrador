@@ -1,6 +1,7 @@
 import { ReglaNegocioError } from '../../../common/errors/dominio.errors.js';
 import {
   ajusteManual,
+  esSubida,
   mensajeSubida,
   normalizarMotivo,
   subidaPorAprobacion,
@@ -78,6 +79,15 @@ describe('escalera: ajuste manual', () => {
     expect(
       ajusteManual({ nivelActual: 4, completado: false }, 2),
     ).toMatchObject({ nivelNuevo: 2 });
+  });
+
+  it('esSubida: solo un nivel mayor que el actual es subir', () => {
+    expect(esSubida({ nivelActual: 2, completado: false }, 3)).toBe(true);
+    expect(esSubida({ nivelActual: 2, completado: false }, 5)).toBe(true);
+    expect(esSubida({ nivelActual: 3, completado: false }, 1)).toBe(false);
+    // Repetir un juego completado (en el 5 o más abajo) no es subir.
+    expect(esSubida({ nivelActual: 5, completado: true }, 5)).toBe(false);
+    expect(esSubida({ nivelActual: 5, completado: true }, 3)).toBe(false);
   });
 
   it('el mismo nivel o uno que no existe → 422', () => {

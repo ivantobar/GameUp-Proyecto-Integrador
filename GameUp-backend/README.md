@@ -266,7 +266,7 @@ tallerista a cargo o la directora **aprueba** un intento del nivel actual.
 | `GET /estudiantes/me/niveles-juego` | E | Nivel (1-5), `completado` y `pendientesValidacion` de cada juego |
 | `GET /estudiantes/me/niveles-juego/:juego/actividad` | E | `{ nivel, actividad }` del nivel actual (`:juego` = `EMPAREJAR`, `CLASIFICAR`, `SECUENCIAR` o `MEMORIA`) |
 | `GET /estudiantes/:id/niveles-juego` | D, T a cargo, A | Ajeno → 404 |
-| `PUT /estudiantes/:id/niveles-juego/:juego` | D, T a cargo | `{ nivel, motivo }` (motivo obligatorio). Queda en el historial; no avisa |
+| `PUT /estudiantes/:id/niveles-juego/:juego` | D sube o baja; T a cargo solo baja | `{ nivel, motivo }` (motivo obligatorio). Queda en el historial; no avisa. Si la tallerista pide un nivel mayor que el actual → **403** (subir a mano es solo de la directora; la tallerista sube aprobando un intento del nivel actual). Volver a abrir un juego completado en su nivel cuenta como bajar |
 
 | Nivel | Memoria | Emparejar | Clasificar | Secuenciar |
 |---|---|---|---|---|
