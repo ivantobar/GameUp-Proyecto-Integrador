@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 /**
  * Forma de toda respuesta de error (para Swagger). La produce
@@ -18,4 +18,12 @@ export class ErrorRespuestaDto {
       'Texto para la persona. En los 400 de validación es una lista.',
   })
   message: string | string[];
+
+  @ApiPropertyOptional({
+    example: 'CONSENTIMIENTO_RETIRADO',
+    description:
+      'Solo en algunos errores: identificador fijo para que la app reconozca el caso sin leer el texto. ' +
+      'Hoy: CONSENTIMIENTO_RETIRADO (403 de GET /intentos/{id}/grabacion).',
+  })
+  codigo?: string;
 }

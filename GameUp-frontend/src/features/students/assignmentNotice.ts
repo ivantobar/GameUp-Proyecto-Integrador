@@ -34,3 +34,18 @@ export function leaveTeacherNotice(studentId: string): void {
 export function takeTeacherNotice(studentId: string): boolean {
   return teacherPending.delete(studentId);
 }
+
+/** Aviso «Memoria quedó en el nivel 2.» al volver de «Cambiar nivel». */
+const levelPending = new Map<string, string>();
+
+export function leaveLevelNotice(studentId: string, text: string): void {
+  levelPending.set(studentId, text);
+}
+
+/** El texto del aviso (una sola vez), o `null` si no hay. */
+export function takeLevelNotice(studentId: string): string | null {
+  const text = levelPending.get(studentId);
+  if (text === undefined) return null;
+  levelPending.delete(studentId);
+  return text;
+}

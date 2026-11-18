@@ -2,6 +2,7 @@ import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Prisma } from '../../generated/prisma/client.js';
 import {
   AccesoDenegadoError,
+  CODIGO_CONSENTIMIENTO_RETIRADO,
   ConflictoError,
   NoAutenticadoError,
   RecursoNoEncontradoError,
@@ -68,6 +69,28 @@ describe('FiltroErroresGlobal', () => {
       error: nombre,
       message: error.message,
     });
+  });
+
+  it('un error con código fijo lo agrega a la respuesta', () => {
+    expect(
+      filtro.traducir(
+        new AccesoDenegadoError(
+          'El acudiente retiró la autorización de grabar la voz.',
+          CODIGO_CONSENTIMIENTO_RETIRADO,
+        ),
+      ),
+    ).toEqual({
+      statusCode: 403,
+      error: 'Forbidden',
+      message: 'El acudiente retiró la autorización de grabar la voz.',
+      codigo: 'CONSENTIMIENTO_RETIRADO',
+    });
+  });
+
+  it('sin código, la respuesta no trae el campo', () => {
+    expect(
+      filtro.traducir(new AccesoDenegadoError('No puedes.')),
+    ).not.toHaveProperty('codigo');
   });
 
   it('conserva la lista de mensajes del ValidationPipe (400)', () => {

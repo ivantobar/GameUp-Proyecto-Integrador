@@ -33,6 +33,7 @@ import type {
   Vowel,
   VowelPractice,
   WeeklyPractice,
+  LevelChange,
 } from './types';
 
 /**
@@ -149,6 +150,12 @@ export interface GameLevelRepository {
    * acudiente (el backend responde 404 con cualquier otro).
    */
   getStudentLevels(studentId: string): Promise<GameLevel[]>;
+  /**
+   * Pone a mano el nivel de un juego (motivo obligatorio). La directora sube
+   * o baja; la tallerista a cargo solo baja. Rechaza con `LevelChangeError`
+   * (`notAllowed` trae el mensaje del backend) o `StudentAccessError`.
+   */
+  setStudentLevel(change: LevelChange): Promise<GameLevel>;
 }
 
 export interface ProgressRepository {
@@ -210,6 +217,13 @@ export interface ReviewRepository {
   shareNoteWithFamily(studentId: string, text: string): Promise<void>;
   /** Nota de voz del docente para la familia (si `features.familyVoiceNote`). */
   saveFamilyVoiceNote(studentId: string, audioUri: string): Promise<void>;
+  /**
+   * Solo la directora: borra TODAS las grabaciones de voz de un estudiante
+   * (por ejemplo, si la familia lo pide). No se puede deshacer. Devuelve
+   * cuántas borró (0 si no quedaba ninguna). Rechaza con
+   * `StudentAccessError` si no le corresponde.
+   */
+  deleteStudentRecordings(studentId: string): Promise<number>;
 }
 
 export interface ReviewFeatures {

@@ -5,7 +5,13 @@ import {
   jsonResponse,
   type FakeHandler,
 } from '@/test-utils/fakeFetch';
-import { ListenFirstError } from '../../reviewErrors';
+import { ForbiddenError, ServerError } from '@/services/apiErrors';
+import { StudentAccessError } from '../../studentErrors';
+import {
+  ListenFirstError,
+  RecordingConsentWithdrawnError,
+  RecordingUnavailableError,
+} from '../../reviewErrors';
 import type { ItemRevisionDto } from '../dto/revisiones';
 import { createHttpReviewRepository } from '../httpReviewRepository';
 import { toReviewItem } from '../mappers/reviewMapper';
@@ -269,6 +275,94 @@ describe('ReviewRepository (HTTP)', () => {
       'https://storage.prueba/voz.m4a?firma=x',
     );
     expect(requests[0]?.url).toBe(`${BASE}/intentos/41/grabacion`);
+  });
+
+  it('403 con codigo CONSENTIMIENTO_RETIRADO → RecordingConsentWithdrawnError', async () => {
+    const { reviews } = setup(() =>
+      errorResponse(
+        403,
+        'El acudiente retiró la autorización de grabar la voz.',
+        'CONSENTIMIENTO_RETIRADO',
+      ),
+    );
+    await expect(reviews.getRecordingUrl('41')).rejects.toBeInstanceOf(
+      RecordingConsentWithdrawnError,
+    );
+  });
+
+  it('un 403 con el mismo texto pero sin el código es un error normal', async () => {
+    const { reviews } = setup(() =>
+      errorResponse(
+        403,
+        'El acudiente retiró la autorización de grabar la voz.',
+      ),
+    );
+    const error = await reviews.getRecordingUrl('41').catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(ForbiddenError);
+    expect(error).not.toBeInstanceOf(RecordingConsentWithdrawnError);
+  });
+
+  it('cualquier otro 403 sigue siendo un error normal', async () => {
+    const { reviews } = setup(() =>
+      errorResponse(403, 'Tu rol no tiene acceso a esta acción.'),
+    );
+    const error = await reviews.getRecordingUrl('41').catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(ForbiddenError);
+    expect(error).not.toBeInstanceOf(RecordingConsentWithdrawnError);
+  });
+
+  it('503 (ASISCO UP o Storage) → RecordingUnavailableError; otros códigos, igual', async () => {
+    const { reviews } = setup(() =>
+      errorResponse(
+        503,
+        'No se puede verificar la autorización de grabar la voz en este momento.',
+      ),
+    );
+    await expect(reviews.getRecordingUrl('41')).rejects.toBeInstanceOf(
+      RecordingUnavailableError,
+    );
+
+    const otro = setup(() =>
+      errorResponse(500, 'Ocurrió un error inesperado.'),
+    );
+    const error = await otro.reviews
+      .getRecordingUrl('41')
+      .catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(ServerError);
+    expect(error).not.toBeInstanceOf(RecordingUnavailableError);
+  });
+
+  it('borrar las grabaciones de un estudiante: DELETE y cuántas borró', async () => {
+    const { reviews, requests } = setup(() =>
+      jsonResponse(200, { borradas: 3 }),
+    );
+    await expect(reviews.deleteStudentRecordings('5')).resolves.toBe(3);
+    expect(requests[0]).toMatchObject({
+      url: `${BASE}/estudiantes/5/grabaciones`,
+      method: 'DELETE',
+    });
+  });
+
+  it('borrar: 403 o 404 → StudentAccessError; 503 sigue como error del servidor', async () => {
+    for (const status of [403, 404]) {
+      const { reviews } = setup(() => errorResponse(status, 'No'));
+      await expect(reviews.deleteStudentRecordings('5')).rejects.toBeInstanceOf(
+        StudentAccessError,
+      );
+    }
+    const { reviews } = setup(() =>
+      errorResponse(503, 'No se pudieron borrar las grabaciones.'),
+    );
+    await expect(reviews.deleteStudentRecordings('5')).rejects.toBeInstanceOf(
+      ServerError,
+    );
+  });
+
+  it('borrar: una respuesta sin un número válido es inesperada', async () => {
+    const { reviews } = setup(() => jsonResponse(200, { borradas: 'tres' }));
+    await expect(reviews.deleteStudentRecordings('5')).rejects.toBeInstanceOf(
+      ServerError,
+    );
   });
 
   it('nota para la familia: observación visible para el acudiente', async () => {

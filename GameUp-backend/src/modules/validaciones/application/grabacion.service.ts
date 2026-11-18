@@ -7,6 +7,7 @@ import {
 import type { UsuarioAutenticado } from '../../../common/auth/usuario-autenticado.js';
 import {
   AccesoDenegadoError,
+  CODIGO_CONSENTIMIENTO_RETIRADO,
   RecursoNoEncontradoError,
   ReglaNegocioError,
   ServicioExternoNoDisponibleError,
@@ -36,7 +37,10 @@ export const LOTE_LIMPIEZA = 100;
 export const ESCUCHA_OBLIGATORIA =
   'Antes de validar, escucha la grabación de este intento.';
 
-/** El acudiente ya no autoriza grabar la voz: el audio no se entrega (403). */
+/**
+ * El acudiente ya no autoriza grabar la voz: el audio no se entrega (403,
+ * con `codigo: CONSENTIMIENTO_RETIRADO`; la app compara el código).
+ */
 export const AUTORIZACION_RETIRADA =
   'El acudiente retiró la autorización de grabar la voz.';
 
@@ -153,7 +157,10 @@ export class GrabacionService {
     if (verificacion.motivo === 'NO_VERIFICABLE') {
       throw new ServicioExternoNoDisponibleError(AUTORIZACION_NO_VERIFICABLE);
     }
-    throw new AccesoDenegadoError(AUTORIZACION_RETIRADA);
+    throw new AccesoDenegadoError(
+      AUTORIZACION_RETIRADA,
+      CODIGO_CONSENTIMIENTO_RETIRADO,
+    );
   }
 
   /**

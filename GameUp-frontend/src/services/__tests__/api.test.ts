@@ -166,6 +166,28 @@ describe('cliente HTTP', () => {
     expect(fake.fetchFn).not.toHaveBeenCalled();
   });
 
+  it('lee el `codigo` fijo de un error; sin él (o si no es un código), null', async () => {
+    const { api } = clientWith(() =>
+      errorResponse(403, 'Sin autorización', 'CONSENTIMIENTO_RETIRADO'),
+    );
+    const conCodigo = await api.get('/x').catch((e: unknown) => e);
+    expect(conCodigo).toBeInstanceOf(ForbiddenError);
+    expect(conCodigo).toMatchObject({ code: 'CONSENTIMIENTO_RETIRADO' });
+
+    const sinCodigo = await clientWith(() => errorResponse(403, 'No'))
+      .api.get('/x')
+      .catch((e: unknown) => e);
+    expect(sinCodigo).toMatchObject({ code: null });
+
+    const raro = await clientWith(() =>
+      jsonResponse(503, { message: 'Caído', codigo: 'no es un código' }),
+    )
+      .api.get('/x')
+      .catch((e: unknown) => e);
+    expect(raro).toBeInstanceOf(ServerError);
+    expect(raro).toMatchObject({ code: null });
+  });
+
   it('una respuesta que no es JSON es un ServerError', async () => {
     const { api } = clientWith(
       () =>

@@ -29,14 +29,31 @@ export function StudentLevels({
   title = 'Sus juegos',
 }: StudentLevelsProps) {
   const { resource } = useStudentLevels(studentId);
-  if (resource.status !== 'ready' || resource.data.length === 0) return null;
+  if (resource.status !== 'ready') return null;
+  return <StudentLevelsList levels={resource.data} title={title} />;
+}
+
+interface StudentLevelsListProps {
+  levels: GameLevel[];
+  title?: string;
+}
+
+/**
+ * La lista ya cargada (la usa el detalle del estudiante, que recarga los
+ * niveles al volver de «Cambiar nivel»). Vacía, no muestra nada.
+ */
+export function StudentLevelsList({
+  levels,
+  title = 'Sus juegos',
+}: StudentLevelsListProps) {
+  if (levels.length === 0) return null;
 
   return (
     <View style={styles.box} testID="student-levels">
       <AppText variant="label" tone="secundario" accessibilityRole="header">
         {title}
       </AppText>
-      {resource.data.map((level) => {
+      {levels.map((level) => {
         const game = findGame(level.gameId).title;
         const text = levelText(level);
         return (

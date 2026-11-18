@@ -52,3 +52,27 @@ export class TeacherLinkError extends Error {
     this.name = 'TeacherLinkError';
   }
 }
+
+/**
+ * Por qué no se pudo cambiar a mano el nivel de un juego:
+ * - `notAllowed`: 403, su rol no puede (la tallerista solo baja; subir a
+ *   mano es de la directora). Lleva el mensaje del backend;
+ * - `invalid`: 400 o 422, falta el motivo, nivel fuera de 1-5 o ya va en él;
+ * - `changed`: 409, el nivel cambió mientras tanto (una validación).
+ */
+export type LevelChangeProblem = 'notAllowed' | 'invalid' | 'changed';
+
+export class LevelChangeError extends Error {
+  constructor(
+    readonly problem: LevelChangeProblem,
+    /** Lo que explicó el backend (en español), si lo dijo. */
+    readonly detail: string | null = null,
+  ) {
+    super(`No se pudo cambiar el nivel (${problem}).`);
+    this.name = 'LevelChangeError';
+  }
+}
+
+/** Lo que responde el backend cuando la tallerista intenta subir a mano. */
+export const SOLO_DIRECTORA_SUBE =
+  'Solo la directora puede subir de nivel a mano. La tallerista lo sube aprobando un intento del nivel actual.';

@@ -8,6 +8,8 @@ import { MOCK_PASSWORD, mockStudent } from '../mock/fixtures';
 import type { Repositories } from '../repositories';
 import {
   AssignmentError,
+  LevelChangeError,
+  SOLO_DIRECTORA_SUBE,
   StudentAccessError,
   TeacherLinkError,
 } from '../studentErrors';
@@ -345,6 +347,49 @@ describe.each(implementations)('contrato de la versión %s', (_name, create) => 
       ).rejects.toThrow();
     });
 
+    it('cambiar el nivel a mano: la directora sube; la tallerista solo baja', async () => {
+      const student = await settle(repos.students.getCurrentStudent());
+      const cambio = (level: number, reason = 'Prueba') => ({
+        studentId: student.id,
+        gameId: 'memory' as const,
+        level,
+        reason,
+      });
+
+      await signInAs('directora@gameup.test');
+      await expect(
+        settle(repos.levels.setStudentLevel(cambio(4))),
+      ).resolves.toMatchObject({
+        gameId: 'memory',
+        level: 4,
+        completed: false,
+      });
+
+      await signInAs('docente@gameup.test');
+      // Subir: 403 con el mensaje del backend.
+      const error = await settle(repos.levels.setStudentLevel(cambio(5))).catch(
+        (e: unknown) => e,
+      );
+      expect(error).toBeInstanceOf(LevelChangeError);
+      expect(error).toMatchObject({
+        problem: 'notAllowed',
+        detail: SOLO_DIRECTORA_SUBE,
+      });
+      // Sin motivo o en el mismo nivel: invalid.
+      await expect(
+        settle(repos.levels.setStudentLevel(cambio(2, '   '))),
+      ).rejects.toMatchObject({ problem: 'invalid' });
+      await expect(
+        settle(repos.levels.setStudentLevel(cambio(4))),
+      ).rejects.toMatchObject({ problem: 'invalid' });
+      // Bajar sí.
+      await expect(
+        settle(repos.levels.setStudentLevel(cambio(2))),
+      ).resolves.toMatchObject({ level: 2 });
+      const levels = await settle(repos.levels.getStudentLevels(student.id));
+      expect(levels.find((l) => l.gameId === 'memory')?.level).toBe(2);
+    });
+
     it('la profe ve el nivel de cada juego de su estudiante', async () => {
       const student = await settle(repos.students.getCurrentStudent());
       await signInAs('docente@gameup.test');
@@ -466,6 +511,24 @@ describe.each(implementations)('contrato de la versión %s', (_name, create) => 
   describe('espacio de la directora', () => {
     beforeEach(async () => {
       await signInAs('directora@gameup.test');
+    });
+
+    it('borra las grabaciones de un estudiante: un número; la segunda vez, 0', async () => {
+      const primera = await settle(
+        repos.reviews.deleteStudentRecordings(mockStudent.id),
+      );
+      expect(Number.isInteger(primera)).toBe(true);
+      expect(primera).toBeGreaterThanOrEqual(0);
+      await expect(
+        settle(repos.reviews.deleteStudentRecordings(mockStudent.id)),
+      ).resolves.toBe(0);
+    });
+
+    it('la docente no puede borrar grabaciones: StudentAccessError', async () => {
+      await signInAs('docente@gameup.test');
+      await expect(
+        settle(repos.reviews.deleteStudentRecordings(mockStudent.id)),
+      ).rejects.toBeInstanceOf(StudentAccessError);
     });
 
     it('la sesión es un StaffProfile, aunque no sea docente', async () => {

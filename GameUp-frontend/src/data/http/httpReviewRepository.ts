@@ -1,7 +1,17 @@
 import type { ApiClient } from '@/services/api';
-import { ServerError } from '@/services/apiErrors';
+import {
+  ForbiddenError,
+  NotFoundError,
+  ServerError,
+} from '@/services/apiErrors';
 import type { ReviewRepository } from '../repositories';
-import { ListenFirstError } from '../reviewErrors';
+import { StudentAccessError } from '../studentErrors';
+import {
+  CODIGO_CONSENTIMIENTO_RETIRADO,
+  ListenFirstError,
+  RecordingConsentWithdrawnError,
+  RecordingUnavailableError,
+} from '../reviewErrors';
 import type {
   CrearObservacionDto,
   IntentoValidadoDto,
@@ -11,7 +21,7 @@ import type {
   ValidarIntentoDto,
 } from './dto/revisiones';
 import { toLevelUp } from './mappers/levelMapper';
-import { requireList, requireText } from './mappers/responseShape';
+import { requireList, requireText, unexpected } from './mappers/responseShape';
 import { toPendingSummary, toReviewItem } from './mappers/reviewMapper';
 
 /** La bandeja trae hasta 50 intentos (el máximo de la paginación del backend). */
@@ -23,6 +33,25 @@ export class NotAvailableError extends Error {
     super(`Todavía no está disponible: ${what}`);
     this.name = 'NotAvailableError';
   }
+}
+
+/**
+ * Errores de `GET /intentos/:id/grabacion` que la pantalla explica:
+ * - 403 con `codigo: CONSENTIMIENTO_RETIRADO` (solo ese 403; no se mira el texto);
+ * - 503: ASISCO UP no confirmó la autorización o Storage no respondió.
+ * Cualquier otro error sigue igual.
+ */
+function recordingError(error: unknown): unknown {
+  if (
+    error instanceof ForbiddenError &&
+    error.code === CODIGO_CONSENTIMIENTO_RETIRADO
+  ) {
+    return new RecordingConsentWithdrawnError();
+  }
+  if (error instanceof ServerError && error.status === 503) {
+    return new RecordingUnavailableError();
+  }
+  return error;
 }
 
 const path = (intentoId: string) =>
@@ -85,7 +114,12 @@ export function createHttpReviewRepository(api: ApiClient): ReviewRepository {
     },
 
     async getRecordingUrl(reviewId) {
-      const dto = await api.get<UrlFirmadaDto>(`${path(reviewId)}/grabacion`);
+      let dto: UrlFirmadaDto;
+      try {
+        dto = await api.get<UrlFirmadaDto>(`${path(reviewId)}/grabacion`);
+      } catch (error: unknown) {
+        throw recordingError(error);
+      }
       return requireText(dto.url, 'url');
     },
 
@@ -120,5 +154,29 @@ export function createHttpReviewRepository(api: ApiClient): ReviewRepository {
 
     saveFamilyVoiceNote: () =>
       Promise.reject(new NotAvailableError('nota de voz para la familia')),
+
+    async deleteStudentRecordings(studentId) {
+      let dto: { borradas?: unknown };
+      try {
+        dto = await api.delete<{ borradas?: unknown }>(
+          `/estudiantes/${encodeURIComponent(studentId)}/grabaciones`,
+        );
+      } catch (error: unknown) {
+        // 403 (no es la directora) o 404 (no existe): no le corresponde.
+        if (error instanceof ForbiddenError || error instanceof NotFoundError) {
+          throw new StudentAccessError();
+        }
+        throw error;
+      }
+      const borradas = dto?.borradas;
+      if (
+        typeof borradas !== 'number' ||
+        !Number.isInteger(borradas) ||
+        borradas < 0
+      ) {
+        throw unexpected('borradas');
+      }
+      return borradas;
+    },
   };
 }

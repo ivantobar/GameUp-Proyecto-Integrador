@@ -224,7 +224,10 @@ describe('Validación, audio y progreso', () => {
         codigoVersion: 'TERMINOS-2026-01',
       };
       await expect(grabaciones.urlAudio(TALLERISTA_2, voz)).rejects.toThrow(
-        new AccesoDenegadoError(AUTORIZACION_RETIRADA),
+        new AccesoDenegadoError(
+          AUTORIZACION_RETIRADA,
+          'CONSENTIMIENTO_RETIRADO',
+        ),
       );
       // Sin consentimiento vigente alguno (null) es lo mismo.
       e.consentimiento.respuesta = null;

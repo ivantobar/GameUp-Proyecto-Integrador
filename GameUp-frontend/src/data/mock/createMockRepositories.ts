@@ -4,6 +4,8 @@ import { NoLinkedStudentsError } from '../guardianErrors';
 import type { Repositories } from '../repositories';
 import {
   AssignmentError,
+  LevelChangeError,
+  SOLO_DIRECTORA_SUBE,
   StudentAccessError,
   TeacherLinkError,
 } from '../studentErrors';
@@ -406,6 +408,55 @@ export function createMockRepositories({
         return respond({ level, content: ladderContent(gameId, level.level) });
       },
       getStudentLevels: (studentId) => respond(levelsOf(studentId)),
+      // Como el backend: directora o tallerista a cargo; motivo obligatorio;
+      // la tallerista solo baja (subir a mano es de la directora).
+      setStudentLevel: ({ studentId, gameId, level, reason }) => {
+        // Sin sesión («Modo desarrollo») cuenta como docente, como al asignar.
+        if (!canAssign()) {
+          return rejectWith(
+            new LevelChangeError(
+              'notAllowed',
+              'Tu rol no tiene acceso a esta acción.',
+            ),
+          );
+        }
+        if (!canSee(studentId)) return rejectWith(new StudentAccessError());
+        if (!reason.trim()) {
+          return rejectWith(
+            new LevelChangeError(
+              'invalid',
+              'Para cambiar el nivel a mano, el motivo es obligatorio.',
+            ),
+          );
+        }
+        if (!Number.isInteger(level) || level < 1 || level > LADDER_LEVELS) {
+          return rejectWith(
+            new LevelChangeError('invalid', 'El nivel va de 1 a 5.'),
+          );
+        }
+        const actual = levelOf(studentId, gameId);
+        if (level === actual.level && !actual.completed) {
+          return rejectWith(
+            new LevelChangeError(
+              'invalid',
+              `Ya va en el nivel ${level} de ese juego.`,
+            ),
+          );
+        }
+        if (!isDirector() && level > actual.level) {
+          return rejectWith(
+            new LevelChangeError('notAllowed', SOLO_DIRECTORA_SUBE),
+          );
+        }
+        state.levels[studentId] = {
+          ...state.levels[studentId],
+          [gameId]: { level, completed: false },
+        };
+        const updated = levelsOf(studentId).find((l) => l.gameId === gameId);
+        return updated
+          ? respond(updated)
+          : fail('Ese juego no tiene escalera de niveles');
+      },
     },
     consent: {
       hasVoiceRecordingConsent: () => respond(voiceConsent()),
@@ -617,6 +668,22 @@ export function createMockRepositories({
           audioUri: note?.audioUri ?? null,
         };
         return respond(undefined);
+      },
+      // Como el backend: solo la directora; borra el audio de todos sus
+      // intentos y quedan como «vencidos» (se validan sin escucharlos).
+      deleteStudentRecordings: (studentId) => {
+        if (!isDirector() || !(studentId in mockStudentSummaries)) {
+          return rejectWith(new StudentAccessError());
+        }
+        let borradas = 0;
+        for (const review of state.reviews) {
+          if (review.student.id === studentId && review.speech?.audioUri) {
+            review.speech.audioUri = null;
+            review.speech.audioExpired = true;
+            borradas += 1;
+          }
+        }
+        return respond(borradas);
       },
       saveFamilyVoiceNote: (studentId, audioUri) => {
         const note = state.teacherNotes[studentId];

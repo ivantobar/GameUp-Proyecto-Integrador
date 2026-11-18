@@ -113,11 +113,17 @@ export function useStudentDetail(studentId: string) {
     });
   }, []);
 
+  /** Un aviso cualquiera ya redactado (por ejemplo, al volver de «Cambiar nivel»). */
+  const showNotice = useCallback((text: string) => {
+    setMessage({ tone: 'done', text });
+  }, []);
+
   return {
     resource,
     reload,
     refresh,
     message,
+    showNotice,
     rowMessage,
     confirmingId,
     busyId,

@@ -67,7 +67,10 @@ const NO_BODY: Payload = { kind: 'none' };
 const json = (value: unknown): Payload =>
   value === undefined ? NO_BODY : { kind: 'json', value };
 
-/** El backend responde los errores como `{ statusCode, error, message }`. */
+/**
+ * El backend responde los errores como `{ statusCode, error, message }` y,
+ * en algunos casos, `codigo` (un identificador fijo).
+ */
 function messageFrom(body: unknown, status: number): string {
   if (body && typeof body === 'object' && 'message' in body) {
     const { message } = body as { message: unknown };
@@ -76,7 +79,24 @@ function messageFrom(body: unknown, status: number): string {
   return `El servidor respondió con el código ${status}`;
 }
 
+/** `codigo` del cuerpo de error (solo si es un identificador en MAYÚSCULAS). */
+function codeFrom(body: unknown): string | null {
+  if (body && typeof body === 'object' && 'codigo' in body) {
+    const { codigo } = body as { codigo: unknown };
+    if (typeof codigo === 'string' && /^[A-Z][A-Z0-9_]*$/.test(codigo)) {
+      return codigo;
+    }
+  }
+  return null;
+}
+
 function errorFor(status: number, body: unknown): ApiError {
+  const error = errorForStatus(status, body);
+  error.code = codeFrom(body);
+  return error;
+}
+
+function errorForStatus(status: number, body: unknown): ApiError {
   const message = messageFrom(body, status);
   switch (status) {
     case 401:

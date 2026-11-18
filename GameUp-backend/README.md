@@ -220,6 +220,11 @@ y en los DTO, `@ApiProperty({ example: ... })` en cada campo.
 | Base: único (23505) / FK (23503) / CHECK o trigger (23514) / vínculo (42501) | 409 / 422 / 422 / 403 |
 | Cualquier otro | 500 genérico (sin traza ni SQL) |
 
+Algunos errores traen además `codigo`, un identificador fijo para que la app
+reconozca el caso sin leer el texto. Hoy solo uno: `CONSENTIMIENTO_RETIRADO`
+(403 de `GET /intentos/:id/grabacion` cuando el acudiente retiró la
+autorización de voz). Los demás errores no traen el campo.
+
 ### Endpoints de sesión y cuentas (fase 2)
 
 | Método y ruta | Quién | Qué hace |
