@@ -1,9 +1,12 @@
 import { act } from '@testing-library/react-native';
-import { setUpTests } from 'react-native-reanimated';
 
-// Reanimated 4: matchers de estilos animados y animaciones con los
-// temporizadores simulados de Jest.
-setUpTests();
+/*
+ * Reanimated NO se configura aquí a propósito: importarlo en este archivo
+ * lo carga en TODAS las pruebas (también en las de datos, que no dibujan
+ * nada) y cuesta ~1,5 s por archivo. Las pruebas que dibujan componentes
+ * animados lo cargan solas; la que lee estilos animados
+ * (`getAnimatedStyle`) llama a `setUpTests()` en su propio archivo.
+ */
 
 /**
  * Configuración común de Jest.

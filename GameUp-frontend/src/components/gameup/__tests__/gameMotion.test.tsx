@@ -1,10 +1,14 @@
 import { act, render, screen } from '@testing-library/react-native';
-import { getAnimatedStyle } from 'react-native-reanimated';
+import { getAnimatedStyle, setUpTests } from 'react-native-reanimated';
 import { hintPillStyles, PictureCard } from '@/components/gameup';
 import { mouthOptionStates } from '@/components/gameup/MouthOption';
 import { pictureCardStates } from '@/components/gameup/PictureCard';
 import { memoryCardStyles } from '@/features/memory/components/MemoryCard';
 import { colors, motion } from '@/theme';
+
+// Reanimated en Jest: animaciones con los temporizadores simulados y
+// lectura del estilo animado (solo esta prueba lo necesita).
+setUpTests();
 
 const apple = { id: 'manzana', label: 'manzana', emoji: '🍎' };
 
