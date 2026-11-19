@@ -16,7 +16,13 @@ const recorder = {
   stop: jest.fn(() => Promise.resolve()),
 };
 
-export const RecordingPresets = { HIGH_QUALITY: {} };
+/**
+ * Los presets REALES de expo-audio (son solo datos, sin código nativo): así
+ * las pruebas ven las mismas opciones que la app en el teléfono.
+ */
+export const RecordingPresets = jest.requireActual(
+  'expo-audio/build/RecordingConstants',
+).RecordingPresets;
 export const useAudioPlayer = jest.fn(() => player);
 export const useAudioPlayerStatus = jest.fn(() => ({ playing: false }));
 export const useAudioRecorder = jest.fn(() => recorder);

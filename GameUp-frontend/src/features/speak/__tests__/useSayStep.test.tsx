@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { act, renderHook } from '@testing-library/react-native';
-import { useAudioRecorder } from 'expo-audio';
+import { RecordingPresets, useAudioRecorder } from 'expo-audio';
 import { createMockRepositories } from '@/data/mock/createMockRepositories';
 import type { Repositories } from '@/data/repositories';
 import { RepositoryProvider } from '@/data/RepositoryProvider';
@@ -68,14 +68,18 @@ describe('«Dilo»: cuándo se graba la voz', () => {
     expect(result.current.canRecord).toBe(false);
   });
 
-  it('cada grabación tiene un nombre de GameUP', async () => {
+  it('cada grabación usa el preset completo y un nombre de GameUP', async () => {
     const { result } = await renderSayStep('act-demo-002', true);
 
     await act(async () => {
       await result.current.toggleRecording();
     });
 
+    // Las opciones de prepareToRecordAsync reemplazan a las de la
+    // grabadora: si solo llegara el nombre, se perderían formato y extensión.
     expect(recorder.prepareToRecordAsync).toHaveBeenCalledWith({
+      ...RecordingPresets.HIGH_QUALITY,
+      isMeteringEnabled: true,
       fileName: expect.stringMatching(/^gameup-grabacion-/),
     });
   });
