@@ -71,8 +71,17 @@ export const sizes = {
   mouth: { sm: 56, md: 80, lg: 120 },
   /** Recuadro blanco del ícono en las tarjetas de juego. */
   iconBox: 56,
-  /** Dibujo de cada juego: tareas e Inicio (sm), tarjetas de Juegos (md). */
-  gameIcon: { sm: 56, md: 72 },
+  /**
+   * Dibujo de cada juego: tareas y preguntas (sm), tarjetas de Juegos (md),
+   * aviso de la tarea en Inicio y celebración de nivel (lg).
+   */
+  gameIcon: { sm: 56, md: 72, lg: 96 },
+  /**
+   * Ancho mínimo de la columna de texto junto a un dibujo (aviso de la
+   * tarea, «Sigue donde ibas»). Con letra grande, si no cabe, el texto baja
+   * debajo del dibujo en vez de partir las palabras.
+   */
+  textColumnMin: 176,
   /** Recuadro del símbolo de cada tema en «Mi progreso». */
   moduleBadge: 44,
   /** Botón de micrófono y su halo (paso «Dilo»). */

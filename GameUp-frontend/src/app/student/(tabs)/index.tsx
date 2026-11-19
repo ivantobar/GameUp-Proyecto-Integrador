@@ -26,7 +26,7 @@ export default function StudentHome() {
 
   if (resource.status !== 'ready') {
     return (
-      <Screen safeAreaBottom={false}>
+      <Screen tone="child" backdrop="hills" safeAreaBottom={false}>
         {resource.status === 'loading' ? (
           <StateView kind="loading" title="Preparando tus juegos…" />
         ) : (
@@ -67,6 +67,8 @@ export default function StudentHome() {
 
   return (
     <Screen
+      tone="child"
+      backdrop="hills"
       safeAreaBottom={false}
       header={
         <GreetingHeader

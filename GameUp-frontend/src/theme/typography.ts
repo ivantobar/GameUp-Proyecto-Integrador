@@ -27,6 +27,14 @@ export type TextVariant =
 /** Tamaño mínimo de texto de la guía. */
 export const MIN_FONT_SIZE = 15;
 
+/**
+ * Desde esta escala de letra del sistema (130 %), las pantallas del niño
+ * pasan a una columna: las tarjetas que iban de dos en dos van de a una y
+ * el texto de los avisos baja debajo del dibujo (si no, las palabras
+ * largas como «Secuenciar» se partirían a la mitad).
+ */
+export const LARGE_TEXT_SCALE = 1.3;
+
 export const typography: Record<TextVariant, TextStyle> = {
   /** Display 30/36 */
   display: { fontFamily: fontFamilies.extraBold, fontSize: 30, lineHeight: 36 },

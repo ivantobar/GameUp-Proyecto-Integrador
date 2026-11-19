@@ -9,6 +9,7 @@ import {
   StateView,
 } from '@/components/ui';
 import { Character, NarrationButton } from '@/components/gameup';
+import { EnterStagger } from '@/components/gameup/motion';
 import { useRefreshOnFocus } from '@/data/useRefreshOnFocus';
 import { TaskCard } from '@/features/games/components/TaskCard';
 import { moduleBadge, tasksCountText } from '@/features/games/moduleTasks';
@@ -31,6 +32,8 @@ export default function TasksScreen() {
 
   return (
     <Screen
+      tone="child"
+      backdrop="clouds"
       header={
         <ScreenHeader
           left={<HeaderBackButton onPress={() => router.back()} />}
@@ -60,7 +63,7 @@ export default function TasksScreen() {
 
       {modules && modules.length === 0 ? (
         <View style={styles.center}>
-          <Character mouth="smile" size="lg" />
+          <Character mouth="smile" eyes="happy" size="lg" />
           <AppText variant="title" style={styles.text}>
             {EMPTY_TITLE}
           </AppText>
@@ -80,21 +83,22 @@ export default function TasksScreen() {
           <AppText variant="display" accessibilityRole="header">
             ¿Qué tema quieres hacer?
           </AppText>
-          {modules.map((group) => (
-            <TaskCard
-              key={group.moduleId}
-              caption={tasksCountText(group.tasks.length)}
-              title={group.title}
-              icon="book"
-              badge={moduleBadge(group)}
-              accessibilityHint="Abre las actividades de este tema."
-              onPress={() =>
-                router.push({
-                  pathname: '/student/module/[moduleId]',
-                  params: { moduleId: group.moduleId },
-                })
-              }
-            />
+          {modules.map((group, position) => (
+            <EnterStagger key={group.moduleId} index={position}>
+              <TaskCard
+                caption={tasksCountText(group.tasks.length)}
+                title={group.title}
+                icon="book"
+                badge={moduleBadge(group)}
+                accessibilityHint="Abre las actividades de este tema."
+                onPress={() =>
+                  router.push({
+                    pathname: '/student/module/[moduleId]',
+                    params: { moduleId: group.moduleId },
+                  })
+                }
+              />
+            </EnterStagger>
           ))}
         </View>
       ) : null}

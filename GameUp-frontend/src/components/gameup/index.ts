@@ -29,3 +29,4 @@ export {
 } from './illustrations';
 export { MiniPicture } from './MiniPicture';
 export { gameThemes } from './gameThemes';
+export { useBlinkOnce } from './useBlinkOnce';

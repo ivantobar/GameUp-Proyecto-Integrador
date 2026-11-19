@@ -183,6 +183,18 @@ export const sceneDrawings = {
       <Path d="M40 50 L48 50" stroke={ink.piel} strokeWidth={4} />
     </>
   ),
+  /**
+   * Estrella para tamaños de ícono (20 a 32 dp): contorno más grueso, para
+   * que siga viéndose a ese tamaño (3:1 o más gracias al contorno oscuro).
+   */
+  estrellaIcono: (
+    <Path
+      d="M50.0 14.0 L60.0 40.2 L88.0 41.6 L66.2 59.3 L73.5 86.4 L50.0 71.0 L26.5 86.4 L33.8 59.3 L12.0 41.6 L40.0 40.2 Z"
+      fill={ink.amarillo}
+      {...line}
+      strokeWidth={8}
+    />
+  ),
 } satisfies Record<string, ReactNode>;
 
 export type SceneIllustration = keyof typeof sceneDrawings;

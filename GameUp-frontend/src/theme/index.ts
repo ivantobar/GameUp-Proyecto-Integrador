@@ -3,6 +3,7 @@ export {
   typography,
   fontFamilies,
   MIN_FONT_SIZE,
+  LARGE_TEXT_SCALE,
   type TextVariant,
 } from './typography';
 export {

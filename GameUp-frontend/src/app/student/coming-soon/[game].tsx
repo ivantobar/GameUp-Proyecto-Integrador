@@ -22,6 +22,8 @@ export default function ComingSoonScreen() {
 
   return (
     <Screen
+      tone="child"
+      backdrop="clouds"
       header={
         <ScreenHeader
           left={<HeaderBackButton onPress={() => router.back()} />}
@@ -37,7 +39,7 @@ export default function ComingSoonScreen() {
       }
     >
       <View style={styles.center}>
-        <Character mouth="smile" size="lg" />
+        <Character mouth="smile" eyes="happy" size="lg" />
         <AppText variant="title" style={styles.text}>
           Estamos preparando {title}
         </AppText>

@@ -1,6 +1,6 @@
 import { StyleSheet, View } from 'react-native';
 import { AppText, Icon, PressableCard, type IconName } from '@/components/ui';
-import { colors, spacing } from '@/theme';
+import { colors, radii, sizes, spacing } from '@/theme';
 
 interface HomeShortcutProps {
   icon: IconName;
@@ -29,7 +29,9 @@ export function HomeShortcut({
       accessibilityHint={accessibilityHint}
     >
       <View style={styles.row}>
-        <Icon name={icon} color={colors.marca.verde} />
+        <View style={styles.iconBox}>
+          <Icon name={icon} size="lg" color={colors.verde.oscuro} />
+        </View>
         <View style={styles.texts}>
           <AppText variant="subtitle">{title}</AppText>
           <AppText variant="support" tone="secundario">
@@ -47,6 +49,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
+  },
+  /** Mismo recuadro que las tarjetas de tareas (TaskCard). */
+  iconBox: {
+    width: sizes.iconBox,
+    height: sizes.iconBox,
+    borderRadius: radii.lg,
+    backgroundColor: colors.verde.suave,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   texts: {
     flex: 1,

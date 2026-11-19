@@ -1,10 +1,15 @@
 import { StyleSheet, View } from 'react-native';
 import type { BottomTabBarProps } from 'expo-router/js-tabs';
 import { BottomTabBar, type BottomTabItem } from '@/components/ui';
-import { colors, spacing } from '@/theme';
+import { colors, spacing, type ThemeColor } from '@/theme';
 
 interface RoleTabBarProps<K extends string> extends BottomTabBarProps {
   items: readonly BottomTabItem<K>[];
+  /**
+   * Fondo detrás de la barra: el mismo de las pantallas del rol (crema en
+   * las del niño, gris en las de los adultos), para que no quede una franja.
+   */
+  background?: ThemeColor;
 }
 
 /**
@@ -17,6 +22,7 @@ export function RoleTabBar<K extends string>({
   state,
   navigateToTab,
   insets,
+  background = colors.marca.gris,
 }: RoleTabBarProps<K>) {
   const current = state.routes[state.index]?.name ?? '';
   const fallback = items[0]?.key;
@@ -27,7 +33,10 @@ export function RoleTabBar<K extends string>({
     <View
       style={[
         styles.container,
-        { paddingBottom: Math.max(insets.bottom, spacing.md) },
+        {
+          backgroundColor: background,
+          paddingBottom: Math.max(insets.bottom, spacing.md),
+        },
       ]}
     >
       <BottomTabBar
@@ -45,7 +54,6 @@ export function RoleTabBar<K extends string>({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: colors.marca.gris,
     paddingHorizontal: spacing.gutter,
     paddingTop: spacing.xs,
   },

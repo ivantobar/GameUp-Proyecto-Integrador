@@ -6,10 +6,12 @@ import {
   Screen,
   ScreenHeader,
 } from '@/components/ui';
-import { GameCard, NarrationButton } from '@/components/gameup';
+import { Character, GameCard, NarrationButton } from '@/components/gameup';
+import { EnterStagger } from '@/components/gameup/motion';
 import { useRefreshOnFocus } from '@/data/useRefreshOnFocus';
 import { moduleBadge, type ModuleTasks } from '@/features/games/moduleTasks';
 import { useModuleTasks } from '@/features/games/useModuleTasks';
+import { useLargeText } from '@/features/accessibility/useLargeText';
 import { spacing } from '@/theme';
 
 const QUESTION = '¿Qué quieres hacer?';
@@ -40,9 +42,13 @@ export default function GamesScreen() {
   // Al volver, la cuenta de temas y la insignia se actualizan.
   useRefreshOnFocus(refresh);
   const modules = resource.status === 'ready' ? resource.data : null;
+  // Con letra grande, una opción debajo de la otra (no se parten palabras).
+  const largeText = useLargeText();
 
   return (
     <Screen
+      tone="child"
+      backdrop="clouds"
       safeAreaBottom={false}
       header={
         <ScreenHeader
@@ -56,10 +62,20 @@ export default function GamesScreen() {
         />
       }
     >
-      <AppText variant="display" accessibilityRole="header">
-        {QUESTION}
-      </AppText>
-      <View style={styles.choices}>
+      <View style={styles.question}>
+        <Character mouth="smile" size="sm" />
+        <AppText
+          variant="display"
+          accessibilityRole="header"
+          style={styles.questionText}
+        >
+          {QUESTION}
+        </AppText>
+      </View>
+      <EnterStagger
+        index={0}
+        style={largeText ? styles.choicesColumn : styles.choices}
+      >
         <GameCard
           tone="brand"
           icon="book"
@@ -77,15 +93,26 @@ export default function GamesScreen() {
           accessibilityHint="Abre los juegos que suben de nivel."
           onPress={() => router.push('/student/levels')}
         />
-      </View>
+      </EnterStagger>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
+  question: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  questionText: {
+    flexShrink: 1,
+  },
   // En fila, como las tarjetas de Inicio (GameCard ocupa el ancho con flex).
   choices: {
     flexDirection: 'row',
+    gap: spacing.md,
+  },
+  choicesColumn: {
     gap: spacing.md,
   },
 });
