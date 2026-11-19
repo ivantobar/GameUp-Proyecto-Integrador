@@ -3,6 +3,7 @@ import { router, SplashScreen, Stack } from 'expo-router';
 import { useFonts } from 'expo-font';
 import { env } from '@/config/env';
 import { createRepositories } from '@/data/createRepositories';
+import { deleteAllRecordings } from '@/features/audio/recordingFiles';
 import { ConfigErrorScreen } from '@/features/config/ConfigErrorScreen';
 import { RepositoryProvider } from '@/data/RepositoryProvider';
 import { useStackScreenOptions } from '@/features/motion/useStackScreenOptions';
@@ -30,6 +31,13 @@ export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts(fontAssets);
   const screenOptions = useStackScreenOptions();
   const ready = fontsLoaded || fontError !== null;
+
+  // Al abrir la app se borran las grabaciones de voz que hayan quedado de
+  // antes (por ejemplo, si se cerró a la fuerza en «Listo»). Solo las de
+  // GameUP, no el resto de la caché.
+  useEffect(() => {
+    deleteAllRecordings();
+  }, []);
 
   useEffect(() => {
     if (fontError) {

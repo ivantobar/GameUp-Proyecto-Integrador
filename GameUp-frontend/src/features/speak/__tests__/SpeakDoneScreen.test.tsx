@@ -1,7 +1,11 @@
 import { act, render, screen, userEvent } from '@testing-library/react-native';
 import { router } from 'expo-router';
 import DoneStep from '@/app/student/speak/[vowel]/done';
-import type { VoiceConsentStatus } from '@/data/types';
+import { createMockRepositories } from '@/data/mock/createMockRepositories';
+import type { Repositories } from '@/data/repositories';
+import { RepositoryProvider } from '@/data/RepositoryProvider';
+import type { SpeechAttempt, VoiceConsentStatus } from '@/data/types';
+import { createRecording, mockFiles } from '@/test-utils/mockFiles';
 import type { PracticeOutcome } from '../completePractice';
 import { usePracticeSession } from '../PracticeSession';
 
@@ -42,15 +46,24 @@ function outcomeWith(status: VoiceConsentStatus): PracticeOutcome {
   };
 }
 
-async function renderDone(status: VoiceConsentStatus) {
+async function renderDone(
+  status: VoiceConsentStatus,
+  outcome: PracticeOutcome = outcomeWith(status),
+  repositories: Repositories = createMockRepositories({ delayMs: 0 }),
+) {
   jest.mocked(usePracticeSession).mockReturnValue({
-    outcome: outcomeWith(status),
+    outcome,
     setOutcome: jest.fn(),
   });
-  await render(<DoneStep />);
+  const view = await render(
+    <RepositoryProvider repositories={repositories}>
+      <DoneStep />
+    </RepositoryProvider>,
+  );
   await act(async () => {
     await jest.runAllTimersAsync();
   });
+  return view;
 }
 
 const NO_AUTH =
@@ -128,5 +141,132 @@ describe('«Listo» de Habla conmigo según de dónde viene', () => {
     ).toBeNull();
     await user.press(screen.getByRole('button', { name: 'Otro sonido' }));
     expect(router.dismissTo).toHaveBeenCalledWith('/student/speak');
+  });
+});
+
+/** Resultado desde una tarea, con una grabación real en la caché simulada. */
+function taskOutcome(delivery: PracticeOutcome['delivery']): PracticeOutcome {
+  const base = outcomeWith('granted');
+  return {
+    ...base,
+    attempt: { ...base.attempt, audioUri: createRecording() },
+    delivery,
+  };
+}
+
+describe('«Listo»: la voz se borra del teléfono al salir (Ley 1581)', () => {
+  afterEach(() => {
+    delete mockParams.actividadId;
+    mockFiles().clear();
+  });
+
+  it('mientras está en «Listo» la grabación sigue (para oírse)', async () => {
+    mockParams.actividadId = '8';
+    const outcome = taskOutcome('review');
+    await renderDone('granted', outcome);
+
+    expect(mockFiles().has(outcome.attempt.audioUri!)).toBe(true);
+    expect(
+      screen.getByRole('button', { name: 'Escuchar: Así lo dijiste tú' }),
+    ).toBeOnTheScreen();
+  });
+
+  it('al salir de «Listo» la grabación se borra, aunque se haya enviado', async () => {
+    mockParams.actividadId = '8';
+    const outcome = taskOutcome('review');
+    const view = await renderDone('granted', outcome);
+
+    await view.unmount();
+
+    expect(mockFiles().has(outcome.attempt.audioUri!)).toBe(false);
+  });
+
+  it('si no se envió, también se borra al salir', async () => {
+    mockParams.actividadId = '8';
+    const outcome = taskOutcome('notSent');
+    const view = await renderDone('granted', outcome);
+
+    await view.unmount();
+
+    expect(mockFiles().has(outcome.attempt.audioUri!)).toBe(false);
+  });
+});
+
+describe('«Listo»: «Reintentar envío» para el adulto', () => {
+  afterEach(() => {
+    delete mockParams.actividadId;
+    mockFiles().clear();
+  });
+
+  const NOT_SENT =
+    'Para el adulto: no pudimos enviar la voz a la profe. Revisen la conexión y toquen «Reintentar envío».';
+  const FAILED =
+    'Para el adulto: todavía no se pudo enviar. Revisen la conexión e inténtenlo otra vez.';
+  const SENT = 'Listo: la voz ya le llegó a la profe.';
+
+  it('si llegó a la profe, no hay botón de reintento', async () => {
+    mockParams.actividadId = '8';
+    await renderDone('granted', taskOutcome('review'));
+
+    expect(
+      screen.queryByRole('button', { name: 'Reintentar envío' }),
+    ).toBeNull();
+  });
+
+  it('si no llegó, reintenta con la misma voz y avisa que llegó', async () => {
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    mockParams.actividadId = '8';
+    const outcome = taskOutcome('notSent');
+    const repositories = createMockRepositories({ delayMs: 0 });
+    const submit = jest
+      .spyOn(repositories.recordings, 'submitSpeechAttempt')
+      .mockResolvedValue({
+        ...outcome.attempt,
+        sentForReview: true,
+      } satisfies SpeechAttempt);
+    await renderDone('granted', outcome, repositories);
+
+    expect(screen.getByText(NOT_SENT)).toBeOnTheScreen();
+    await user.press(screen.getByRole('button', { name: 'Reintentar envío' }));
+
+    expect(submit).toHaveBeenCalledWith({
+      studentId: 'est-prueba-1',
+      vowel: 'a',
+      audioUri: outcome.attempt.audioUri,
+      activityId: '8',
+    });
+    expect(await screen.findByText(SENT)).toBeOnTheScreen();
+    expect(
+      screen.queryByRole('button', { name: 'Reintentar envío' }),
+    ).toBeNull();
+    // Ya llegó: se habla de la profe.
+    expect(
+      screen.getByText(
+        'Tu profe lo va a escuchar antes de sumarlo a tu progreso',
+      ),
+    ).toBeOnTheScreen();
+  });
+
+  it('si el reintento falla, lo dice y deja reintentar otra vez', async () => {
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    mockParams.actividadId = '8';
+    const repositories = createMockRepositories({ delayMs: 0 });
+    repositories.recordings.submitSpeechAttempt = () =>
+      Promise.reject(new Error('sin red'));
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    await renderDone('granted', taskOutcome('notSent'), repositories);
+
+    await user.press(screen.getByRole('button', { name: 'Reintentar envío' }));
+
+    expect(await screen.findByText(FAILED)).toBeOnTheScreen();
+    expect(
+      screen.getByRole('button', { name: 'Reintentar envío' }),
+    ).toBeOnTheScreen();
+    // Sin datos del niño en el registro.
+    expect(warn).toHaveBeenCalledWith(
+      '[GameUP] No se pudo reenviar el intento de voz',
+      'Error',
+    );
+    warn.mockRestore();
   });
 });

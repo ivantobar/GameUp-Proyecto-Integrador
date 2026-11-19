@@ -1,5 +1,6 @@
 import { createMockRepositories } from '@/data/mock/createMockRepositories';
 import { devSettings } from '@/data/mock/devSettings';
+import { createRecording, mockFiles } from '@/test-utils/mockFiles';
 import { completePractice, notRecordedText } from '../completePractice';
 
 /** Los repositorios simulados responden con setTimeout: se avanza el reloj. */
@@ -37,6 +38,31 @@ describe('completePractice (ciclo Mira → Dilo → Listo)', () => {
     expect(outcome.voiceConsent).toBe(false);
     expect(outcome.voiceConsentStatus).toBe('notGranted');
     expect(outcome.attempt.audioUri).toBeNull();
+  });
+
+  it('sin autorización, el archivo grabado se borra en el acto', async () => {
+    const uri = createRecording();
+    const repositories = createMockRepositories({
+      delayMs: 0,
+      voiceConsent: () => false,
+    });
+
+    await run(completePractice(repositories, 'o', uri, 'act-demo-002'));
+
+    expect(mockFiles().has(uri)).toBe(false);
+  });
+
+  it('con autorización, el archivo queda para «Listo»', async () => {
+    const uri = createRecording();
+    const repositories = createMockRepositories({
+      delayMs: 0,
+      voiceConsent: () => true,
+    });
+
+    await run(completePractice(repositories, 'o', uri, 'act-demo-002'));
+
+    expect(mockFiles().has(uri)).toBe(true);
+    mockFiles().clear();
   });
 
   it('consulta el consentimiento una sola vez', async () => {

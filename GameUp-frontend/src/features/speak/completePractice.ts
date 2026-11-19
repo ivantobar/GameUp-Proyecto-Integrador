@@ -6,6 +6,7 @@ import type {
   VoiceConsentStatus,
   Vowel,
 } from '@/data/types';
+import { deleteRecording } from '@/features/audio/recordingFiles';
 import { deliveryOf, type Delivery } from '@/features/games/delivery';
 
 export interface PracticeOutcome {
@@ -81,7 +82,10 @@ async function voiceConsentStatusOf(
  *    si viene de una actividad: `activityId`);
  * 3. lee las estrellas de práctica (no son progreso oficial).
  * Si el envío falla (ya reintentado en silencio), el niño celebra igual y
- * «Listo» deja un aviso para el adulto.
+ * «Listo» deja un aviso para el adulto con «Reintentar envío».
+ *
+ * El archivo de voz queda para «Listo» (oírse y reintentar), que lo borra al
+ * salir. Si no hay autorización, se borra aquí mismo.
  */
 export async function completePractice(
   repositories: PracticeRepositories,
@@ -95,6 +99,8 @@ export async function completePractice(
     student.id,
   );
   const voiceConsent = voiceConsentStatus === 'granted';
+  // Sin autorización la voz no se usa: se borra ya, no al salir de «Listo».
+  if (!voiceConsent) deleteRecording(audioUri);
   const input: NewSpeechAttempt = {
     studentId: student.id,
     vowel,
