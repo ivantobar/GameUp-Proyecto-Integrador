@@ -21,7 +21,15 @@ export function useResource<T>(load: () => Promise<T>) {
         if (active) setResource({ status: 'ready', data });
       })
       .catch((error: unknown) => {
-        console.warn('[GameUP] No se pudieron cargar los datos', error);
+        // Solo en desarrollo y solo el tipo de error: el mensaje del
+        // servidor puede traer datos de un niño y el registro del teléfono
+        // (logcat) lo podría leer otra app.
+        if (__DEV__) {
+          console.warn(
+            '[GameUP] No se pudieron cargar los datos',
+            error instanceof Error ? error.name : 'Error',
+          );
+        }
         if (active) setResource({ status: 'error', error });
       });
     return () => {

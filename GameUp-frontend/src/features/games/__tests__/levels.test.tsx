@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { AccessibilityInfo } from 'react-native';
 import {
   act,
   render,
@@ -189,6 +190,53 @@ describe('celebración al subir de nivel', () => {
   it('sin subida no muestra nada', async () => {
     await render(<LevelUpCelebration levelUp={null} onClose={() => {}} />);
     expect(screen.queryByText(/Subiste/)).toBeNull();
+  });
+
+  it('para TalkBack es un botón con un texto claro', async () => {
+    await render(
+      <LevelUpCelebration
+        levelUp={{
+          gameId: 'memory',
+          previousLevel: 1,
+          level: 2,
+          completed: false,
+        }}
+        onClose={() => {}}
+      />,
+    );
+
+    expect(
+      screen.getByRole('button', {
+        name: '¡Subiste de nivel en Memoria! Toca la pantalla para seguir jugando.',
+      }),
+    ).toBeOnTheScreen();
+  });
+
+  it('con TalkBack encendido no se cierra sola; se cierra con un toque', async () => {
+    const reader = jest
+      .spyOn(AccessibilityInfo, 'isScreenReaderEnabled')
+      .mockResolvedValue(true);
+    const onClose = jest.fn();
+    await render(
+      <LevelUpCelebration
+        levelUp={{
+          gameId: 'memory',
+          previousLevel: 1,
+          level: 2,
+          completed: false,
+        }}
+        onClose={onClose}
+      />,
+    );
+
+    await act(async () => {
+      await jest.advanceTimersByTimeAsync(CELEBRATION_MS * 3);
+    });
+    expect(onClose).not.toHaveBeenCalled();
+
+    await userEvent.press(screen.getByRole('button', { name: '¡Sí!' }));
+    expect(onClose).toHaveBeenCalledTimes(1);
+    reader.mockRestore();
   });
 });
 
