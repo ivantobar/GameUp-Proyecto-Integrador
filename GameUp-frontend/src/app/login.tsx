@@ -22,7 +22,6 @@ import { roleHomes } from '@/features/auth/roleHome';
 import { useSignIn, type SignInProblem } from '@/features/auth/useSignIn';
 import type { DevAccountsProps } from '@/features/dev/DevAccounts';
 import { spacing } from '@/theme';
-import { Illustration } from '@/components/gameup';
 
 const problemNotices: Record<
   SignInProblem,
@@ -104,9 +103,6 @@ export default function LoginScreen() {
         <Screen>
           <View style={styles.brand}>
             <Logo />
-            <View style={styles.welcome}>
-              <Illustration name="welcome" size="md" />
-            </View>
             <View style={styles.texts}>
               <AppText
                 variant="title"
@@ -232,9 +228,6 @@ const styles = StyleSheet.create({
   brand: {
     gap: spacing.lg,
     paddingTop: spacing.lg,
-  },
-  welcome: {
-    alignItems: 'center',
   },
   texts: {
     gap: spacing.xxs,

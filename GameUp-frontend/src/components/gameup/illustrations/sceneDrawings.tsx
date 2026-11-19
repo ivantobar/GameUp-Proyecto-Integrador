@@ -109,30 +109,6 @@ export const sceneDrawings = {
       <Path d="M43 58 Q50 64 57 58" {...stroke} strokeWidth={2.5} />
     </>
   ),
-  /** Bienvenida del login: formas de la marca alrededor de un corazón. */
-  welcome: (
-    <>
-      <Circle cx={50} cy={52} r={46} fill={ink.verdeSuave} />
-      <Circle cx={18} cy={24} r={7} fill={ink.naranja} />
-      <Circle cx={86} cy={30} r={5} fill={ink.verde} />
-      <Rect
-        x={76}
-        y={74}
-        width={12}
-        height={12}
-        rx={3}
-        fill={ink.amarillo}
-        {...line}
-        strokeWidth={2}
-      />
-      <Path
-        d="M50 82 C20 64 18 42 30 34 C40 28 48 34 50 40 C52 34 60 28 70 34 C82 42 80 64 50 82 Z"
-        fill={ink.naranja}
-        {...line}
-      />
-      <Ellipse cx={38} cy={44} rx={4} ry={6} fill={ink.blanco} opacity={0.7} />
-    </>
-  ),
   /**
    * Manito de pista: el índice estirado, como cuando se toca la pantalla.
    * Se anima despacio en los juegos (ver `HintHand`).
