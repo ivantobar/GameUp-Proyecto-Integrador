@@ -1,15 +1,11 @@
 import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { AppText } from '@/components/ui';
-import {
-  gameThemes,
-  PictureCard,
-  type PictureCardState,
-} from '@/components/gameup';
+import { PictureCard, type PictureCardState } from '@/components/gameup';
 import { CategoryBin } from '@/features/classify/components/CategoryBin';
 import { MemoryCard } from '@/features/memory/components/MemoryCard';
 import { SequenceSlots } from '@/features/sequence/components/SequenceSlots';
-import { radii, spacing, type ThemeColor } from '@/theme';
+import { colors, radii, spacing, type ThemeColor } from '@/theme';
 import { CatalogLabel, CatalogSection } from './CatalogSection';
 
 const noop = () => {};
@@ -43,7 +39,7 @@ export function ThinkingGamesSection() {
       note="Relieve plano que se hunde al tocar. La pista (borde punteado + manito que toca despacio) y el acierto «respiran» dos veces y paran; antes de la pista nada se mueve. Los estados usan siempre los verdes de la guía, nunca el color del juego."
     >
       <CatalogLabel>Emparejar: idle, pista, acierto, atenuada</CatalogLabel>
-      <GameBackground background={gameThemes.match.background}>
+      <GameBackground background={colors.marca.gris}>
         {states.map((state) => (
           <PictureCard key={state} face={apple} state={state} onPress={noop} />
         ))}
@@ -52,7 +48,7 @@ export function ThinkingGamesSection() {
       <CatalogLabel>
         Clasificar: grupo con pista y grupo con elementos
       </CatalogLabel>
-      <GameBackground background={gameThemes.classify.background}>
+      <GameBackground background={colors.marca.gris}>
         <View style={styles.row}>
           <View style={styles.cell}>
             <CategoryBin
@@ -89,7 +85,7 @@ export function ThinkingGamesSection() {
       </GameBackground>
 
       <CatalogLabel>Secuenciar: casillas</CatalogLabel>
-      <GameBackground background={gameThemes.sequence.background}>
+      <GameBackground background={colors.marca.gris}>
         <SequenceSlots
           total={3}
           placed={[{ id: 'llave', label: 'Abrir la llave', emoji: '🚰' }]}
@@ -99,7 +95,7 @@ export function ThinkingGamesSection() {
       <CatalogLabel>
         Memoria: boca abajo, arriba, no es su pareja, pareja
       </CatalogLabel>
-      <GameBackground background={gameThemes.memory.background}>
+      <GameBackground background={colors.marca.gris}>
         <View style={styles.row}>
           <View style={styles.cell}>
             <MemoryCard position={1} face={apple} view="down" onPress={noop} />

@@ -1,12 +1,7 @@
 import { useEffect } from 'react';
 import { Modal, Pressable, StyleSheet, View } from 'react-native';
 import { AppText, Button } from '@/components/ui';
-import {
-  Celebration,
-  GameIcon,
-  gameThemes,
-  LevelStars,
-} from '@/components/gameup';
+import { Celebration, GameIconFrame, LevelStars } from '@/components/gameup';
 import { PopIn } from '@/components/gameup/motion';
 import type { LevelUp } from '@/data/types';
 import { useScreenReaderEnabled } from '@/features/accessibility/useScreenReaderEnabled';
@@ -68,14 +63,7 @@ export function LevelUpCelebration({
               width={sizes.character.lg + 40}
               height={sizes.gameIcon.lg + spacing.xxl}
             >
-              <View
-                style={[
-                  styles.iconFrame,
-                  { borderColor: gameThemes[levelUp.gameId].accent },
-                ]}
-              >
-                <GameIcon game={levelUp.gameId} size="lg" />
-              </View>
+              <GameIconFrame game={levelUp.gameId} size="lg" />
             </Celebration>
             <LevelStars level={levelUp.level} size="lg" appear />
             <AppText variant="title" tone="sobreOscuro" style={styles.center}>
@@ -109,12 +97,6 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     borderRadius: radii.card,
     backgroundColor: colors.verde.oscuro,
-  },
-  iconFrame: {
-    padding: spacing.xxs,
-    borderRadius: radii.xl,
-    borderWidth: sizes.borderStrong + 1,
-    backgroundColor: colors.superficie.blanca,
   },
   center: {
     textAlign: 'center',

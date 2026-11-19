@@ -1,9 +1,8 @@
 import { StyleSheet, View } from 'react-native';
 import { AppText } from '@/components/ui';
 import type { GameId } from '@/data/types';
-import { radii, sizes, spacing } from '@/theme';
-import { GameIcon } from './GameIcon';
-import { gameThemes } from './gameThemes';
+import { spacing } from '@/theme';
+import { GameIconFrame } from './GameIconFrame';
 
 interface GameQuestionProps {
   game: GameId;
@@ -12,21 +11,15 @@ interface GameQuestionProps {
 }
 
 /**
- * Pregunta de una ronda con el dibujo del juego al lado, enmarcado con el
- * acento del juego: así el niño reconoce el juego sin leer. El dibujo es
+ * Pregunta de una ronda con el dibujo del juego al lado, sobre su fondo
+ * suave (`GameIconFrame`): así el niño reconoce el juego sin leer. El dibujo es
  * decorativo; la pregunta es el título de la pantalla. Con letra grande,
  * la pregunta baja de línea junto al dibujo.
  */
 export function GameQuestion({ game, question }: GameQuestionProps) {
   return (
     <View style={styles.row}>
-      <View
-        style={[styles.frame, { borderColor: gameThemes[game].accent }]}
-        accessibilityElementsHidden
-        importantForAccessibility="no-hide-descendants"
-      >
-        <GameIcon game={game} size="sm" />
-      </View>
+      <GameIconFrame game={game} />
       <AppText variant="title" accessibilityRole="header" style={styles.text}>
         {question}
       </AppText>
@@ -39,11 +32,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-  },
-  frame: {
-    borderWidth: sizes.borderStrong,
-    borderRadius: radii.lg,
-    padding: spacing.xxs,
   },
   text: {
     flexShrink: 1,

@@ -1,5 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 import { AppText, Backdrop, Card, type BackdropKind } from '@/components/ui';
+import { GameIconFrame } from '@/components/gameup';
+import type { GameId } from '@/data/types';
 import {
   colors,
   radii,
@@ -32,9 +34,7 @@ const swatches: readonly Swatch[] = [
   { token: 'cafe.oscuro · derivado', value: colors.cafe.oscuro },
   { token: 'borde.suave · derivado', value: colors.borde.suave },
   { token: 'estrella.vacia · derivado', value: colors.estrella.vacia },
-  { token: 'fondo.nino · pendiente', value: colors.fondo.nino },
-  { token: 'relieve.naranja · pendiente', value: colors.relieve.naranja },
-  { token: 'relieve.superficie · pendiente', value: colors.relieve.superficie },
+  { token: 'borde.relieve · pendiente', value: colors.borde.relieve },
 ];
 
 /** Fondos decorativos sobre el color donde se usan. */
@@ -45,57 +45,29 @@ const backdrops: readonly {
 }[] = [
   {
     kind: 'clouds',
-    name: 'Nubes · fondo del niño',
-    background: colors.fondo.nino,
+    name: 'Nubes · pantallas del niño',
+    background: colors.marca.gris,
   },
   {
     kind: 'hills',
-    name: 'Colinas · Inicio y ¡Listo!',
-    background: colors.fondo.nino,
+    name: 'Colinas · Inicio',
+    background: colors.marca.gris,
   },
   {
     kind: 'bubbles',
-    name: 'Burbujas · juegos (Clasificar)',
-    background: colors.identidad.clasificarFondo,
+    name: 'Burbujas · juegos',
+    background: colors.marca.gris,
   },
 ];
 
-/** Identidad de cada juego (pendiente de aprobación): fondo y acento. */
-const gameIdentities: readonly {
-  name: string;
-  background: ThemeColor;
-  accent: ThemeColor;
-}[] = [
-  {
-    name: 'Emparejar',
-    background: colors.identidad.emparejarFondo,
-    accent: colors.identidad.emparejarAcento,
-  },
-  {
-    name: 'Clasificar',
-    background: colors.identidad.clasificarFondo,
-    accent: colors.identidad.clasificarAcento,
-  },
-  {
-    name: 'Secuenciar',
-    background: colors.juego.fondoAmarillo,
-    accent: colors.identidad.secuenciarAcento,
-  },
-  {
-    name: 'Memoria',
-    background: colors.identidad.memoriaFondo,
-    accent: colors.identidad.memoriaAcento,
-  },
-  {
-    name: 'Habla conmigo',
-    background: colors.verde.suave,
-    accent: colors.verde.oscuro,
-  },
-  {
-    name: 'Busca la boca',
-    background: colors.identidad.bocaFondo,
-    accent: colors.identidad.bocaAcento,
-  },
+/** Identidad de cada juego (pendiente): solo el fondo detrás del dibujo. */
+const gameIdentities: readonly { name: string; game: GameId }[] = [
+  { name: 'Emparejar', game: 'match' },
+  { name: 'Clasificar', game: 'classify' },
+  { name: 'Secuenciar', game: 'sequence' },
+  { name: 'Memoria', game: 'memory' },
+  { name: 'Habla conmigo', game: 'speak' },
+  { name: 'Busca la boca', game: 'findMouth' },
 ];
 
 function formatRatio(ratio: number): string {
@@ -158,21 +130,13 @@ export function FoundationsSection() {
       </CatalogSection>
       <CatalogSection
         title="Identidad de cada juego"
-        note="Solo para reconocer el juego (fondo y encabezado). Nunca marcan un estado: elegido, pista y acierto usan siempre los verdes de la guía. Pendiente de aprobación."
+        note="Solo el fondo suave detrás del dibujo de cada juego, para reconocerlo sin leer. Nunca en botones, textos, encabezados, fondos de pantalla ni estados. Pendiente de aprobación."
       >
-        {gameIdentities.map((game) => (
-          <View
-            key={game.name}
-            style={[styles.identity, { backgroundColor: game.background }]}
-          >
-            <View
-              style={[styles.identityAccent, { backgroundColor: game.accent }]}
-            />
+        {gameIdentities.map((item) => (
+          <View key={item.name} style={styles.identity}>
+            <GameIconFrame game={item.game} />
             <AppText variant="bodyStrong" style={styles.flex}>
-              {game.name}
-            </AppText>
-            <AppText variant="support" tone="secundario">
-              acento {formatRatio(contrastRatio(game.accent, game.background))}
+              {item.name}
             </AppText>
           </View>
         ))}
@@ -220,11 +184,6 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     padding: spacing.md,
     borderRadius: radii.xl,
-  },
-  identityAccent: {
-    width: sizes.icon.lg,
-    height: sizes.icon.lg,
-    borderRadius: radii.pill,
   },
   flex: {
     flex: 1,

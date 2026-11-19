@@ -30,13 +30,13 @@ export const soundTileLevels = {
     background: colors.superficie.blanca,
     pressedBackground: colors.verde.suave,
     border: colors.borde.suave,
-    edge: colors.relieve.superficie,
+    edge: colors.borde.relieve,
   },
   inProgress: {
     background: colors.superficie.blanca,
     pressedBackground: colors.naranja.suave,
     border: colors.marca.naranja,
-    edge: colors.relieve.naranja,
+    edge: colors.cafe.oscuro,
   },
   practiced: {
     background: colors.verde.suave,

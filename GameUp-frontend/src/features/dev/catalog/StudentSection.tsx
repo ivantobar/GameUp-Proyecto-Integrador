@@ -19,14 +19,14 @@ const sampleLevelUp: LevelUp = {
   completed: false,
 };
 
-/** Piezas de las pantallas del niño, sobre su fondo crema. */
+/** Piezas de las pantallas del niño, sobre el gris de la guía. */
 export function StudentSection() {
   const [levelUp, setLevelUp] = useState<LevelUp | null>(null);
 
   return (
     <CatalogSection
       title="Pantallas del estudiante"
-      note="Fondo crema con nubes o colinas. En «Jugar por niveles», cada juego tiene su color de fondo y un relieve de su color (identidad, nunca estado). Las estrellas de nivel llevan contorno oscuro para verse en cualquier fondo."
+      note="Fondo gris de la guía con nubes o colinas. El color de cada juego va solo detrás de su dibujo; las tarjetas y botones usan los colores de ASISCO UP. Las estrellas de nivel llevan contorno oscuro para verse en cualquier fondo."
     >
       <View style={styles.stage}>
         <CatalogLabel>
@@ -91,7 +91,7 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     padding: spacing.md,
     borderRadius: radii.xl,
-    backgroundColor: colors.fondo.nino,
+    backgroundColor: colors.marca.gris,
   },
   row: {
     flexDirection: 'row',

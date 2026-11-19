@@ -51,7 +51,7 @@ export default function FindMouthScreen() {
   if (resource.status !== 'ready') {
     return (
       <Screen
-        tone="findMouth"
+        tone="softOrange"
         backdrop="bubbles"
         header={
           <ScreenHeader
@@ -104,7 +104,7 @@ function FindMouthGame({ vowels, activityId }: FindMouthGameProps) {
 
   return (
     <Screen
-      tone="findMouth"
+      tone="softOrange"
       backdrop="bubbles"
       header={
         <ScreenHeader

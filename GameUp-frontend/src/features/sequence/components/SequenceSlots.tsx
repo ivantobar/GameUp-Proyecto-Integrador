@@ -99,9 +99,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.superficie.blanca,
     borderColor: colors.borde.suave,
   },
-  /** Café-naranja: 4,3:1 sobre blanco (el naranja de marca daba 2,3:1). */
+  /** Café: 6,9:1 sobre blanco (el naranja de marca daba 2,3:1). */
   next: {
-    borderColor: colors.relieve.naranja,
+    borderColor: colors.cafe.oscuro,
     borderStyle: 'dashed',
   },
 });

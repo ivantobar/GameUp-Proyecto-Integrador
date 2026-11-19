@@ -4,6 +4,7 @@ export { CelebrationHero } from './CelebrationHero';
 export { Character, type CharacterEyes } from './Character';
 export { GameCard, type GameCardTone } from './GameCard';
 export { GameIcon } from './GameIcon';
+export { GameIconFrame } from './GameIconFrame';
 export { GameQuestion } from './GameQuestion';
 export { MicButton } from './MicButton';
 export { MirrorView } from './MirrorView';

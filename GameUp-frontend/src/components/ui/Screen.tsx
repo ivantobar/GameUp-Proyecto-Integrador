@@ -6,17 +6,7 @@ import { colors, spacing, type ThemeColor } from '@/theme';
 import { Backdrop, type BackdropKind } from './Backdrop';
 
 export type ScreenTone =
-  | 'gray'
-  | 'white'
-  | 'softGreen'
-  | 'softOrange'
-  | 'brand'
-  | 'child'
-  | 'match'
-  | 'classify'
-  | 'sequence'
-  | 'memory'
-  | 'findMouth';
+  'gray' | 'white' | 'softGreen' | 'softOrange' | 'brand';
 
 export const screenTones = {
   /** Fondo general de la guía. */
@@ -29,17 +19,6 @@ export const screenTones = {
   softOrange: { background: colors.naranja.suave, statusBar: 'dark' },
   /** Celebración (Listo). */
   brand: { background: colors.verde.oscuro, statusBar: 'light' },
-  /** [PENDIENTE DE APROBACIÓN] Fondo cálido de las pantallas del niño. */
-  child: { background: colors.fondo.nino, statusBar: 'dark' },
-  /**
-   * [PENDIENTE DE APROBACIÓN] Identidad de cada juego de «Pensar y
-   * recordar» y de «Busca la boca» (solo el fondo; nunca un estado).
-   */
-  match: { background: colors.identidad.emparejarFondo, statusBar: 'dark' },
-  classify: { background: colors.identidad.clasificarFondo, statusBar: 'dark' },
-  sequence: { background: colors.juego.fondoAmarillo, statusBar: 'dark' },
-  memory: { background: colors.identidad.memoriaFondo, statusBar: 'dark' },
-  findMouth: { background: colors.identidad.bocaFondo, statusBar: 'dark' },
 } as const satisfies Record<
   ScreenTone,
   { background: ThemeColor; statusBar: 'dark' | 'light' }

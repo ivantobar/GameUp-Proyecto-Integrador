@@ -39,14 +39,14 @@ export const memoryCardStyles = {
   up: {
     background: colors.superficie.blanca,
     border: colors.verde.oscuro,
-    edge: colors.relieve.superficie,
+    edge: colors.borde.relieve,
     pressedBackground: colors.superficie.blanca,
     borderStyle: 'solid',
   },
   mismatch: {
     background: colors.superficie.blanca,
     border: colors.texto.secundario,
-    edge: colors.relieve.superficie,
+    edge: colors.borde.relieve,
     pressedBackground: colors.verde.suave,
     borderStyle: 'dashed',
   },

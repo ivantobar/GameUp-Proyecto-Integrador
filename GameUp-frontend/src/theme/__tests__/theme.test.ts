@@ -76,97 +76,46 @@ describe('contraste de colores (WCAG AA)', () => {
     );
   });
 
-  it.each([
-    ['fondo del niño', colors.fondo.nino],
-    ['Emparejar', colors.identidad.emparejarFondo],
-    ['Clasificar', colors.identidad.clasificarFondo],
-    ['Secuenciar', colors.juego.fondoAmarillo],
-    ['Memoria', colors.identidad.memoriaFondo],
-    ['Busca la boca', colors.identidad.bocaFondo],
-  ])(
-    'textos principal, secundario y de marca cumplen AA sobre %s',
-    (_name, background) => {
-      expect(
-        contrastRatio(colors.texto.principal, background),
-      ).toBeGreaterThanOrEqual(AA.text);
-      expect(
-        contrastRatio(colors.texto.secundario, background),
-      ).toBeGreaterThanOrEqual(AA.text);
-      expect(
-        contrastRatio(colors.verde.oscuro, background),
-      ).toBeGreaterThanOrEqual(AA.text);
-    },
-  );
-
-  it.each([
-    [
-      'Emparejar',
-      colors.identidad.emparejarAcento,
-      colors.identidad.emparejarFondo,
-    ],
-    [
-      'Clasificar',
-      colors.identidad.clasificarAcento,
-      colors.identidad.clasificarFondo,
-    ],
-    [
-      'Secuenciar',
-      colors.identidad.secuenciarAcento,
-      colors.juego.fondoAmarillo,
-    ],
-    ['Memoria', colors.identidad.memoriaAcento, colors.identidad.memoriaFondo],
-    ['Busca la boca', colors.identidad.bocaAcento, colors.identidad.bocaFondo],
-  ])(
-    'el acento de %s cumple AA para texto sobre su fondo y sobre blanco',
-    (_name, accent, background) => {
-      expect(contrastRatio(accent, background)).toBeGreaterThanOrEqual(AA.text);
-      expect(
-        contrastRatio(accent, colors.superficie.blanca),
-      ).toBeGreaterThanOrEqual(AA.text);
-    },
-  );
-
-  it('el relieve del botón naranja se distingue del fondo (gráficos)', () => {
-    expect(
-      contrastRatio(colors.relieve.naranja, colors.marca.gris),
-    ).toBeGreaterThanOrEqual(AA.graphic);
-    expect(
-      contrastRatio(colors.relieve.naranja, colors.fondo.nino),
-    ).toBeGreaterThanOrEqual(AA.graphic);
-    // También marca la casilla «siguiente» de Secuenciar, sobre blanco.
-    expect(
-      contrastRatio(colors.relieve.naranja, colors.superficie.blanca),
-    ).toBeGreaterThanOrEqual(AA.graphic);
+  it('el relieve de lo blanco es un gris decorativo (1,6:1 a 2:1 sobre el gris)', () => {
+    const onGray = contrastRatio(colors.borde.relieve, colors.marca.gris);
+    expect(onGray).toBeGreaterThanOrEqual(1.6);
+    expect(onGray).toBeLessThanOrEqual(2);
+    // Más marcado que el borde suave y más claro que la estrella vacía.
+    expect(onGray).toBeGreaterThan(
+      contrastRatio(colors.borde.suave, colors.marca.gris),
+    );
+    expect(onGray).toBeLessThan(
+      contrastRatio(colors.estrella.vacia, colors.marca.gris),
+    );
   });
 
   it.each([
     ['gris', colors.marca.gris],
-    ['fondo del niño', colors.fondo.nino],
-    ['Habla conmigo', colors.verde.suave],
-    ['Emparejar', colors.identidad.emparejarFondo],
-    ['Clasificar', colors.identidad.clasificarFondo],
-    ['Secuenciar', colors.juego.fondoAmarillo],
-    ['Memoria', colors.identidad.memoriaFondo],
-    ['Busca la boca', colors.identidad.bocaFondo],
-  ])('los puntos de avance se ven sobre %s (gráficos ≥ 3:1)', (_n, bg) => {
-    // Actual, hecho y borde del pendiente (ProgressDots).
-    for (const dot of [
-      colors.relieve.naranja,
-      colors.verde.oscuro,
-      colors.texto.secundario,
-    ]) {
+    ['blanco', colors.superficie.blanca],
+    ['verde suave (Habla conmigo)', colors.verde.suave],
+    ['naranja suave (Busca la boca)', colors.naranja.suave],
+  ])(
+    'el café (avance actual, casilla «siguiente») se ve sobre %s',
+    (_n, bg) => {
+      // Gráficos: borde del punto actual y de la casilla «siguiente».
+      expect(contrastRatio(colors.cafe.oscuro, bg)).toBeGreaterThanOrEqual(
+        AA.graphic,
+      );
+      // Texto: «Toca para oír otra vez» en Busca la boca.
+      expect(contrastRatio(colors.cafe.oscuro, bg)).toBeGreaterThanOrEqual(
+        AA.text,
+      );
+    },
+  );
+
+  it.each([
+    ['gris', colors.marca.gris],
+    ['verde suave (Habla conmigo)', colors.verde.suave],
+    ['naranja suave (Busca la boca)', colors.naranja.suave],
+  ])('los puntos hechos y pendientes se ven sobre %s (gráficos)', (_n, bg) => {
+    for (const dot of [colors.verde.oscuro, colors.texto.secundario]) {
       expect(contrastRatio(dot, bg)).toBeGreaterThanOrEqual(AA.graphic);
     }
-    // «Toca para oír otra vez» (café) en Busca la boca y demás fondos.
-    expect(contrastRatio(colors.cafe.oscuro, bg)).toBeGreaterThanOrEqual(
-      AA.text,
-    );
-  });
-
-  it('la estrella vacía también se ve sobre el fondo del niño', () => {
-    expect(
-      contrastRatio(colors.estrella.vacia, colors.fondo.nino),
-    ).toBeGreaterThanOrEqual(AA.graphic);
   });
 
   it('la estrella vacía cumple el mínimo para gráficos sobre blanco', () => {

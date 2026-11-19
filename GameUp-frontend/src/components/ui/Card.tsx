@@ -25,19 +25,19 @@ export const cardTones = {
   surface: {
     background: colors.superficie.blanca,
     pressedBorder: colors.verde.oscuro,
-    edge: colors.relieve.superficie,
+    edge: colors.borde.relieve,
   },
   /** Verde suave: seleccionado, notas de la profe. */
   soft: {
     background: colors.verde.suave,
     pressedBorder: colors.verde.oscuro,
-    edge: colors.relieve.verdeSuave,
+    edge: colors.marca.verde,
   },
   /** Naranja suave: avisos y destacados (texto oscuro o café). */
   warm: {
     background: colors.naranja.suave,
     pressedBorder: colors.cafe.oscuro,
-    edge: colors.relieve.naranjaSuave,
+    edge: colors.marca.naranja,
   },
   /** Verde oscuro: tarjeta destacada («Sigue donde ibas»). Texto blanco. */
   brand: {

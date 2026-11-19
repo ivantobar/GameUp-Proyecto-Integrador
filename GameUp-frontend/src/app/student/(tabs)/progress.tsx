@@ -42,7 +42,6 @@ export default function ProgressScreen() {
 
   return (
     <Screen
-      tone="child"
       backdrop="clouds"
       safeAreaBottom={false}
       header={

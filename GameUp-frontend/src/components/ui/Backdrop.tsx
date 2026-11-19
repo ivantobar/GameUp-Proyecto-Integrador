@@ -11,9 +11,9 @@ export type BackdropKind = 'clouds' | 'hills' | 'bubbles';
  * sin distraer. Por eso no siguen la regla de 3:1 de los gráficos: no
  * comunican nada.
  *
- * - clouds: nubes blancas arriba (fondos de color: el del niño o el de un
- *   juego; sobre blanco no se ven).
- * - hills: colinas verde suave abajo (Inicio y pantallas de «¡Listo!»).
+ * - clouds: nubes blancas arriba (sobre el gris o el verde suave de la
+ *   guía; sobre blanco no se ven).
+ * - hills: colinas verde suave abajo (Inicio).
  * - bubbles: burbujas blancas en los bordes (pantallas de juego).
  */
 const shapes: Record<BackdropKind, ReactNode> = {

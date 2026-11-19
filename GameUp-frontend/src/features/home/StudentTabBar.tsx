@@ -1,7 +1,6 @@
 import type { BottomTabBarProps } from 'expo-router/js-tabs';
 import type { BottomTabItem } from '@/components/ui';
 import { RoleTabBar } from '@/features/navigation/RoleTabBar';
-import { colors } from '@/theme';
 
 export type StudentTabRoute = 'index' | 'games' | 'progress';
 
@@ -13,8 +12,5 @@ export const studentTabs: readonly BottomTabItem<StudentTabRoute>[] = [
 
 /** Barra inferior del estudiante: Inicio, Juegos y Progreso. */
 export function StudentTabBar(props: BottomTabBarProps) {
-  // Fondo crema, como las pantallas del niño.
-  return (
-    <RoleTabBar {...props} items={studentTabs} background={colors.fondo.nino} />
-  );
+  return <RoleTabBar {...props} items={studentTabs} />;
 }

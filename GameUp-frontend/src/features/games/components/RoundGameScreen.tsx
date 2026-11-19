@@ -9,7 +9,7 @@ import {
   Screen,
   ScreenHeader,
 } from '@/components/ui';
-import { GameQuestion, gameThemes, NarrationButton } from '@/components/gameup';
+import { GameQuestion, NarrationButton } from '@/components/gameup';
 import { PopIn } from '@/components/gameup/motion';
 import type { GameId } from '@/data/types';
 import type { TurnPhase } from '../turnGame';
@@ -61,9 +61,9 @@ interface RoundGameScreenProps {
  * pregunta; juego; y «Siguiente» abajo, que se habilita al completar la
  * ronda. Sin tiempo límite, vidas ni puntaje.
  *
- * Identidad del juego (para reconocerlo sin leer): fondo suave del juego con
- * burbujas y su dibujo junto a la pregunta, enmarcado con su acento. Esos
- * colores nunca marcan una opción.
+ * Identidad del juego (para reconocerlo sin leer): su dibujo junto a la
+ * pregunta, sobre su fondo suave. La pantalla va sobre el gris de la guía
+ * con burbujas blancas sutiles. El color del juego nunca marca una opción.
  */
 export function RoundGameScreen({
   game,
@@ -79,10 +79,8 @@ export function RoundGameScreen({
   saving = false,
   children,
 }: RoundGameScreenProps) {
-  const theme = gameThemes[game];
   return (
     <Screen
-      tone={theme.screen}
       backdrop="bubbles"
       header={
         <ScreenHeader

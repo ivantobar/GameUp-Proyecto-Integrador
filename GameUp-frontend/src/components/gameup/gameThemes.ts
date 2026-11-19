@@ -1,53 +1,25 @@
-import type { ScreenTone } from '@/components/ui';
 import type { GameId } from '@/data/types';
 import { colors, type ThemeColor } from '@/theme';
 
 interface GameTheme {
-  /** Fondo de la pantalla del juego (`Screen`). */
-  screen: ScreenTone;
-  /** Fondo suave (recuadros de identidad). */
+  /** Fondo suave detrás del dibujo del juego (recuadro del `GameIcon`). */
   background: ThemeColor;
-  /** Acento de identidad: franja del encabezado y recuadro del dibujo. */
-  accent: ThemeColor;
 }
 
 /**
- * Identidad de cada juego (color + dibujo + fondo) para que el niño lo
- * reconozca sin leer.
+ * Identidad de cada juego: su dibujo y un fondo suave detrás (para
+ * reconocerlo sin leer).
  *
- * Regla: estos colores son SOLO identidad. Nunca marcan el estado de una
- * opción: elegido, pista y acierto usan siempre los verdes de la guía (así
- * el coral de Emparejar nunca se confunde con «elegiste mal»).
+ * Regla (guía de ASISCO UP): el color de identidad va SOLO en el recuadro
+ * del dibujo. Nunca en botones, textos, encabezados, fondos de pantalla ni
+ * estados de una opción (elegido, pista y acierto usan los verdes de la
+ * guía). Ver `GameIconFrame`.
  */
 export const gameThemes = {
-  match: {
-    screen: 'match',
-    background: colors.identidad.emparejarFondo,
-    accent: colors.identidad.emparejarAcento,
-  },
-  classify: {
-    screen: 'classify',
-    background: colors.identidad.clasificarFondo,
-    accent: colors.identidad.clasificarAcento,
-  },
-  sequence: {
-    screen: 'sequence',
-    background: colors.juego.fondoAmarillo,
-    accent: colors.identidad.secuenciarAcento,
-  },
-  memory: {
-    screen: 'memory',
-    background: colors.identidad.memoriaFondo,
-    accent: colors.identidad.memoriaAcento,
-  },
-  speak: {
-    screen: 'softGreen',
-    background: colors.verde.suave,
-    accent: colors.verde.oscuro,
-  },
-  findMouth: {
-    screen: 'findMouth',
-    background: colors.identidad.bocaFondo,
-    accent: colors.identidad.bocaAcento,
-  },
+  match: { background: colors.identidad.emparejarFondo },
+  classify: { background: colors.identidad.clasificarFondo },
+  sequence: { background: colors.juego.fondoAmarillo },
+  memory: { background: colors.identidad.memoriaFondo },
+  speak: { background: colors.verde.suave },
+  findMouth: { background: colors.identidad.bocaFondo },
 } as const satisfies Record<GameId, GameTheme>;

@@ -22,7 +22,6 @@ export default function ComingSoonScreen() {
 
   return (
     <Screen
-      tone="child"
       backdrop="clouds"
       header={
         <ScreenHeader

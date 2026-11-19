@@ -160,7 +160,7 @@ describe('ninguna superficie crece si no se le pide (`fill`)', () => {
       pressedBackground: colors.superficie.blanca,
       border: colors.borde.suave,
       pressedBorder: colors.borde.suave,
-      edge: colors.relieve.superficie,
+      edge: colors.borde.relieve,
     } as const;
     await render(
       <>

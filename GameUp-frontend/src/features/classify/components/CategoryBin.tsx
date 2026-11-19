@@ -52,7 +52,7 @@ export function CategoryBin({
           pressedBackground: colors.verde.suave,
           border: hint ? colors.verde.oscuro : colors.borde.suave,
           pressedBorder: colors.verde.oscuro,
-          edge: colors.relieve.superficie,
+          edge: colors.borde.relieve,
         }}
         onPress={onPress}
         disabled={disabled}

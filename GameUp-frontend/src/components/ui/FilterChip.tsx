@@ -39,7 +39,7 @@ export function FilterChip({
               pressedBackground: colors.verde.suave,
               border: colors.borde.suave,
               pressedBorder: colors.verde.oscuro,
-              edge: colors.relieve.superficie,
+              edge: colors.borde.relieve,
             }
       }
       onPress={onPress}

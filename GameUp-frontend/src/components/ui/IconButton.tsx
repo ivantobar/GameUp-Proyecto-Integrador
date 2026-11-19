@@ -31,7 +31,7 @@ export const iconButtonVariants = {
     pressedBackground: colors.verde.suave,
     border: colors.borde.suave,
     pressedBorder: colors.verde.oscuro,
-    edge: colors.relieve.superficie,
+    edge: colors.borde.relieve,
     icon: colors.verde.oscuro,
   },
   /** Verde suave: parlante de las instrucciones. */
@@ -40,7 +40,7 @@ export const iconButtonVariants = {
     pressedBackground: colors.verde.suave,
     border: colors.borde.suave,
     pressedBorder: colors.verde.oscuro,
-    edge: colors.relieve.verdeSuave,
+    edge: colors.marca.verde,
     icon: colors.verde.oscuro,
   },
   /** Verde oscuro: reproducir el modelo, oír el sonido en Busca la boca. */
@@ -58,7 +58,7 @@ export const iconButtonVariants = {
     pressedBackground: colors.naranja.presionado,
     border: colors.marca.naranja,
     pressedBorder: colors.naranja.presionado,
-    edge: colors.relieve.naranja,
+    edge: colors.cafe.oscuro,
     icon: colors.texto.principal,
   },
 } as const satisfies Record<IconButtonVariant, VariantStyle>;

@@ -60,7 +60,6 @@ export default function LevelsScreen() {
 
   return (
     <Screen
-      tone="child"
       backdrop="clouds"
       header={
         <ScreenHeader

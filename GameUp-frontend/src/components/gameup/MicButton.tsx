@@ -38,7 +38,7 @@ export function MicButton({
           pressedBorder: recording
             ? colors.texto.principal
             : colors.naranja.presionado,
-          edge: colors.relieve.naranja,
+          edge: colors.cafe.oscuro,
         }}
         onPress={onPress}
         disabled={disabled}

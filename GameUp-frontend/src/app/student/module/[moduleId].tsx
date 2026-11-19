@@ -54,7 +54,6 @@ export default function ModuleTasksScreen() {
 
   return (
     <Screen
-      tone="child"
       backdrop="clouds"
       header={
         <ScreenHeader

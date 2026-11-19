@@ -4,7 +4,6 @@ import { Button, ProgressDots } from '@/components/ui';
 import {
   CelebrationHero,
   GameQuestion,
-  gameThemes,
   MicButton,
   MouthOption,
   StepIndicator,
@@ -48,12 +47,7 @@ export function SpeakGamesSection() {
       </View>
 
       <CatalogLabel>Busca la boca: pregunta, avance y bocas</CatalogLabel>
-      <View
-        style={[
-          styles.stage,
-          { backgroundColor: gameThemes.findMouth.background },
-        ]}
-      >
+      <View style={[styles.stage, { backgroundColor: colors.naranja.suave }]}>
         <ProgressDots total={4} current={1} />
         <GameQuestion game="findMouth" question="¿Qué boca hace este sonido?" />
         {states.map((state) => (

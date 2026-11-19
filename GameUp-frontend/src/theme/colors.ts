@@ -64,6 +64,15 @@ export const colors = {
   borde: {
     /** [derivado GameUP] Bordes de tarjetas y fichas. Decorativo. */
     suave: '#D9DCDB',
+    /**
+     * [PENDIENTE DE APROBACIÓN] Relieve plano de las tarjetas y botones
+     * blancos: el borde inferior sólido que los hace ver «tocables» (sin
+     * sombras ni degradados). DECORATIVO: el estado nunca depende de él.
+     * Gris neutro entre `borde.suave` y `estrella.vacia`: 1,8:1 sobre
+     * `marca.gris` y 2,1:1 sobre blanco. Es el único color nuevo fuera de
+     * los dibujos; los demás relieves usan colores de la guía o derivados.
+     */
+    relieve: '#ADB4B2',
   },
   estrella: {
     /** [derivado GameUP] Estrella vacía. 3,15:1 sobre blanco. */
@@ -118,57 +127,21 @@ export const colors = {
     gris: '#C9D1CF',
   },
   /**
-   * [PENDIENTE DE APROBACIÓN] Fondo cálido de las pantallas del niño (los
-   * adultos siguen sobre el gris de la guía). Texto secundario 6,5:1;
-   * estrella vacía 3,06:1.
-   */
-  fondo: {
-    nino: '#FFFBF4',
-  },
-  /**
-   * [PENDIENTE DE APROBACIÓN] Relieve plano: borde inferior sólido, más
-   * oscuro, que hace ver «tocable» un botón o una tarjeta (sin sombras ni
-   * degradados, regla de la guía). Es decorativo: el estado nunca depende
-   * de él. El relieve del botón principal es `verde.profundo` y el de la
-   * tarjeta verde oscuro también.
-   */
-  relieve: {
-    /** Botón naranja. 3,7:1 sobre gris; 4,2:1 sobre el fondo del niño. */
-    naranja: '#B5650A',
-    /** Superficies blancas. Decorativo (1,3:1 sobre gris). */
-    superficie: '#C9CFCD',
-    /** Botón verde suave. Decorativo (1,2:1). */
-    verdeSuave: '#BFDCD7',
-    /** Botón naranja suave. Decorativo (1,2:1). */
-    naranjaSuave: '#F2D3A6',
-  },
-  /**
-   * [PENDIENTE DE APROBACIÓN] Identidad de cada juego: un fondo suave y un
-   * acento para que el niño reconozca el juego sin leer.
-   *
-   * Regla: SOLO identidad (fondo de la pantalla, franja del encabezado,
-   * recuadro del dibujo). Nunca marcan el estado de una opción: elegido,
-   * pista y acierto siempre usan los verdes de la guía.
-   *
-   * Contraste: texto principal sobre cada fondo ≥ 12,3:1; texto secundario
-   * ≥ 5,6:1; cada acento sobre su fondo ≥ 4,5:1 y sobre blanco ≥ 5,1:1.
-   * Habla conmigo usa los verdes de la guía.
+   * [PENDIENTE DE APROBACIÓN] Fondo suave de cada juego, SOLO detrás de su
+   * dibujo (el recuadro del `GameIcon`), para reconocer el juego sin leer.
+   * Nunca en botones, textos, encabezados, fondos de pantalla ni estados.
+   * Secuenciar usa `juego.fondoAmarillo` y Habla conmigo, `verde.suave`.
+   * Sobre ellos no va texto.
    */
   identidad: {
-    /** Emparejar: coral. Acento 5,1:1 sobre su fondo, 5,9:1 sobre blanco. */
+    /** Emparejar: coral muy claro. */
     emparejarFondo: '#FFE9E5',
-    emparejarAcento: '#B23A2B',
-    /** Clasificar: azul. Acento 4,6:1 sobre su fondo, 5,2:1 sobre blanco. */
+    /** Clasificar: azul muy claro. */
     clasificarFondo: '#E3F1FF',
-    clasificarAcento: '#1F6FB8',
-    /** Secuenciar: miel. Fondo = `juego.fondoAmarillo`. Acento 4,5:1 y 5,1:1. */
-    secuenciarAcento: '#9A6200',
-    /** Memoria: lila. Acento 5,3:1 sobre su fondo, 6,3:1 sobre blanco. */
+    /** Memoria: lila muy claro. */
     memoriaFondo: '#EFE8FF',
-    memoriaAcento: '#6B45C9',
-    /** Busca la boca: rosa. Acento 4,7:1 sobre su fondo, 5,4:1 sobre blanco. */
+    /** Busca la boca: rosa muy claro. */
     bocaFondo: '#FDEBF1',
-    bocaAcento: '#B83C6A',
   },
   /** Sin color de fondo (enlaces, bordes invisibles). */
   transparente: 'transparent',

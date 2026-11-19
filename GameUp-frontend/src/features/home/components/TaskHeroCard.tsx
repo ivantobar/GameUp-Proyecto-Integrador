@@ -1,10 +1,10 @@
 import { StyleSheet, View } from 'react-native';
 import { AppText, Badge, Button, Card } from '@/components/ui';
-import { GameIcon, gameThemes } from '@/components/gameup';
+import { GameIconFrame } from '@/components/gameup';
 import { EnterStagger } from '@/components/gameup/motion';
 import { useLargeText } from '@/features/accessibility/useLargeText';
 import type { GameId } from '@/data/types';
-import { colors, radii, sizes, spacing } from '@/theme';
+import { radii, sizes, spacing } from '@/theme';
 
 interface TaskHeroCardProps {
   gameTitle: string;
@@ -17,8 +17,8 @@ interface TaskHeroCardProps {
 
 /**
  * Inicio · «Haz esta tarea»: la tarea de la profe es lo primero que ve el
- * niño, grande y con un solo botón. El dibujo del juego va en un recuadro
- * blanco con el color del juego, para reconocerlo sin leer. El botón es
+ * niño, grande y con un solo botón. El dibujo del juego va sobre su fondo
+ * suave (`GameIconFrame`), para reconocerlo sin leer. El botón es
  * naranja porque está sobre verde oscuro (la misma excepción que
  * «Continuar»). Entra con un desplazamiento corto al abrir el Inicio.
  */
@@ -36,11 +36,7 @@ export function TaskHeroCard({
     <EnterStagger index={0}>
       <Card tone="brand" style={styles.card}>
         <View style={largeText ? styles.stacked : styles.row}>
-          <View
-            style={[styles.iconFrame, { borderColor: gameThemes[game].accent }]}
-          >
-            <GameIcon game={game} size="lg" />
-          </View>
+          <GameIconFrame game={game} size="lg" />
           <View style={largeText ? styles.stackedTexts : styles.texts}>
             <AppText
               variant="label"
@@ -89,12 +85,6 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     alignItems: 'center',
     gap: spacing.md,
-  },
-  iconFrame: {
-    padding: spacing.xxs,
-    borderRadius: radii.xl,
-    borderWidth: sizes.borderStrong + 1,
-    backgroundColor: colors.superficie.blanca,
   },
   texts: {
     flexGrow: 1,

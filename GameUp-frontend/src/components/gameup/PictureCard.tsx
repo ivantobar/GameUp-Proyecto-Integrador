@@ -28,13 +28,13 @@ export const pictureCardStates = {
     background: colors.superficie.blanca,
     border: colors.borde.suave,
     borderStyle: 'solid',
-    edge: colors.relieve.superficie,
+    edge: colors.borde.relieve,
   },
   hint: {
     background: colors.superficie.blanca,
     border: colors.verde.oscuro,
     borderStyle: 'dashed',
-    edge: colors.relieve.superficie,
+    edge: colors.borde.relieve,
   },
   correct: {
     background: colors.verde.suave,
@@ -46,7 +46,7 @@ export const pictureCardStates = {
     background: colors.superficie.blanca,
     border: colors.borde.suave,
     borderStyle: 'solid',
-    edge: colors.relieve.superficie,
+    edge: colors.borde.relieve,
   },
 } as const satisfies Record<
   PictureCardState,
