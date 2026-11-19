@@ -51,6 +51,9 @@ export function GameDoneScreen({ message, replayPath }: GameDoneScreenProps) {
   return (
     <Screen
       tone="brand"
+      // El personaje, las estrellas y el aviso, centrados en el espacio
+      // libre (sin hueco grande antes de los botones).
+      centerContent
       header={
         <ScreenHeader
           left={

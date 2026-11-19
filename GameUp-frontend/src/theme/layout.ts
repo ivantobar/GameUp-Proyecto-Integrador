@@ -126,7 +126,12 @@ export const sizes = {
    * de una casilla de Secuenciar (`sm`), y en un grupo de 3 (`xs`).
    */
   miniPicture: { xs: 28, sm: 40 },
-  /** Ilustraciones: estado vacío (sm), bienvenida y celebración (md/lg). */
+  /**
+   * Alto de pantalla desde el que la celebración de «¡Listo!» usa el
+   * personaje grande (en pantallas más bajas no cabría sin desplazar).
+   */
+  tallScreen: 860,
+  /** Ilustraciones: estados vacíos y celebración (sm, md, lg). */
   illustration: { sm: 64, md: 120, lg: 200 },
   /** Logo completo de la fundación (guía: con lema, desde 200 px de ancho). */
   logo: 220,

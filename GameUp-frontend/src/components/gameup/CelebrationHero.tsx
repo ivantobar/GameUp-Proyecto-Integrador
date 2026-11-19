@@ -1,15 +1,29 @@
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, useWindowDimensions, View } from 'react-native';
 import Animated, {
   FadeIn,
   ReduceMotion,
   ZoomIn,
 } from 'react-native-reanimated';
 import { AppText } from '@/components/ui';
+import { isLargeText } from '@/features/accessibility/useLargeText';
 import { useReducedMotion } from '@/features/motion/useReducedMotion';
 import { motion, sizes, spacing } from '@/theme';
 import { Celebration } from './Celebration';
 import { Character } from './Character';
 import { Illustration } from './illustrations';
+
+/**
+ * Personaje de la celebración: el grande solo si cabe sin desplazar
+ * (pantalla alta y sin letra grande); si no, el mediano.
+ */
+export function celebrationCharacterSize(
+  windowHeight: number,
+  fontScale: number,
+): 'lg' | 'md' {
+  return windowHeight >= sizes.tallScreen && !isLargeText(fontScale)
+    ? 'lg'
+    : 'md';
+}
 
 /** Las estrellas premian el intento: siempre tres, nunca una nota. */
 const STARS = 3;
@@ -31,6 +45,10 @@ interface CelebrationHeroProps {
  * personaje celebrando con ojos felices, el confeti y tres estrellas que
  * aparecen una a una con un rebote leve. Todo pasa una sola vez y se queda
  * quieto. Con «reducir movimiento», solo un fundido corto.
+ *
+ * En pantallas altas (y sin letra grande) el personaje es el grande; si
+ * no, el mediano, para que todo quepa sin desplazar. La pantalla centra el
+ * bloque en el espacio libre (`Screen centerContent`).
  */
 export function CelebrationHero({
   cheer,
@@ -38,6 +56,8 @@ export function CelebrationHero({
   starsLabel,
 }: CelebrationHeroProps) {
   const reduced = useReducedMotion();
+  const { height, fontScale } = useWindowDimensions();
+  const size = celebrationCharacterSize(height, fontScale);
   const starEntering = (index: number) =>
     reduced
       ? FadeIn.duration(motion.duration.reducedFade).reduceMotion(
@@ -52,9 +72,9 @@ export function CelebrationHero({
     <View style={styles.center}>
       <Celebration
         width={sizes.character.lg + 80}
-        height={sizes.character.md + 24}
+        height={sizes.character[size] + 24}
       >
-        <Character mouth="smile" eyes="happy" size="md" />
+        <Character mouth="smile" eyes="happy" size={size} />
       </Celebration>
 
       <View style={styles.stars} accessible accessibilityLabel={starsLabel}>
