@@ -108,6 +108,14 @@ export const colors = {
     morado: '#9B6BFF',
     moradoClaro: '#C9B3FF',
     fondoAmarillo: '#FFF1C7',
+    /**
+     * [PENDIENTE DE APROBACIÓN] Rellenos de la biblioteca de ilustraciones
+     * (perro, pan; agua y cielo; metal del grifo). Siempre dentro de un
+     * contorno oscuro: el dibujo se distingue por el contorno, no por ellos.
+     */
+    cafe: '#C98B4E',
+    celeste: '#BFE6FF',
+    gris: '#C9D1CF',
   },
   /**
    * [PENDIENTE DE APROBACIÓN] Fondo cálido de las pantallas del niño (los

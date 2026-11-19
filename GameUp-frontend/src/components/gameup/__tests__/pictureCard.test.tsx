@@ -58,7 +58,9 @@ describe('Pictogram', () => {
       <Pictogram face={{ id: 'p', label: 'tres', emoji: '⭐', count: 3 }} />,
     );
     expect(
-      screen.getAllByText('⭐', { includeHiddenElements: true }),
+      screen.getAllByTestId('illustration-estrella', {
+        includeHiddenElements: true,
+      }),
     ).toHaveLength(3);
   });
 });

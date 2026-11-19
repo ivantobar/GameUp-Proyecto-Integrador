@@ -1,6 +1,6 @@
 export { AudioClipRow, type AudioClipKind } from './AudioClipRow';
 export { Celebration } from './Celebration';
-export { Character } from './Character';
+export { Character, type CharacterEyes } from './Character';
 export { GameCard, type GameCardTone } from './GameCard';
 export { GameIcon } from './GameIcon';
 export { MicButton } from './MicButton';
@@ -18,3 +18,10 @@ export { Waveform, type WaveformTone } from './Waveform';
 export { HintPill, hintPillStyles, type HintPillKind } from './HintPill';
 export { Pictogram, type PictogramSize } from './Pictogram';
 export { PictureCard, type PictureCardState } from './PictureCard';
+export {
+  Illustration,
+  illustrationFor,
+  illustrationNames,
+  normalizeWord,
+  type IllustrationName,
+} from './illustrations';

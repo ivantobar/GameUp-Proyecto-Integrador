@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { colors, spacing } from '@/theme';
 import { AppText } from './AppText';
@@ -20,10 +21,21 @@ interface StateViewProps {
   title: string;
   message?: string;
   action?: { label: string; onPress: () => void };
+  /**
+   * Ilustración amable en lugar del ícono (vacío o error). Es decorativa:
+   * el título ya dice lo mismo.
+   */
+  visual?: ReactNode;
 }
 
 /** Estados de carga, vacío y error, con el mismo aspecto en toda la app. */
-export function StateView({ kind, title, message, action }: StateViewProps) {
+export function StateView({
+  kind,
+  title,
+  message,
+  action,
+  visual,
+}: StateViewProps) {
   return (
     <View style={styles.container} accessibilityLiveRegion="polite">
       {kind === 'loading' ? (
@@ -35,7 +47,13 @@ export function StateView({ kind, title, message, action }: StateViewProps) {
         />
       ) : (
         <View style={styles.visual}>
-          <Icon name={stateIcons[kind]} size="xl" color={colors.verde.oscuro} />
+          {visual ?? (
+            <Icon
+              name={stateIcons[kind]}
+              size="xl"
+              color={colors.verde.oscuro}
+            />
+          )}
         </View>
       )}
       <AppText variant="subtitle" style={styles.center}>
