@@ -22,6 +22,7 @@ import {
   useMemoryGame,
 } from '@/features/memory/useMemoryGame';
 import { spacing } from '@/theme';
+import { EnterStagger } from '@/components/gameup/motion';
 
 const MISMATCH = 'Son distintas. Toca otra carta';
 
@@ -75,6 +76,7 @@ function MemoryGame({ boards, activityId, ladder }: MemoryGameProps) {
 
   return (
     <RoundGameScreen
+      game="memory"
       question={MEMORY_INSTRUCTION}
       narration={`${MEMORY_INSTRUCTION}. Toca una carta para verla.`}
       index={index}
@@ -86,20 +88,26 @@ function MemoryGame({ boards, activityId, ladder }: MemoryGameProps) {
       pendingHint="Primero encuentra todas las parejas"
       message={message}
     >
-      <View style={styles.grid}>
+      {/* `key` por tablero: las cartas nuevas entran escalonadas. */}
+      <View key={`tablero-${index}`} style={styles.grid}>
         {rows.map((row, rowIndex) => (
           <View key={row.map((card) => card.key).join('-')} style={styles.row}>
             {row.map((card, column) => {
               const position = rowIndex * columns + column;
               return (
-                <MemoryCard
+                <EnterStagger
                   key={card.key}
-                  position={position + 1}
-                  face={card.face}
-                  view={card.view}
-                  compact={columns === 3}
-                  onPress={() => flip(position)}
-                />
+                  index={position}
+                  style={styles.card}
+                >
+                  <MemoryCard
+                    position={position + 1}
+                    face={card.face}
+                    view={card.view}
+                    compact={columns === 3}
+                    onPress={() => flip(position)}
+                  />
+                </EnterStagger>
               );
             })}
             {/* Si la fila queda incompleta, huecos mantienen el ancho. */}
@@ -118,10 +126,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   grid: {
-    gap: spacing.md,
+    gap: spacing.option,
   },
   row: {
     flexDirection: 'row',
-    gap: spacing.md,
+    gap: spacing.option,
+  },
+  card: {
+    flex: 1,
   },
 });

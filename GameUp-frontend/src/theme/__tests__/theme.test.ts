@@ -133,6 +133,10 @@ describe('contraste de colores (WCAG AA)', () => {
     expect(
       contrastRatio(colors.relieve.naranja, colors.fondo.nino),
     ).toBeGreaterThanOrEqual(AA.graphic);
+    // También marca la casilla «siguiente» de Secuenciar, sobre blanco.
+    expect(
+      contrastRatio(colors.relieve.naranja, colors.superficie.blanca),
+    ).toBeGreaterThanOrEqual(AA.graphic);
   });
 
   it('la estrella vacía también se ve sobre el fondo del niño', () => {

@@ -25,3 +25,5 @@ export {
   normalizeWord,
   type IllustrationName,
 } from './illustrations';
+export { MiniPicture } from './MiniPicture';
+export { gameThemes } from './gameThemes';

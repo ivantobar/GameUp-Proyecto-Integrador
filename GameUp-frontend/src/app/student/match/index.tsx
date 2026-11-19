@@ -7,6 +7,7 @@ import {
   PictureCard,
   type PictureCardState,
 } from '@/components/gameup';
+import { EnterStagger, PopIn } from '@/components/gameup/motion';
 import type { MatchRound } from '@/data/types';
 import { GameContentGate } from '@/features/games/components/GameContentGate';
 import {
@@ -83,6 +84,7 @@ function MatchGame({ rounds, activityId, ladder }: MatchGameProps) {
 
   return (
     <RoundGameScreen
+      game="match"
       question={round.question}
       narration={`${round.question} ${round.prompt.label}. Toca la que va con ella.`}
       index={index}
@@ -94,20 +96,27 @@ function MatchGame({ rounds, activityId, ladder }: MatchGameProps) {
       pendingHint="Primero toca la que va con la tarjeta"
       message={phaseMessage(phase)}
     >
-      <Card style={styles.prompt}>
-        <View accessible accessibilityLabel={`Tarjeta: ${round.prompt.label}`}>
-          <Pictogram face={round.prompt} size="lg" />
-        </View>
-      </Card>
+      <PopIn key={`tarjeta-${round.id}`}>
+        <Card style={styles.prompt}>
+          <View
+            accessible
+            accessibilityLabel={`Tarjeta: ${round.prompt.label}`}
+          >
+            <Pictogram face={round.prompt} size="lg" />
+          </View>
+        </Card>
+      </PopIn>
 
-      <View style={styles.options}>
-        {round.options.map((option) => (
-          <PictureCard
-            key={option.id}
-            face={option}
-            state={optionState(option.id, round.answerId, phase)}
-            onPress={() => choose(option.id)}
-          />
+      {/* `key` por ronda: las opciones nuevas vuelven a entrar escalonadas. */}
+      <View key={round.id} style={styles.options}>
+        {round.options.map((option, position) => (
+          <EnterStagger key={option.id} index={position}>
+            <PictureCard
+              face={option}
+              state={optionState(option.id, round.answerId, phase)}
+              onPress={() => choose(option.id)}
+            />
+          </EnterStagger>
         ))}
       </View>
     </RoundGameScreen>
@@ -120,6 +129,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.lg,
   },
   options: {
-    gap: spacing.md,
+    gap: spacing.option,
   },
 });

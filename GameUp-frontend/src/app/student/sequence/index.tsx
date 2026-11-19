@@ -3,6 +3,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 import { AppText } from '@/components/ui';
 import { PictureCard, type PictureCardState } from '@/components/gameup';
+import { EnterStagger } from '@/components/gameup/motion';
 import {
   phaseMessage,
   RoundGameScreen,
@@ -92,6 +93,7 @@ function SequenceGame({ routines, activityId, ladder }: SequenceGameProps) {
 
   return (
     <RoundGameScreen
+      game="sequence"
       question={question}
       narration={`${routine.title}. ${question} Toca el paso que sigue.`}
       index={index}
@@ -110,18 +112,25 @@ function SequenceGame({ routines, activityId, ladder }: SequenceGameProps) {
         <SequenceSlots total={routine.steps.length} placed={placed} />
       </View>
 
-      <View style={styles.grid}>
-        {rowsOf(options).map((row, _i, all) => (
-          <View key={row.map((step) => step.id).join('-')} style={styles.row}>
-            {row.map((step) => (
-              <PictureCard
+      <View key={routine.id} style={styles.grid}>
+        {rowsOf(options).map((row, rowIndex, all) => (
+          // `key` por posición: al acomodar un paso, las demás tarjetas no
+          // vuelven a entrar (solo se mueve la que cambia de fila).
+          <View key={`fila-${rowIndex}`} style={styles.row}>
+            {row.map((step, column) => (
+              <EnterStagger
                 key={step.id}
-                face={step}
-                layout="tile"
-                showLabel
-                state={state(step.id)}
-                onPress={() => choose(step.id)}
-              />
+                index={rowIndex * (all[0]?.length ?? row.length) + column}
+                style={styles.tile}
+              >
+                <PictureCard
+                  face={step}
+                  layout="tile"
+                  showLabel
+                  state={state(step.id)}
+                  onPress={() => choose(step.id)}
+                />
+              </EnterStagger>
             ))}
             {/* Si la fila queda incompleta, huecos mantienen el ancho. */}
             {Array.from(
@@ -145,11 +154,14 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   grid: {
-    gap: spacing.md,
+    gap: spacing.option,
   },
   row: {
     flexDirection: 'row',
-    gap: spacing.md,
+    gap: spacing.option,
+  },
+  tile: {
+    flex: 1,
   },
   spacer: {
     flex: 1,

@@ -9,9 +9,17 @@ import {
   Screen,
   ScreenHeader,
 } from '@/components/ui';
-import { NarrationButton } from '@/components/gameup';
+import { GameIcon, gameThemes, NarrationButton } from '@/components/gameup';
+import { PopIn } from '@/components/gameup/motion';
+import type { GameId } from '@/data/types';
 import type { TurnPhase } from '../turnGame';
-import { typography } from '@/theme';
+import { radii, sizes, spacing, typography } from '@/theme';
+
+/** Juegos que usan este marco («Pensar y recordar»). */
+export type RoundGameId = Extract<
+  GameId,
+  'match' | 'classify' | 'sequence' | 'memory'
+>;
 
 /** Mensajes de apoyo comunes. Nunca dicen «mal», «error» ni «incorrecto». */
 export const supportMessages = {
@@ -25,6 +33,8 @@ export function phaseMessage(phase: TurnPhase): string | null {
 }
 
 interface RoundGameScreenProps {
+  /** Juego: da el fondo, las burbujas y el dibujo de identidad. */
+  game: RoundGameId;
   /** Pregunta de la ronda, corta: «¿Qué palabra es?». */
   question: string;
   /** Lo que lee el parlante del encabezado. */
@@ -50,8 +60,13 @@ interface RoundGameScreenProps {
  * flujo que «Busca la boca»: volver, puntos de avance y parlante arriba;
  * pregunta; juego; y «Siguiente» abajo, que se habilita al completar la
  * ronda. Sin tiempo límite, vidas ni puntaje.
+ *
+ * Identidad del juego (para reconocerlo sin leer): fondo suave del juego con
+ * burbujas y su dibujo junto a la pregunta, enmarcado con su acento. Esos
+ * colores nunca marcan una opción.
  */
 export function RoundGameScreen({
+  game,
   question,
   narration,
   index,
@@ -64,8 +79,11 @@ export function RoundGameScreen({
   saving = false,
   children,
 }: RoundGameScreenProps) {
+  const theme = gameThemes[game];
   return (
     <Screen
+      tone={theme.screen}
+      backdrop="bubbles"
       header={
         <ScreenHeader
           left={<HeaderBackButton onPress={() => router.back()} />}
@@ -85,19 +103,27 @@ export function RoundGameScreen({
       }
     >
       <View style={styles.top}>
-        <AppText
-          variant="title"
-          accessibilityRole="header"
-          style={styles.center}
-        >
-          {question}
-        </AppText>
+        <View style={styles.questionRow}>
+          <View style={[styles.iconFrame, { borderColor: theme.accent }]}>
+            <GameIcon game={game} size="sm" />
+          </View>
+          <AppText
+            variant="title"
+            accessibilityRole="header"
+            style={styles.question}
+          >
+            {question}
+          </AppText>
+        </View>
         {/* Espacio fijo: el juego no salta cuando aparece el mensaje. */}
         <View style={styles.message} accessibilityLiveRegion="polite">
           {message ? (
-            <AppText variant="bodyStrong" tone="marca" style={styles.center}>
-              {message}
-            </AppText>
+            // Cada mensaje nuevo aparece con un rebote leve.
+            <PopIn key={message}>
+              <AppText variant="bodyStrong" tone="marca" style={styles.center}>
+                {message}
+              </AppText>
+            </PopIn>
           ) : null}
         </View>
       </View>
@@ -109,6 +135,21 @@ export function RoundGameScreen({
 const styles = StyleSheet.create({
   top: {
     alignItems: 'center',
+    gap: spacing.xxs,
+  },
+  /** Dibujo y pregunta en fila; con letra grande, la pregunta baja de línea. */
+  questionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  iconFrame: {
+    borderWidth: sizes.borderStrong,
+    borderRadius: radii.lg,
+    padding: spacing.xxs,
+  },
+  question: {
+    flexShrink: 1,
   },
   center: {
     textAlign: 'center',

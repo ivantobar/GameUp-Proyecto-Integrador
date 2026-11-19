@@ -106,6 +106,11 @@ export const sizes = {
    * glifos: `md` en las opciones, `lg` en la tarjeta grande de arriba.
    */
   pictogramImage: { md: 64, lg: 112 },
+  /**
+   * Miniatura de lo que ya se acomodó: dentro de un grupo de Clasificar o
+   * de una casilla de Secuenciar (`sm`), y en un grupo de 3 (`xs`).
+   */
+  miniPicture: { xs: 28, sm: 40 },
   /** Ilustraciones: estado vacío (sm), bienvenida y celebración (md/lg). */
   illustration: { sm: 64, md: 120, lg: 200 },
   /** Logo completo de la fundación (guía: con lema, desde 200 px de ancho). */
