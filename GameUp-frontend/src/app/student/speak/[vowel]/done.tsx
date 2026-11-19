@@ -15,15 +15,17 @@ import {
   Character,
   NarrationButton,
 } from '@/components/gameup';
-import {
-  NOT_SENT_ADULT_TEXT,
-  parseActivityId,
-  PRACTICE_TEXT,
-} from '@/features/games/delivery';
+import { parseActivityId, PRACTICE_TEXT } from '@/features/games/delivery';
 import { notRecordedText } from '@/features/speak/completePractice';
 import { exitPractice } from '@/features/speak/components/PracticeHeader';
 import { usePracticeSession } from '@/features/speak/PracticeSession';
 import { useAttemptPlayback } from '@/features/speak/useAttemptPlayback';
+import {
+  SPEAK_NOT_SENT_ADULT_TEXT,
+  SPEAK_RETRY_FAILED_TEXT,
+  SPEAK_RETRY_SENT_TEXT,
+  useSpeakDelivery,
+} from '@/features/speak/useSpeakDelivery';
 import { parseVowel } from '@/features/speak/vowelContent';
 import { colors, sizes, spacing } from '@/theme';
 
@@ -54,7 +56,13 @@ export default function DoneStep() {
   const onClose = fromTask ? backToTasks : exitPractice;
   const letter = vowel.toUpperCase();
   const { outcome } = usePracticeSession();
-  const audioUri = outcome?.vowel === vowel ? outcome.attempt.audioUri : null;
+  // La voz se borra del teléfono al salir de «Listo»; si no llegó a la
+  // profe, el adulto puede reintentar el envío.
+  const { audioUri, delivery, retry, retrySend } = useSpeakDelivery(
+    outcome,
+    vowel,
+    activityId,
+  );
   // Sin resultado (por ejemplo, al abrir «Listo» directo) no se dice nada.
   const noVoiceText = outcome
     ? notRecordedText(outcome.voiceConsentStatus)
@@ -68,7 +76,6 @@ export default function DoneStep() {
   const cheer = name ? `¡Muy bien, ${name}!` : '¡Muy bien!';
   // Solo si llegó al docente se habla de la profe (en práctica libre no
   // recibe nada). Sin envío no hay «Tu profe…».
-  const delivery = outcome?.vowel === vowel ? outcome.delivery : 'review';
   const reviewText =
     delivery !== 'review'
       ? PRACTICE_TEXT
@@ -179,11 +186,32 @@ export default function DoneStep() {
             {reviewText}
           </AppText>
         </View>
-        {delivery === 'notSent' ? (
-          <AppText variant="support" tone="secundario">
-            {NOT_SENT_ADULT_TEXT}
-          </AppText>
-        ) : null}
+        <View accessibilityLiveRegion="polite">
+          {delivery === 'notSent' ? (
+            <View style={styles.adult}>
+              <AppText variant="support" tone="secundario">
+                {retry === 'failed'
+                  ? SPEAK_RETRY_FAILED_TEXT
+                  : SPEAK_NOT_SENT_ADULT_TEXT}
+              </AppText>
+              <Button
+                label="Reintentar envío"
+                icon="replay"
+                variant="secondary"
+                loading={retry === 'sending'}
+                accessibilityHint="Vuelve a enviar la voz a la profe."
+                onPress={() => {
+                  retrySend().catch(() => {});
+                }}
+              />
+            </View>
+          ) : null}
+          {retry === 'sent' ? (
+            <AppText variant="support" tone="secundario">
+              {SPEAK_RETRY_SENT_TEXT}
+            </AppText>
+          ) : null}
+        </View>
         {noVoiceText ? (
           <AppText variant="support" tone="secundario">
             {noVoiceText}
@@ -215,5 +243,8 @@ const styles = StyleSheet.create({
   },
   flex: {
     flex: 1,
+  },
+  adult: {
+    gap: spacing.sm,
   },
 });

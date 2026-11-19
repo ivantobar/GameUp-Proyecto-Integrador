@@ -38,7 +38,9 @@ export function ScreenHeader({
               variant="subtitle"
               tone={onDark ? 'sobreOscuro' : 'principal'}
               accessibilityRole="header"
-              numberOfLines={1}
+              // Dos líneas: con letra grande, el título no se corta.
+              numberOfLines={2}
+              style={styles.title}
             >
               {title}
             </AppText>
@@ -99,5 +101,8 @@ const styles = StyleSheet.create({
   center: {
     flex: 1,
     alignItems: 'center',
+  },
+  title: {
+    textAlign: 'center',
   },
 });

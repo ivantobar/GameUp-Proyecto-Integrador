@@ -22,6 +22,7 @@ import {
   type ModuleTasks,
 } from '@/features/games/moduleTasks';
 import { spacing } from '@/theme';
+import { errorOf, LoadErrorState } from '@/features/errors/LoadErrorState';
 
 const DONE_TITLE = '¡Terminaste este tema!';
 
@@ -64,8 +65,8 @@ export default function ModuleTasksScreen() {
         <StateView kind="loading" title="Buscando tus actividades…" />
       ) : null}
       {resource.status === 'error' ? (
-        <StateView
-          kind="error"
+        <LoadErrorState
+          error={errorOf(resource)}
           title="Vamos a intentarlo otra vez"
           action={{ label: 'Intentar de nuevo', onPress: reload }}
         />

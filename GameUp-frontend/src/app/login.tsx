@@ -1,4 +1,4 @@
-import { useRef, useState, type ComponentRef } from 'react';
+import { useRef, useState, type ComponentRef, type ComponentType } from 'react';
 import { router } from 'expo-router';
 import {
   KeyboardAvoidingView,
@@ -11,18 +11,15 @@ import {
   AppText,
   Button,
   Card,
-  FilterChip,
   IconButton,
   Logo,
   Notice,
   Screen,
   TextField,
 } from '@/components/ui';
-import { env } from '@/config/env';
-import { MOCK_PASSWORD, mockAccounts } from '@/data/mock/fixtures';
-import type { UserRole } from '@/data/types';
 import { roleHomes } from '@/features/auth/roleHome';
 import { useSignIn, type SignInProblem } from '@/features/auth/useSignIn';
+import type { DevAccountsProps } from '@/features/dev/DevAccounts';
 import { spacing } from '@/theme';
 
 const problemNotices: Record<
@@ -53,13 +50,15 @@ const problemNotices: Record<
   },
 };
 
-/** Nombres de los roles en las cuentas de prueba. */
-const roleLabels: Record<UserRole, string> = {
-  student: 'Estudiante',
-  teacher: 'Docente',
-  guardian: 'Acudiente',
-  director: 'Directora',
-};
+/**
+ * «Cuentas de prueba», solo en desarrollo. En una versión publicada
+ * `__DEV__` es `false` y el `require` desaparece del paquete: ni el bloque
+ * ni la contraseña de prueba entran en la APK.
+ */
+const DevAccounts: ComponentType<DevAccountsProps> | null = __DEV__
+  ? // eslint-disable-next-line @typescript-eslint/no-require-imports
+    require('@/features/dev/DevAccounts').DevAccounts
+  : null;
 
 /**
  * Iniciar sesión. La sesión la resuelve `repositories.auth` (ver
@@ -166,6 +165,19 @@ export default function LoginScreen() {
               }
             />
 
+            {form.waking ? (
+              // El backend gratuito de Render se duerme: el primer «Entrar»
+              // del día puede tardar casi un minuto.
+              <View accessibilityLiveRegion="polite">
+                <Notice
+                  icon="time"
+                  tone="soft"
+                  title="Estamos despertando GameUP…"
+                  message="Puede tardar hasta un minuto. No cierres la app."
+                />
+              </View>
+            ) : null}
+
             {notice ? (
               <View accessibilityLiveRegion="polite">
                 <Notice
@@ -199,53 +211,9 @@ export default function LoginScreen() {
           </View>
         </Card>
 
-        {__DEV__ ? <DevAccounts onPick={form.fill} /> : null}
+        {DevAccounts ? <DevAccounts onPick={form.fill} /> : null}
       </Screen>
     </KeyboardAvoidingView>
-  );
-}
-
-interface DevAccountsProps {
-  onPick: (values: { email: string; password: string }) => void;
-}
-
-/**
- * Solo en desarrollo: llena el formulario con una cuenta de prueba y lleva
- * al «Modo desarrollo». No aparece en una versión publicada. Con la API,
- * las cuentas ficticias no existen: no se ofrecen.
- */
-function DevAccounts({ onPick }: DevAccountsProps) {
-  const usesMockData = env.dataSource === 'mock';
-  return (
-    <Card tone="warm">
-      <AppText variant="bodyStrong">Cuentas de prueba</AppText>
-      {usesMockData ? (
-        <>
-          <AppText variant="support" tone="cafe">
-            Solo en desarrollo. Contraseña: {MOCK_PASSWORD}
-          </AppText>
-          <View style={styles.chips}>
-            {Object.entries(mockAccounts).map(([email, session]) => (
-              <FilterChip
-                key={email}
-                label={roleLabels[session.role]}
-                selected={false}
-                onPress={() => onPick({ email, password: MOCK_PASSWORD })}
-              />
-            ))}
-          </View>
-        </>
-      ) : (
-        <AppText variant="support" tone="cafe">
-          La app usa la API. Entra con una cuenta de prueba del backend.
-        </AppText>
-      )}
-      <Button
-        label="Ir al modo desarrollo"
-        variant="link"
-        onPress={() => router.push('/dev')}
-      />
-    </Card>
   );
 }
 
@@ -265,11 +233,5 @@ const styles = StyleSheet.create({
   },
   form: {
     gap: spacing.md,
-  },
-  chips: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.xs,
-    marginTop: spacing.xs,
   },
 });

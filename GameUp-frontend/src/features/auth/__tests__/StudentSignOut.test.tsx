@@ -4,6 +4,7 @@ import ProgressScreen from '@/app/student/(tabs)/progress';
 import { createMockRepositories } from '@/data/mock/createMockRepositories';
 import { RepositoryProvider } from '@/data/RepositoryProvider';
 import type { Repositories } from '@/data/repositories';
+import { createRecording, mockFiles } from '@/test-utils/mockFiles';
 
 jest.mock('expo-router', () => ({
   router: { replace: jest.fn(), navigate: jest.fn() },
@@ -70,5 +71,22 @@ describe('«Cerrar sesión» del estudiante (Mi progreso)', () => {
 
     expect(signOut).toHaveBeenCalledTimes(1);
     expect(router.replace).toHaveBeenCalledWith('/login');
+  });
+
+  it('«Salir» borra las grabaciones de voz que quedaron, y nada más', async () => {
+    const repositories = createMockRepositories({ delayMs: 0 });
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    const recording = createRecording();
+    const otherFile = 'file:///cache/imagen.png';
+    mockFiles().add(otherFile);
+    await renderProgress(repositories);
+
+    await user.press(screen.getByRole('button', { name: 'Cerrar sesión' }));
+    await user.press(screen.getByRole('button', { name: 'Salir' }));
+    await settle();
+
+    expect(mockFiles().has(recording)).toBe(false);
+    expect(mockFiles().has(otherFile)).toBe(true);
+    mockFiles().clear();
   });
 });

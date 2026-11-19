@@ -13,6 +13,7 @@ import { useStudentHome } from '@/features/home/useStudentHome';
 import { spacing } from '@/theme';
 import { useRefreshOnFocus } from '@/data/useRefreshOnFocus';
 import type { Vowel } from '@/data/types';
+import { errorOf, LoadErrorState } from '@/features/errors/LoadErrorState';
 
 /**
  * Pantalla 1 · Inicio del estudiante. Solo compone: saludo, la tarea de la
@@ -29,8 +30,8 @@ export default function StudentHome() {
         {resource.status === 'loading' ? (
           <StateView kind="loading" title="Preparando tus juegos…" />
         ) : (
-          <StateView
-            kind="error"
+          <LoadErrorState
+            error={errorOf(resource)}
             title="Vamos a intentarlo otra vez"
             action={{ label: 'Intentar de nuevo', onPress: reload }}
           />

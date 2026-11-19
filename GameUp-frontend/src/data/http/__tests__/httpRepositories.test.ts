@@ -143,6 +143,85 @@ describe('AuthRepository (HTTP)', () => {
     await expect(
       offline.repos.auth.signIn({ email: 'a@b.co', password: 'x' }),
     ).rejects.toBeInstanceOf(ConnectionError);
+    // Cada caso se intentó dos veces, salvo el 500 (no es despertar).
+    expect(down.requests).toHaveLength(2);
+    expect(broken.requests).toHaveLength(1);
+    expect(offline.requests).toHaveLength(2);
+  });
+
+  it.each([
+    ['503 (la API de seguridad despertando)', () => errorResponse(503, 'x')],
+    [
+      'sin respuesta',
+      () => {
+        throw new TypeError('Network request failed');
+      },
+    ],
+  ])(
+    'Render despertando: con %s reintenta una vez y entra',
+    async (_name, firstFailure) => {
+      let calls = 0;
+      const { repos, requests } = setup(() => {
+        calls += 1;
+        return calls === 1 ? firstFailure() : jsonResponse(200, loginOk);
+      });
+
+      const session = await repos.auth.signIn({
+        email: 'a@b.co',
+        password: 'x',
+      });
+
+      expect(session.role).toBe('teacher');
+      expect(requests).toHaveLength(2);
+    },
+  );
+
+  it('reintenta solo una vez: si vuelve a fallar, avisa', async () => {
+    const { repos, requests } = setup(() => errorResponse(503, 'x'));
+
+    await expect(
+      repos.auth.signIn({ email: 'a@b.co', password: 'x' }),
+    ).rejects.toBeInstanceOf(SignInUnavailableError);
+    expect(requests).toHaveLength(2);
+  });
+
+  it('una contraseña equivocada no se reintenta', async () => {
+    const { repos, requests } = setup(() => errorResponse(401, 'No'));
+
+    await expect(
+      repos.auth.signIn({ email: 'a@b.co', password: 'x' }),
+    ).rejects.toBeInstanceOf(InvalidCredentialsError);
+    expect(requests).toHaveLength(1);
+  });
+
+  it('espera hasta un minuto la respuesta del inicio de sesión', async () => {
+    // Responde a los 50 s (Render despertando): con 15 s se habría rendido.
+    const fetchFn = jest.fn(
+      (_url: unknown, init?: RequestInit) =>
+        new Promise<Response>((resolve, reject) => {
+          const id = setTimeout(
+            () => resolve(jsonResponse(200, loginOk)),
+            50_000,
+          );
+          init?.signal?.addEventListener('abort', () => {
+            clearTimeout(id);
+            reject(new Error('Aborted'));
+          });
+        }),
+    );
+    const tokens = createMemoryTokenStore();
+    const api = createApiClient({
+      baseUrl: BASE,
+      getToken: tokens.get,
+      fetchFn: fetchFn as unknown as typeof fetch,
+    });
+    const repos = createHttpRepositories(api, tokens);
+
+    const pending = repos.auth.signIn({ email: 'a@b.co', password: 'x' });
+    await jest.advanceTimersByTimeAsync(50_000);
+
+    await expect(pending).resolves.toMatchObject({ role: 'teacher' });
+    expect(fetchFn).toHaveBeenCalledTimes(1);
   });
 
   it('un rol desconocido no inicia sesión ni guarda el token', async () => {
@@ -157,6 +236,45 @@ describe('AuthRepository (HTTP)', () => {
       repos.auth.signIn({ email: 'a@b.co', password: 'x' }),
     ).rejects.toBeInstanceOf(ServerError);
     await expect(tokens.get()).resolves.toBeNull();
+  });
+});
+
+describe('olvidar la sesión al abrir «Iniciar sesión» (H7)', () => {
+  it('borra el token guardado sin llamar al backend', async () => {
+    const { repos, tokens, requests } = setup(
+      () => jsonResponse(200, {}),
+      'token-viejo',
+    );
+
+    await repos.auth.forgetSession();
+
+    await expect(tokens.get()).resolves.toBeNull();
+    expect(requests).toHaveLength(0);
+  });
+});
+
+describe('despertar el backend al abrir «Iniciar sesión»', () => {
+  it('pide GET /health sin token', async () => {
+    const { repos, requests } = setup(() => jsonResponse(200, {}));
+
+    await repos.auth.warmUp();
+
+    expect(requests).toHaveLength(1);
+    expect(requests[0]).toMatchObject({
+      url: `${BASE}/health`,
+      method: 'GET',
+    });
+    expect(requests[0]?.headers.Authorization).toBeUndefined();
+  });
+
+  it('si no responde, no pasa nada', async () => {
+    const offline = setup(() => {
+      throw new TypeError('Network request failed');
+    });
+    await expect(offline.repos.auth.warmUp()).resolves.toBeUndefined();
+
+    const down = setup(() => errorResponse(503, 'x'));
+    await expect(down.repos.auth.warmUp()).resolves.toBeUndefined();
   });
 });
 

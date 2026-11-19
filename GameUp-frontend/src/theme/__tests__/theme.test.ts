@@ -142,10 +142,10 @@ describe('tamaños', () => {
     });
   });
 
-  it('botones de 56 px o más y áreas táctiles de 44 px o más', () => {
+  it('botones de 56 px o más y áreas táctiles de 48 dp o más (Android)', () => {
     expect(sizes.button).toBeGreaterThanOrEqual(56);
     expect(sizes.buttonLarge).toBeGreaterThanOrEqual(56);
-    expect(sizes.touchMin).toBeGreaterThanOrEqual(44);
+    expect(sizes.touchMin).toBeGreaterThanOrEqual(48);
     Object.values(sizes.iconButton).forEach((size) => {
       expect(size).toBeGreaterThanOrEqual(sizes.touchMin);
     });

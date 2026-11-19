@@ -15,8 +15,12 @@ const MAX_RECORDING_MS = 10_000;
 export type SayPhase = 'ready' | 'recording' | 'saving' | 'error';
 
 /**
- * Lógica del paso «Dilo»: consentimiento, grabación (si hay autorización) y
- * cierre del ciclo. La pantalla solo pinta y navega con `onDone`.
+ * Lógica del paso «Dilo»: consentimiento, grabación (si hay autorización y
+ * viene de una tarea) y cierre del ciclo. La pantalla solo pinta y navega
+ * con `onDone`.
+ *
+ * Archivo de voz: al terminar pasa a «Listo», que lo borra al salir. Si se
+ * sale de «Dilo» sin terminar, se borra aquí.
  */
 export function useSayStep(
   vowel: Vowel,
@@ -29,6 +33,10 @@ export function useSayStep(
   const recorder = useVoiceRecorder();
   const [phase, setPhase] = useState<SayPhase>('ready');
   const finishing = useRef(false);
+  /** La grabación ya pasó a «Listo»: «Dilo» no la borra. */
+  const handedOff = useRef(false);
+  // En práctica libre la voz no se envía a nadie: no se graba (Ley 1581).
+  const fromTask = activityId !== null;
 
   const loadConsent = useCallback(async () => {
     const student = await students.getCurrentStudent();
@@ -37,27 +45,43 @@ export function useSayStep(
   const { resource: consentResource } = useResource(loadConsent);
   const voiceConsent =
     consentResource.status === 'ready' ? consentResource.data : false;
+  const mayRecord = fromTask && voiceConsent;
+
+  // Al salir de «Dilo» sin terminar (atrás, ✕), la grabación se borra.
+  const { discard } = recorder;
+  useEffect(
+    () => () => {
+      if (!handedOff.current) discard();
+    },
+    [discard],
+  );
 
   const finish = useCallback(async () => {
-    if (finishing.current) return;
+    // Ya terminó (por ejemplo, el tope de grabación llegó justo después):
+    // no se envía dos veces.
+    if (finishing.current || handedOff.current) return;
     finishing.current = true;
     setPhase('saving');
     try {
-      const audioUri = voiceConsent ? await recorder.stop() : null;
+      const audioUri = mayRecord ? await recorder.stop() : null;
       const outcome = await completePractice(
         repositories,
         vowel,
         audioUri,
         activityId,
       );
+      handedOff.current = true;
       onDone(outcome);
     } catch (error) {
-      console.warn('[GameUP] No se pudo guardar el intento', error);
+      console.warn(
+        '[GameUP] No se pudo guardar el intento',
+        error instanceof Error ? error.name : 'Error',
+      );
       setPhase('error');
     } finally {
       finishing.current = false;
     }
-  }, [voiceConsent, recorder, repositories, vowel, activityId, onDone]);
+  }, [mayRecord, recorder, repositories, vowel, activityId, onDone]);
 
   /** Toque en el micrófono: empieza a grabar, o termina si ya graba. */
   const toggleRecording = useCallback(async () => {
@@ -80,8 +104,11 @@ export function useSayStep(
 
   return {
     consentLoading: consentResource.status === 'loading',
-    /** Graba solo si hay autorización y el teléfono dio permiso. */
-    canRecord: voiceConsent && recorder.status !== 'denied',
+    /**
+     * Graba solo desde una tarea, con autorización del acudiente y permiso
+     * del teléfono. Si no, «Ya lo dije».
+     */
+    canRecord: mayRecord && recorder.status !== 'denied',
     phase,
     level: recorder.level,
     toggleRecording,

@@ -51,7 +51,9 @@ export function SegmentedTabs<T extends string>({
             <AppText
               variant="bodyStrong"
               tone={selected ? 'sobreOscuro' : 'secundario'}
-              numberOfLines={1}
+              // Dos líneas: con letra grande, la pestaña no se corta.
+              numberOfLines={2}
+              style={styles.label}
             >
               {option.label}
             </AppText>
@@ -85,5 +87,8 @@ const styles = StyleSheet.create({
   },
   selected: {
     backgroundColor: colors.verde.oscuro,
+  },
+  label: {
+    textAlign: 'center',
   },
 });

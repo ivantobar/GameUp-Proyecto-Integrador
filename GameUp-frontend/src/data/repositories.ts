@@ -58,6 +58,18 @@ export interface AuthRepository {
    */
   signIn(credentials: Credentials): Promise<AuthSession>;
   /**
+   * Despierta el backend al abrir «Iniciar sesión» (en Render se duerme), para
+   * que «Entrar» responda antes. Nunca falla: si no responde, no pasa nada.
+   */
+  warmUp(): Promise<void>;
+  /**
+   * Olvida el token guardado en el teléfono, sin llamar al backend. Se usa
+   * cada vez que se abre «Iniciar sesión» (también al llegar por un 401):
+   * así no queda una sesión vieja que un enlace directo pueda reutilizar.
+   * Nunca falla.
+   */
+  forgetSession(): Promise<void>;
+  /**
    * Cerrar sesión: la app olvida el token (y avisa al backend, si puede).
    * Nunca falla: aunque no haya red, la sesión queda cerrada en el teléfono.
    */

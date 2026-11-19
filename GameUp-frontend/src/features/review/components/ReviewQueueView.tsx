@@ -20,6 +20,7 @@ import {
 } from '@/features/review/reviewText';
 import { useReviewQueue } from '@/features/review/useReviewQueue';
 import { spacing } from '@/theme';
+import { errorOf, LoadErrorState } from '@/features/errors/LoadErrorState';
 
 interface ReviewQueueViewProps {
   /** «Por revisar» (docente) o «Por validar» (directora). */
@@ -76,8 +77,8 @@ export function ReviewQueueView({
         <StateView kind="loading" title="Buscando actividades…" />
       ) : null}
       {resource.status === 'error' ? (
-        <StateView
-          kind="error"
+        <LoadErrorState
+          error={errorOf(resource)}
           title="No pudimos cargar las actividades"
           message="Revisa la conexión."
           action={{ label: 'Intentar de nuevo', onPress: reload }}

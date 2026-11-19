@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import {
   RecordingPresets,
   requestRecordingPermissionsAsync,
@@ -6,6 +6,10 @@ import {
   useAudioRecorder,
   useAudioRecorderState,
 } from 'expo-audio';
+import {
+  deleteRecording,
+  newRecordingName,
+} from '@/features/audio/recordingFiles';
 
 export type RecorderStatus = 'idle' | 'recording' | 'denied';
 
@@ -23,8 +27,9 @@ function normalizeLevel(metering: number | undefined): number | undefined {
  * Graba la voz con expo-audio. Solo se usa cuando el acudiente autorizó la
  * grabación: la pantalla «Dilo» no lo llama sin consentimiento.
  *
- * El archivo queda en la caché del teléfono; con la API real se enviará al
- * docente autorizado y se podrá eliminar después de la validación.
+ * Cada grabación es un archivo nuevo en la caché, con el prefijo de GameUP
+ * (`recordingFiles.ts`). Quien la usa decide cuándo borrarla; `discard`
+ * borra la última si ya no se va a usar.
  */
 export function useVoiceRecorder() {
   const recorder = useAudioRecorder({
@@ -33,6 +38,8 @@ export function useVoiceRecorder() {
   });
   const recorderState = useAudioRecorderState(recorder, 100);
   const [status, setStatus] = useState<RecorderStatus>('idle');
+  /** Archivo de la última grabación (para poder descartarla). */
+  const lastUri = useRef<string | null>(null);
 
   const start = useCallback(async (): Promise<boolean> => {
     const permission = await requestRecordingPermissionsAsync();
@@ -41,11 +48,22 @@ export function useVoiceRecorder() {
       return false;
     }
     await setAudioModeAsync({ allowsRecording: true, playsInSilentMode: true });
-    await recorder.prepareToRecordAsync();
+    // Grabar otra vez reemplaza la toma anterior: esa ya no se usa.
+    deleteRecording(lastUri.current);
+    // Nombre propio en cada grabación: no se pisa la anterior y se puede
+    // borrar solo lo de GameUP.
+    await recorder.prepareToRecordAsync({ fileName: newRecordingName() });
+    lastUri.current = recorder.uri;
     recorder.record();
     setStatus('recording');
     return true;
   }, [recorder]);
+
+  /** Borra la última grabación (por ejemplo, si se sale sin terminar). */
+  const discard = useCallback(() => {
+    deleteRecording(lastUri.current);
+    lastUri.current = null;
+  }, []);
 
   /** Detiene la grabación y devuelve la ubicación del archivo. */
   const stop = useCallback(async (): Promise<string | null> => {
@@ -57,6 +75,7 @@ export function useVoiceRecorder() {
       playsInSilentMode: true,
     });
     setStatus('idle');
+    lastUri.current = recorder.uri;
     return recorder.uri;
   }, [recorder]);
 
@@ -65,5 +84,6 @@ export function useVoiceRecorder() {
     level: normalizeLevel(recorderState.metering),
     start,
     stop,
+    discard,
   };
 }

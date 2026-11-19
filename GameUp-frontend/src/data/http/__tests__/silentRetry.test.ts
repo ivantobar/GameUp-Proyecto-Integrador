@@ -1,6 +1,7 @@
 import {
   ConnectionError,
   ServerError,
+  TimeoutError,
   UnauthorizedError,
 } from '@/services/apiErrors';
 import { withSilentRetry } from '../silentRetry';
@@ -38,6 +39,16 @@ describe('reintento silencioso (Regla 11)', () => {
 
     expect(result.ok).toBe(false);
     expect(send).toHaveBeenCalledTimes(3);
+  });
+
+  it('si se agotó la espera no se repite: pudo guardarse y se duplicaría', async () => {
+    const error = new TimeoutError();
+    const send = jest.fn<Promise<string>, []>().mockRejectedValue(error);
+
+    const result = await settle(withSilentRetry(send));
+
+    expect(result).toEqual({ ok: false, error });
+    expect(send).toHaveBeenCalledTimes(1);
   });
 
   it.each([

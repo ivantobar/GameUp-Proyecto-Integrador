@@ -3,6 +3,7 @@ import { Modal, Pressable, StyleSheet, View } from 'react-native';
 import { AppText, Button } from '@/components/ui';
 import { Celebration, LevelStars } from '@/components/gameup';
 import type { LevelUp } from '@/data/types';
+import { useScreenReaderEnabled } from '@/features/accessibility/useScreenReaderEnabled';
 import { colors, radii, spacing } from '@/theme';
 import { findGame } from '../catalog';
 
@@ -26,16 +27,21 @@ export function celebrationText(levelUp: LevelUp): string {
 /**
  * Celebración al subir de nivel: solo visual y breve. Sin sonido, sin
  * cuenta regresiva y sin pedir nada: se cierra sola o con un toque.
+ *
+ * Con TalkBack (o VoiceOver) encendido NO se cierra sola: el lector
+ * necesita tiempo para leerla, y el niño la cierra con un toque.
  */
 export function LevelUpCelebration({
   levelUp,
   onClose,
 }: LevelUpCelebrationProps) {
+  const screenReader = useScreenReaderEnabled();
+
   useEffect(() => {
-    if (!levelUp) return undefined;
+    if (!levelUp || screenReader) return undefined;
     const timer = setTimeout(onClose, CELEBRATION_MS);
     return () => clearTimeout(timer);
-  }, [levelUp, onClose]);
+  }, [levelUp, onClose, screenReader]);
 
   if (!levelUp) return null;
   const text = celebrationText(levelUp);
@@ -45,8 +51,8 @@ export function LevelUpCelebration({
       <Pressable
         style={styles.backdrop}
         onPress={onClose}
-        accessibilityLabel={text}
-        accessibilityHint="Toca para seguir"
+        accessibilityRole="button"
+        accessibilityLabel={`${text} Toca la pantalla para seguir jugando.`}
       >
         <View style={styles.card} accessibilityLiveRegion="polite">
           <Celebration width={260} height={150}>

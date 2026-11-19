@@ -15,6 +15,7 @@ import { useGameList, type GameListItem } from '@/features/games/useGameList';
 import { useLevelCelebration } from '@/features/games/useLevelCelebration';
 import { useRefreshOnFocus } from '@/data/useRefreshOnFocus';
 import { spacing } from '@/theme';
+import { errorOf, LoadErrorState } from '@/features/errors/LoadErrorState';
 
 const TITLE = 'Jugar por niveles';
 const QUESTION = '¿A qué quieres jugar?';
@@ -68,8 +69,8 @@ export default function LevelsScreen() {
         <StateView kind="loading" title="Buscando tus juegos…" />
       ) : null}
       {resource.status === 'error' ? (
-        <StateView
-          kind="error"
+        <LoadErrorState
+          error={errorOf(resource)}
           title="Vamos a intentarlo otra vez"
           action={{ label: 'Intentar de nuevo', onPress: reload }}
         />

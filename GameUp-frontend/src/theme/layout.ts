@@ -1,6 +1,6 @@
 /**
  * Espacios, radios y tamaños. Las medidas salen de la guía (botones de
- * 56 px, áreas táctiles de 44 px) y de los mockups.
+ * 56 px), de Android (áreas táctiles de 48 dp) y de los mockups.
  */
 export const spacing = {
   xxs: 4,
@@ -25,13 +25,13 @@ export const radii = {
 } as const;
 
 export const sizes = {
-  /** Área táctil mínima (guía: 44 px o más). */
-  touchMin: 44,
+  /** Área táctil mínima (Android: 48 dp o más). */
+  touchMin: 48,
   /** Alto mínimo de un botón (guía: 56 px o más). */
   button: 56,
   /** Botón de acción principal en las pantallas del niño (decisión del equipo). */
   buttonLarge: 64,
-  iconButton: { sm: 44, md: 56, lg: 88 },
+  iconButton: { sm: 48, md: 56, lg: 88 },
   icon: { sm: 20, md: 24, lg: 32, xl: 40 },
   border: 1.5,
   borderStrong: 2,

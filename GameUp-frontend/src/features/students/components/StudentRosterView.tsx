@@ -17,6 +17,7 @@ import { useRefreshOnFocus } from '@/data/useRefreshOnFocus';
 import { spacing } from '@/theme';
 import type { StaffRoutes } from '../staffRoutes';
 import { useStudentRoster, type RosterRow } from '../useStudentRoster';
+import { errorOf, LoadErrorState } from '@/features/errors/LoadErrorState';
 
 interface StudentRosterViewProps {
   title: string;
@@ -58,8 +59,8 @@ export function StudentRosterView({
         <StateView kind="loading" title="Buscando estudiantes…" />
       ) : null}
       {resource.status === 'error' ? (
-        <StateView
-          kind="error"
+        <LoadErrorState
+          error={errorOf(resource)}
           title="No pudimos cargar a los estudiantes"
           message="Revisa la conexión."
           action={{ label: 'Intentar de nuevo', onPress: reload }}

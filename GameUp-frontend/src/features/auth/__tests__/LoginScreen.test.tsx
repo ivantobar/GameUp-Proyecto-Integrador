@@ -1,3 +1,4 @@
+import { Text } from 'react-native';
 import { act, render, screen, userEvent } from '@testing-library/react-native';
 import { router } from 'expo-router';
 import LoginScreen from '@/app/login';
@@ -10,17 +11,32 @@ import { createMockRepositories } from '@/data/mock/createMockRepositories';
 import { MOCK_PASSWORD } from '@/data/mock/fixtures';
 import { RepositoryProvider } from '@/data/RepositoryProvider';
 import type { Repositories } from '@/data/repositories';
+import type { AuthSession } from '@/data/types';
+import { TimeoutError } from '@/services/apiErrors';
+import { SessionProvider, useSession } from '../SessionProvider';
 
 jest.mock('expo-router', () => ({
   router: { replace: jest.fn(), push: jest.fn() },
 }));
 
-async function renderLogin(repositories: Repositories) {
+async function renderLogin(
+  repositories: Repositories,
+  initialSession: AuthSession | null = null,
+) {
   await render(
     <RepositoryProvider repositories={repositories}>
-      <LoginScreen />
+      <SessionProvider initialSession={initialSession}>
+        <LoginScreen />
+        <SessionProbe />
+      </SessionProvider>
     </RepositoryProvider>,
   );
+}
+
+/** Muestra el rol en memoria, para comprobar la sesión desde la prueba. */
+function SessionProbe() {
+  const { session } = useSession();
+  return <Text>{`sesión: ${session?.role ?? 'ninguna'}`}</Text>;
 }
 
 async function signIn(email: string, password: string) {
@@ -180,5 +196,110 @@ describe('Iniciar sesión (simulado)', () => {
     expect(
       screen.getByRole('button', { name: 'Ocultar la contraseña' }),
     ).toBeOnTheScreen();
+  });
+});
+
+describe('sesión al abrir «Iniciar sesión» (H7) y al entrar', () => {
+  beforeEach(() => {
+    jest.mocked(router.replace).mockClear();
+  });
+
+  it('al abrirse borra el token guardado y olvida el rol en memoria', async () => {
+    const repositories = createMockRepositories({ delayMs: 0 });
+    const forget = jest.spyOn(repositories.auth, 'forgetSession');
+
+    // Por ejemplo, se llegó por un 401 con una sesión de docente.
+    await renderLogin(repositories, {
+      userId: 'd1',
+      role: 'teacher',
+      displayName: 'Ana',
+    });
+
+    expect(forget).toHaveBeenCalledTimes(1);
+    expect(screen.getByText('sesión: ninguna')).toBeOnTheScreen();
+  });
+
+  it('al entrar, el rol queda en memoria', async () => {
+    await renderLogin(createMockRepositories({ delayMs: 0 }));
+
+    await signIn('directora@gameup.test', MOCK_PASSWORD);
+
+    expect(screen.getByText('sesión: director')).toBeOnTheScreen();
+    expect(router.replace).toHaveBeenCalledWith('/director');
+  });
+
+  it('si no pudo entrar, no queda ninguna sesión', async () => {
+    await renderLogin(createMockRepositories({ delayMs: 0 }));
+
+    await signIn('docente@gameup.test', 'equivocada');
+
+    expect(screen.getByText('sesión: ninguna')).toBeOnTheScreen();
+  });
+});
+
+describe('Iniciar sesión con el backend dormido (Render)', () => {
+  const WAKING = 'Estamos despertando GameUP…';
+
+  beforeEach(() => {
+    jest.mocked(router.replace).mockClear();
+  });
+
+  it('al abrir la pantalla despierta el backend', async () => {
+    const repositories = createMockRepositories({ delayMs: 0 });
+    const warmUp = jest.spyOn(repositories.auth, 'warmUp');
+
+    await renderLogin(repositories);
+
+    expect(warmUp).toHaveBeenCalledTimes(1);
+  });
+
+  it('si «Entrar» tarda, avisa que se está despertando; al entrar, el aviso se va', async () => {
+    const repositories = createMockRepositories({ delayMs: 0 });
+    let answer: () => void = () => {};
+    jest.spyOn(repositories.auth, 'signIn').mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          answer = () =>
+            resolve({ userId: 'd1', role: 'teacher', displayName: 'Ana' });
+        }),
+    );
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    await renderLogin(repositories);
+
+    await user.type(screen.getByTestId('login-email'), 'docente@gameup.test');
+    await user.type(screen.getByTestId('login-password'), MOCK_PASSWORD);
+    await user.press(screen.getByRole('button', { name: 'Entrar' }));
+
+    // Los primeros segundos no se dice nada.
+    await act(async () => {
+      await jest.advanceTimersByTimeAsync(4000);
+    });
+    expect(screen.queryByText(WAKING)).toBeNull();
+
+    await act(async () => {
+      await jest.advanceTimersByTimeAsync(1000);
+    });
+    expect(screen.getByText(WAKING)).toBeOnTheScreen();
+    expect(screen.queryByText('Sin conexión')).toBeNull();
+
+    await act(async () => {
+      answer();
+      await jest.runAllTimersAsync();
+    });
+    expect(screen.queryByText(WAKING)).toBeNull();
+    expect(router.replace).toHaveBeenCalledWith('/teacher');
+  });
+
+  it('si ni reintentando responde a tiempo, no culpa al internet del teléfono', async () => {
+    const repositories = createMockRepositories({ delayMs: 0 });
+    jest
+      .spyOn(repositories.auth, 'signIn')
+      .mockRejectedValue(new TimeoutError());
+    await renderLogin(repositories);
+
+    await signIn('docente@gameup.test', MOCK_PASSWORD);
+
+    expect(screen.getByText('GameUP no está disponible')).toBeOnTheScreen();
+    expect(screen.queryByText('Sin conexión')).toBeNull();
   });
 });
