@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { act, renderHook } from '@testing-library/react-native';
-import { useAudioRecorder } from 'expo-audio';
+import { RecordingPresets, useAudioRecorder } from 'expo-audio';
 import { createMockRepositories } from '@/data/mock/createMockRepositories';
 import type { Repositories } from '@/data/repositories';
 import { RepositoryProvider } from '@/data/RepositoryProvider';
@@ -39,7 +39,7 @@ async function renderSayStep(activityId: string | null, consent = true) {
   await act(async () => {
     await jest.runAllTimersAsync();
   });
-  return { ...view, onDone };
+  return { ...view, onDone, repositories };
 }
 
 afterEach(() => {
@@ -68,14 +68,18 @@ describe('«Dilo»: cuándo se graba la voz', () => {
     expect(result.current.canRecord).toBe(false);
   });
 
-  it('cada grabación tiene un nombre de GameUP', async () => {
+  it('cada grabación usa el preset completo y un nombre de GameUP', async () => {
     const { result } = await renderSayStep('act-demo-002', true);
 
     await act(async () => {
       await result.current.toggleRecording();
     });
 
+    // Las opciones de prepareToRecordAsync reemplazan a las de la
+    // grabadora: si solo llegara el nombre, se perderían formato y extensión.
     expect(recorder.prepareToRecordAsync).toHaveBeenCalledWith({
+      ...RecordingPresets.HIGH_QUALITY,
+      isMeteringEnabled: true,
       fileName: expect.stringMatching(/^gameup-grabacion-/),
     });
   });
@@ -122,5 +126,71 @@ describe('«Dilo»: la voz no queda en el teléfono si se sale sin terminar', ()
     expect(onDone).toHaveBeenCalledTimes(1);
     expect(onDone.mock.calls[0][0].attempt.audioUri).toBe(uri);
     expect(mockFiles().has(uri)).toBe(true);
+  });
+});
+
+describe('«Dilo»: tope de 10 s de grabación', () => {
+  /**
+   * En el teléfono, el medidor de volumen vuelve a dibujar «Dilo» cada
+   * 100 ms mientras graba. Aquí se imita: avanza el reloj de a 100 ms y
+   * vuelve a dibujar en cada paso.
+   */
+  async function recordFor(ms: number, rerender: (props: unknown) => unknown) {
+    for (let elapsed = 0; elapsed < ms; elapsed += 100) {
+      await act(async () => {
+        await jest.advanceTimersByTimeAsync(100);
+      });
+      await rerender(undefined);
+    }
+  }
+
+  it('a los 10 s para sola, pasa a «Listo» y envía una sola vez', async () => {
+    const { result, rerender, onDone, repositories } = await renderSayStep(
+      'act-demo-002',
+      true,
+    );
+    const submit = jest.spyOn(repositories.recordings, 'submitSpeechAttempt');
+
+    await act(async () => {
+      await result.current.toggleRecording();
+    });
+    await recordFor(9_900, rerender);
+    // Todavía no: falta 0,1 s.
+    expect(onDone).not.toHaveBeenCalled();
+
+    await recordFor(200, rerender);
+    await act(async () => {
+      await jest.runOnlyPendingTimersAsync();
+    });
+
+    expect(onDone).toHaveBeenCalledTimes(1);
+    expect(submit).toHaveBeenCalledTimes(1);
+  });
+
+  it('si el niño toca «terminar» justo cuando llega el tope, se envía una sola vez', async () => {
+    const { result, rerender, onDone, repositories } = await renderSayStep(
+      'act-demo-002',
+      true,
+    );
+    const submit = jest.spyOn(repositories.recordings, 'submitSpeechAttempt');
+
+    await act(async () => {
+      await result.current.toggleRecording();
+    });
+    await recordFor(9_900, rerender);
+    // El tope y el toque llegan a la vez.
+    await act(async () => {
+      const tap = result.current.toggleRecording();
+      await jest.advanceTimersByTimeAsync(100);
+      await tap;
+      await jest.runOnlyPendingTimersAsync();
+    });
+    // Y otro toque tarde, ya en camino a «Listo».
+    await act(async () => {
+      await result.current.finish();
+    });
+
+    expect(onDone).toHaveBeenCalledTimes(1);
+    expect(submit).toHaveBeenCalledTimes(1);
   });
 });

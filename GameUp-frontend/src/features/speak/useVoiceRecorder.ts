@@ -5,6 +5,7 @@ import {
   setAudioModeAsync,
   useAudioRecorder,
   useAudioRecorderState,
+  type RecordingOptions,
 } from 'expo-audio';
 import {
   deleteRecording,
@@ -12,6 +13,21 @@ import {
 } from '@/features/audio/recordingFiles';
 
 export type RecorderStatus = 'idle' | 'recording' | 'denied';
+
+/**
+ * Cómo se graba la voz: el preset oficial `HIGH_QUALITY` de expo-audio
+ * (m4a con AAC en iPhone y en Android, lo que acepta el backend) con el
+ * medidor de volumen para la onda.
+ *
+ * Se usa al crear la grabadora Y en cada `prepareToRecordAsync`: las opciones
+ * que recibe `prepareToRecordAsync` REEMPLAZAN por completo a las de la
+ * grabadora (no se combinan). Pasarle solo `{ fileName }` grababa en iPhone
+ * un archivo sin formato ni extensión, que no sonaba ni se podía subir.
+ */
+export const VOICE_RECORDING_OPTIONS: RecordingOptions = {
+  ...RecordingPresets.HIGH_QUALITY,
+  isMeteringEnabled: true,
+};
 
 /** Rango de volumen que se muestra en la onda (decibeles). */
 const SILENCE_DB = -60;
@@ -32,10 +48,7 @@ function normalizeLevel(metering: number | undefined): number | undefined {
  * borra la última si ya no se va a usar.
  */
 export function useVoiceRecorder() {
-  const recorder = useAudioRecorder({
-    ...RecordingPresets.HIGH_QUALITY,
-    isMeteringEnabled: true,
-  });
+  const recorder = useAudioRecorder(VOICE_RECORDING_OPTIONS);
   const recorderState = useAudioRecorderState(recorder, 100);
   const [status, setStatus] = useState<RecorderStatus>('idle');
   /** Archivo de la última grabación (para poder descartarla). */
@@ -51,8 +64,12 @@ export function useVoiceRecorder() {
     // Grabar otra vez reemplaza la toma anterior: esa ya no se usa.
     deleteRecording(lastUri.current);
     // Nombre propio en cada grabación: no se pisa la anterior y se puede
-    // borrar solo lo de GameUP.
-    await recorder.prepareToRecordAsync({ fileName: newRecordingName() });
+    // borrar solo lo de GameUP. Siempre con las opciones completas (ver
+    // VOICE_RECORDING_OPTIONS): si no, se pierden el formato y la extensión.
+    await recorder.prepareToRecordAsync({
+      ...VOICE_RECORDING_OPTIONS,
+      fileName: newRecordingName(),
+    });
     lastUri.current = recorder.uri;
     recorder.record();
     setStatus('recording');

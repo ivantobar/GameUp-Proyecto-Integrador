@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { deleteRecording } from '@/features/audio/recordingFiles';
 import { useVoiceRecorder } from '@/features/speak/useVoiceRecorder';
 
@@ -28,13 +28,22 @@ export function useVoiceNote() {
     if (started) setPhase('recording');
   }, [recorder]);
 
+  // La versión más reciente de `stop`, para el tope de la nota.
+  const stopRef = useRef(stop);
+  useEffect(() => {
+    stopRef.current = stop;
+  }, [stop]);
+
+  // Tope de la nota. Depende SOLO de `phase`: mientras graba, el medidor de
+  // volumen redibuja cada 100 ms y `stop` cambia en cada dibujo; si el
+  // temporizador dependiera de `stop`, se reiniciaría sin llegar al minuto.
   useEffect(() => {
     if (phase !== 'recording') return;
     const id = setTimeout(() => {
-      stop().catch(() => {});
+      stopRef.current().catch(() => {});
     }, MAX_VOICE_NOTE_MS);
     return () => clearTimeout(id);
-  }, [phase, stop]);
+  }, [phase]);
 
   /**
    * Envía la nota con `onSave`. Si se guardó, el archivo se borra del
