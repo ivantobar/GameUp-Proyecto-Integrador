@@ -43,6 +43,10 @@ const problemNotices: Record<
     message:
       'No pudimos verificar tu cuenta en este momento. Espera un momento e inténtalo otra vez.',
   },
+  tooMany: {
+    title: 'Demasiados intentos',
+    message: 'Demasiados intentos. Espera un momento y vuelve a intentarlo.',
+  },
   connection: {
     title: 'Sin conexión',
     message: 'Revisa la conexión a internet e inténtalo otra vez.',

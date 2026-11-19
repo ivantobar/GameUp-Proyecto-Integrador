@@ -8,6 +8,7 @@ import {
   AccountNotAllowedError,
   InvalidCredentialsError,
   SignInUnavailableError,
+  TooManyAttemptsError,
 } from '../authErrors';
 import type { AuthRepository } from '../repositories';
 import type { LoginDto, LoginRespuestaDto } from './dto/auth';
@@ -58,6 +59,11 @@ export function createHttpAuthRepository(
         // ejemplo, se estaba despertando en Render). No es la red del teléfono.
         if (error instanceof ServerError && error.status === 503) {
           throw new SignInUnavailableError();
+        }
+        // 429: el backend frena los intentos seguidos (10 por minuto con el
+        // mismo correo, 100 desde la misma red). No es falta de internet.
+        if (error instanceof ServerError && error.status === 429) {
+          throw new TooManyAttemptsError();
         }
         throw error;
       }

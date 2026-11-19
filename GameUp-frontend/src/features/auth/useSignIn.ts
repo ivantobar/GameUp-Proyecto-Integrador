@@ -3,6 +3,7 @@ import {
   AccountNotAllowedError,
   InvalidCredentialsError,
   SignInUnavailableError,
+  TooManyAttemptsError,
 } from '@/data/authErrors';
 import { useRepositories } from '@/data/RepositoryProvider';
 import type { AuthSession } from '@/data/types';
@@ -15,12 +16,13 @@ import {
 
 /** Por qué no se pudo entrar, cuando el formulario estaba bien escrito. */
 export type SignInProblem =
-  'invalid' | 'notAllowed' | 'unavailable' | 'connection';
+  'invalid' | 'notAllowed' | 'unavailable' | 'tooMany' | 'connection';
 
 function problemOf(error: unknown): SignInProblem {
   if (error instanceof InvalidCredentialsError) return 'invalid';
   if (error instanceof AccountNotAllowedError) return 'notAllowed';
   if (error instanceof SignInUnavailableError) return 'unavailable';
+  if (error instanceof TooManyAttemptsError) return 'tooMany';
   return 'connection';
 }
 

@@ -10,6 +10,7 @@ import {
   AccountNotAllowedError,
   InvalidCredentialsError,
   SignInUnavailableError,
+  TooManyAttemptsError,
 } from '../../authErrors';
 import { createHttpRepositories } from '../createHttpRepositories';
 import { createMemoryTokenStore } from '../tokenStore';
@@ -110,6 +111,18 @@ describe('AuthRepository (HTTP)', () => {
       .signIn({ email: 'a@b.co', password: 'x' })
       .catch((e: unknown) => e);
     expect((e2 as AccountNotAllowedError).reason).toBeNull();
+  });
+
+  it('429 (demasiados intentos): TooManyAttemptsError, no un error de conexión', async () => {
+    const frenado = setup(() =>
+      errorResponse(
+        429,
+        'Demasiados intentos. Espera un momento y vuelve a intentarlo.',
+      ),
+    );
+    await expect(
+      frenado.repos.auth.signIn({ email: 'a@b.co', password: 'x' }),
+    ).rejects.toBeInstanceOf(TooManyAttemptsError);
   });
 
   it('503 o sin red: no son credenciales inválidas', async () => {
