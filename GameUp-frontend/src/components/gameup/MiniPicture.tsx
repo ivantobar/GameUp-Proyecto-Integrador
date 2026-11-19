@@ -2,7 +2,7 @@ import { Image, StyleSheet } from 'react-native';
 import { AppText } from '@/components/ui';
 import type { PictureFace } from '@/data/types';
 import { radii, sizes } from '@/theme';
-import { Illustration, illustrationFor } from './illustrations';
+import { Illustration, illustrationFor, visibleText } from './illustrations';
 
 interface MiniPictureProps {
   face: PictureFace;
@@ -31,7 +31,7 @@ export function MiniPicture({ face, size = 'sm' }: MiniPictureProps) {
   if (drawing) return <Illustration name={drawing} size={side} />;
   return (
     <AppText variant="support" style={styles.word}>
-      {face.text ?? face.label}
+      {visibleText(face) ?? face.label}
     </AppText>
   );
 }

@@ -40,10 +40,34 @@ const byEmoji: Record<string, ContentIllustration> = {
   '🧻': 'toalla',
   '🪥': 'cepillo',
   '😁': 'dientes',
-  '🥛': 'vaso',
+  '🥛': 'leche',
   '🔴': 'circuloRojo',
   '🔵': 'circuloAzul',
   '🟢': 'circuloVerde',
+  '🍓': 'fresa',
+  '🍐': 'pera',
+  '🍉': 'sandia',
+  '🐰': 'conejo',
+  '🐑': 'oveja',
+  '🐮': 'vaca',
+  '🐷': 'cerdo',
+  '🐻': 'oso',
+  '🦁': 'leon',
+  '🐒': 'mono',
+  '🐘': 'elefante',
+  '🐙': 'pulpo',
+  '🐝': 'abeja',
+  '✈': 'avion',
+  '⛵': 'barco',
+  '🚂': 'tren',
+  '🚌': 'bus',
+  '🚲': 'bicicleta',
+  '🎈': 'globo',
+  '🥄': 'cuchara',
+  '🌊': 'mar',
+  '💧': 'gota',
+  '🟡': 'circuloAmarillo',
+  '🙌': 'manos',
 };
 
 /**
@@ -88,6 +112,30 @@ const byWord: Record<string, ContentIllustration> = {
   circulo: 'circulo',
   cuadrado: 'cuadrado',
   triangulo: 'triangulo',
+  fresa: 'fresa',
+  pera: 'pera',
+  sandia: 'sandia',
+  conejo: 'conejo',
+  oveja: 'oveja',
+  vaca: 'vaca',
+  cerdo: 'cerdo',
+  oso: 'oso',
+  leon: 'leon',
+  mono: 'mono',
+  elefante: 'elefante',
+  pulpo: 'pulpo',
+  abeja: 'abeja',
+  avion: 'avion',
+  barco: 'barco',
+  tren: 'tren',
+  bus: 'bus',
+  bicicleta: 'bicicleta',
+  globo: 'globo',
+  cuchara: 'cuchara',
+  mar: 'mar',
+  gota: 'gota',
+  amarillo: 'circuloAmarillo',
+  leche: 'leche',
 };
 
 /** Minúsculas, sin tildes y con un solo espacio entre palabras. */
@@ -102,7 +150,57 @@ export function normalizeWord(text: string): string {
 
 /** Quita el selector de variante (U+FE0F) que traen algunos emojis («☀️»). */
 function normalizeEmoji(emoji: string): string {
-  return emoji.replace(/️/g, '').trim();
+  return emoji.replace(/\uFE0F/g, '').trim();
+}
+
+/**
+ * Rangos de los emojis que usa el contenido (pictogramas, símbolos,
+ * dingbats, flechas y relojes). Se escriben a mano en lugar de usar
+ * `\p{Extended_Pictographic}`: así no depende de que el motor de JavaScript
+ * del teléfono (Hermes) soporte esa propiedad.
+ */
+const EMOJI_RANGES: readonly [number, number][] = [
+  [0x1f000, 0x1faff],
+  [0x2300, 0x23ff],
+  [0x2600, 0x27bf],
+  [0x2b00, 0x2bff],
+];
+/** Selector de variante y unión de emojis: acompañan, no cuentan. */
+const EMOJI_JOINERS = new Set([0xfe0f, 0x200d]);
+
+const isEmojiCodePoint = (code: number) =>
+  EMOJI_RANGES.some(([from, to]) => code >= from && code <= to);
+
+/**
+ * ¿El texto es solo uno o varios emojis? («🍎», «☀️»). Las letras, los
+ * números y las palabras («a», «3», «sol») no lo son.
+ */
+export function isEmojiOnly(text: string): boolean {
+  let hasEmoji = false;
+  for (const char of text.trim()) {
+    const code = char.codePointAt(0) ?? 0;
+    if (isEmojiCodePoint(code)) hasEmoji = true;
+    else if (!EMOJI_JOINERS.has(code)) return false;
+  }
+  return hasEmoji;
+}
+
+/**
+ * Emoji provisional de una tarjeta. El contenido de ejemplo lo trae en
+ * `emoji`; el que siembra el backend, en `texto` (`face.text`). En los dos
+ * casos solo sirve para elegir el dibujo: nunca se muestra.
+ */
+export function provisionalEmoji(face: PictureFace): string | undefined {
+  if (face.emoji) return face.emoji;
+  return face.text && isEmojiOnly(face.text) ? face.text : undefined;
+}
+
+/**
+ * Texto que sí se escribe en la tarjeta (una letra, un número, una
+ * palabra). Un emoji no se escribe nunca.
+ */
+export function visibleText(face: PictureFace): string | undefined {
+  return face.text && !isEmojiOnly(face.text) ? face.text : undefined;
 }
 
 /**
@@ -111,8 +209,9 @@ function normalizeEmoji(emoji: string): string {
  * la etiqueta.
  */
 export function illustrationFor(face: PictureFace): ContentIllustration | null {
-  if (face.emoji) {
-    const fromEmoji = byEmoji[normalizeEmoji(face.emoji)];
+  const emoji = provisionalEmoji(face);
+  if (emoji) {
+    const fromEmoji = byEmoji[normalizeEmoji(emoji)];
     if (fromEmoji) return fromEmoji;
   }
   return byWord[normalizeWord(face.label)] ?? null;

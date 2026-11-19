@@ -3,7 +3,7 @@ import { Image, StyleSheet, View } from 'react-native';
 import { AppText } from '@/components/ui';
 import type { PictureFace } from '@/data/types';
 import { radii, sizes, spacing, type TextVariant } from '@/theme';
-import { Illustration, illustrationFor } from './illustrations';
+import { Illustration, illustrationFor, visibleText } from './illustrations';
 
 export type PictogramSize = 'md' | 'lg';
 
@@ -24,7 +24,8 @@ function textVariant(text: string): TextVariant {
  *    emoji provisional o a su palabra (`illustrationFor`);
  * 3. si no hay coincidencia exacta, la palabra (nunca un dibujo parecido).
  * El dibujo se repite si es una cantidad; el número o la palabra de
- * `face.text` va al lado.
+ * `face.text` va al lado. Si `face.text` es un emoji (así lo siembra el
+ * backend), solo sirve para elegir el dibujo: nunca se muestra.
  *
  * Es decorativo: el elemento que lo contiene dice al lector de pantalla qué
  * es (`face.label`).
@@ -35,8 +36,8 @@ export function Pictogram({ face, size = 'md' }: PictogramProps) {
   const repeat = (render: (index: number) => ReactNode) =>
     Array.from({ length: count }, (_, index) => render(index));
   const drawing = face.imageUri ? null : illustrationFor(face);
-  const fallbackText =
-    !face.imageUri && !drawing && !face.text ? face.label : null;
+  const text = visibleText(face);
+  const fallbackText = !face.imageUri && !drawing && !text ? face.label : null;
 
   return (
     <View
@@ -60,9 +61,7 @@ export function Pictogram({ face, size = 'md' }: PictogramProps) {
               <Illustration key={index} name={drawing} size={side} />
             ))
           : null}
-      {face.text ? (
-        <AppText variant={textVariant(face.text)}>{face.text}</AppText>
-      ) : null}
+      {text ? <AppText variant={textVariant(text)}>{text}</AppText> : null}
       {fallbackText ? (
         <AppText variant={textVariant(fallbackText)} style={styles.word}>
           {fallbackText}

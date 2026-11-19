@@ -526,6 +526,576 @@ export const contentDrawings = {
       />
     </>
   ),
+  // Lo que más se repite en el contenido que siembra el backend.
+  fresa: (
+    <>
+      <Path
+        d="M50 90 C30 84 16 64 20 44 C22 34 34 30 50 34 C66 30 78 34 80 44 C84 64 70 84 50 90 Z"
+        fill={ink.rojo}
+        {...line}
+      />
+      <Path
+        d="M30 38 Q40 24 50 32 Q60 24 70 38 Q58 42 50 37 Q42 42 30 38 Z"
+        fill={ink.hoja}
+        {...line}
+      />
+      <Path d="M50 32 L50 16" {...stroke} />
+      {[
+        [38, 50],
+        [50, 48],
+        [62, 50],
+        [44, 62],
+        [56, 62],
+        [50, 75],
+        [34, 62],
+        [66, 62],
+      ].map(([cx, cy]) => (
+        <Ellipse
+          key={`${cx}-${cy}`}
+          cx={cx}
+          cy={cy}
+          rx={1.8}
+          ry={2.6}
+          fill={ink.amarillo}
+        />
+      ))}
+    </>
+  ),
+  pera: (
+    <>
+      <Path
+        d="M50 22 C42 22 40 30 40 38 C40 46 26 54 26 70 C26 84 38 92 50 92 C62 92 74 84 74 70 C74 54 60 46 60 38 C60 30 58 22 50 22 Z"
+        fill={ink.hoja}
+        {...line}
+      />
+      <Path d="M50 22 Q52 14 56 10" {...stroke} />
+      <Path d="M54 16 Q64 6 74 12 Q66 22 54 16 Z" fill={ink.hoja} {...line} />
+      <Ellipse cx={38} cy={68} rx={4} ry={8} fill={ink.blanco} opacity={0.6} />
+    </>
+  ),
+  sandia: (
+    <>
+      <Path
+        d="M8 38 L92 38 Q92 88 50 88 Q8 88 8 38 Z"
+        fill={ink.hoja}
+        {...line}
+      />
+      <Path d="M16 38 L84 38 Q82 78 50 79 Q18 78 16 38 Z" fill={ink.rojo} />
+      {[
+        [34, 50],
+        [50, 56],
+        [66, 50],
+        [42, 66],
+        [58, 66],
+      ].map(([cx, cy]) => (
+        <Ellipse
+          key={`${cx}-${cy}`}
+          cx={cx}
+          cy={cy}
+          rx={2}
+          ry={3.2}
+          fill={ink.contorno}
+        />
+      ))}
+      <Path d="M8 38 L92 38" {...stroke} />
+    </>
+  ),
+  conejo: (
+    <>
+      <Ellipse cx={38} cy={28} rx={8} ry={22} fill={ink.blanco} {...line} />
+      <Ellipse cx={62} cy={28} rx={8} ry={22} fill={ink.blanco} {...line} />
+      <Ellipse cx={38} cy={28} rx={3.5} ry={14} fill={ink.rosa} />
+      <Ellipse cx={62} cy={28} rx={3.5} ry={14} fill={ink.rosa} />
+      <Circle cx={50} cy={64} r={27} fill={ink.blanco} {...line} />
+      <Circle cx={40} cy={58} r={4.5} fill={ink.contorno} />
+      <Circle cx={60} cy={58} r={4.5} fill={ink.contorno} />
+      <Circle cx={41.5} cy={56.5} r={1.6} fill={ink.blanco} />
+      <Circle cx={61.5} cy={56.5} r={1.6} fill={ink.blanco} />
+      <Circle cx={32} cy={70} r={4} fill={ink.mejilla} opacity={0.8} />
+      <Circle cx={68} cy={70} r={4} fill={ink.mejilla} opacity={0.8} />
+      <Path
+        d="M46 66 L54 66 L50 71 Z"
+        fill={ink.rosa}
+        {...line}
+        strokeWidth={2}
+      />
+      <Path d="M44 76 Q50 80 56 76" {...stroke} strokeWidth={2.5} />
+    </>
+  ),
+  oveja: (
+    <>
+      <Rect x={32} y={64} width={7} height={22} rx={3} fill={ink.contorno} />
+      <Rect x={62} y={64} width={7} height={22} rx={3} fill={ink.contorno} />
+      <Path
+        d="M28 68 C14 68 14 48 28 48 C28 34 44 30 52 40 C58 30 76 32 78 44 C92 44 92 68 78 68 Z"
+        fill={ink.blanco}
+        {...line}
+      />
+      <Ellipse
+        cx={16}
+        cy={46}
+        rx={7}
+        ry={4}
+        fill={ink.gris}
+        {...line}
+        strokeWidth={2}
+        transform="rotate(-25 16 46)"
+      />
+      <Ellipse cx={26} cy={56} rx={11} ry={13} fill={ink.gris} {...line} />
+      <Circle cx={22} cy={54} r={3} fill={ink.contorno} />
+      <Circle cx={30} cy={54} r={3} fill={ink.contorno} />
+      <Path d="M22 62 Q26 65 30 62" {...stroke} strokeWidth={2} />
+    </>
+  ),
+  vaca: (
+    <>
+      <Ellipse
+        cx={18}
+        cy={42}
+        rx={11}
+        ry={6}
+        fill={ink.blanco}
+        {...line}
+        transform="rotate(-20 18 42)"
+      />
+      <Ellipse
+        cx={82}
+        cy={42}
+        rx={11}
+        ry={6}
+        fill={ink.blanco}
+        {...line}
+        transform="rotate(20 82 42)"
+      />
+      <Path
+        d="M32 30 Q28 18 34 14"
+        {...stroke}
+        strokeWidth={5}
+        stroke={ink.gris}
+      />
+      <Path
+        d="M68 30 Q72 18 66 14"
+        {...stroke}
+        strokeWidth={5}
+        stroke={ink.gris}
+      />
+      <Ellipse cx={50} cy={52} rx={28} ry={28} fill={ink.blanco} {...line} />
+      <Path d="M30 36 Q38 30 44 38 Q42 48 32 46 Z" fill={ink.contorno} />
+      <Circle cx={40} cy={48} r={4} fill={ink.contorno} />
+      <Circle cx={60} cy={48} r={4} fill={ink.contorno} />
+      <Circle cx={41.4} cy={46.6} r={1.4} fill={ink.blanco} />
+      <Circle cx={61.4} cy={46.6} r={1.4} fill={ink.blanco} />
+      <Ellipse cx={50} cy={68} rx={19} ry={12} fill={ink.mejilla} {...line} />
+      <Ellipse cx={43} cy={67} rx={2.5} ry={3.5} fill={ink.contorno} />
+      <Ellipse cx={57} cy={67} rx={2.5} ry={3.5} fill={ink.contorno} />
+    </>
+  ),
+  cerdo: (
+    <>
+      <Path d="M26 36 L22 16 L42 28 Z" fill={ink.rosa} {...line} />
+      <Path d="M74 36 L78 16 L58 28 Z" fill={ink.rosa} {...line} />
+      <Circle cx={50} cy={54} r={30} fill={ink.rosa} {...line} />
+      <Circle cx={39} cy={46} r={4.5} fill={ink.contorno} />
+      <Circle cx={61} cy={46} r={4.5} fill={ink.contorno} />
+      <Circle cx={40.5} cy={44.5} r={1.6} fill={ink.blanco} />
+      <Circle cx={62.5} cy={44.5} r={1.6} fill={ink.blanco} />
+      <Ellipse cx={50} cy={63} rx={13} ry={9} fill={ink.mejilla} {...line} />
+      <Ellipse cx={45} cy={63} rx={2.2} ry={3.2} fill={ink.contorno} />
+      <Ellipse cx={55} cy={63} rx={2.2} ry={3.2} fill={ink.contorno} />
+      <Path d="M44 76 Q50 80 56 76" {...stroke} strokeWidth={2.5} />
+    </>
+  ),
+  oso: (
+    <>
+      <Circle cx={26} cy={30} r={12} fill={ink.cafe} {...line} />
+      <Circle cx={74} cy={30} r={12} fill={ink.cafe} {...line} />
+      <Circle cx={26} cy={30} r={5} fill={ink.piel} />
+      <Circle cx={74} cy={30} r={5} fill={ink.piel} />
+      <Circle cx={50} cy={56} r={31} fill={ink.cafe} {...line} />
+      <Ellipse cx={50} cy={67} rx={14} ry={11} fill={ink.piel} />
+      <Circle cx={39} cy={50} r={4.5} fill={ink.contorno} />
+      <Circle cx={61} cy={50} r={4.5} fill={ink.contorno} />
+      <Circle cx={40.5} cy={48.5} r={1.6} fill={ink.blanco} />
+      <Circle cx={62.5} cy={48.5} r={1.6} fill={ink.blanco} />
+      <Ellipse cx={50} cy={62} rx={6} ry={4.5} fill={ink.contorno} />
+      <Path d="M44 71 Q50 76 56 71" {...stroke} strokeWidth={2.5} />
+    </>
+  ),
+  leon: (
+    <>
+      {[0, 36, 72, 108, 144, 180, 216, 252, 288, 324].map((angle) => {
+        const rad = (angle * Math.PI) / 180;
+        return (
+          <Circle
+            key={angle}
+            cx={50 + 30 * Math.cos(rad)}
+            cy={52 + 30 * Math.sin(rad)}
+            r={13}
+            fill={ink.naranja}
+            {...line}
+          />
+        );
+      })}
+      <Circle cx={50} cy={52} r={27} fill={ink.amarillo} {...line} />
+      <Circle cx={40} cy={47} r={4.5} fill={ink.contorno} />
+      <Circle cx={60} cy={47} r={4.5} fill={ink.contorno} />
+      <Circle cx={41.5} cy={45.5} r={1.6} fill={ink.blanco} />
+      <Circle cx={61.5} cy={45.5} r={1.6} fill={ink.blanco} />
+      <Path
+        d="M44 57 L56 57 L50 64 Z"
+        fill={ink.cafeOscuro}
+        {...line}
+        strokeWidth={2}
+      />
+      <Path d="M43 68 Q50 74 57 68" {...stroke} strokeWidth={2.5} />
+    </>
+  ),
+  mono: (
+    <>
+      <Circle cx={20} cy={50} r={12} fill={ink.cafe} {...line} />
+      <Circle cx={80} cy={50} r={12} fill={ink.cafe} {...line} />
+      <Circle cx={20} cy={50} r={6} fill={ink.piel} />
+      <Circle cx={80} cy={50} r={6} fill={ink.piel} />
+      <Circle cx={50} cy={50} r={30} fill={ink.cafe} {...line} />
+      <Ellipse cx={41} cy={46} rx={11} ry={12} fill={ink.piel} />
+      <Ellipse cx={59} cy={46} rx={11} ry={12} fill={ink.piel} />
+      <Ellipse cx={50} cy={64} rx={19} ry={13} fill={ink.piel} />
+      <Circle cx={42} cy={46} r={4} fill={ink.contorno} />
+      <Circle cx={58} cy={46} r={4} fill={ink.contorno} />
+      <Circle cx={43.4} cy={44.6} r={1.4} fill={ink.blanco} />
+      <Circle cx={59.4} cy={44.6} r={1.4} fill={ink.blanco} />
+      <Circle cx={47} cy={59} r={1.8} fill={ink.contorno} />
+      <Circle cx={53} cy={59} r={1.8} fill={ink.contorno} />
+      <Path d="M42 67 Q50 74 58 67" {...stroke} strokeWidth={2.5} />
+    </>
+  ),
+  elefante: (
+    <>
+      <Ellipse cx={22} cy={46} rx={18} ry={24} fill={ink.gris} {...line} />
+      <Ellipse cx={78} cy={46} rx={18} ry={24} fill={ink.gris} {...line} />
+      <Ellipse
+        cx={22}
+        cy={46}
+        rx={10}
+        ry={15}
+        fill={ink.mejilla}
+        opacity={0.6}
+      />
+      <Ellipse
+        cx={78}
+        cy={46}
+        rx={10}
+        ry={15}
+        fill={ink.mejilla}
+        opacity={0.6}
+      />
+      <Path
+        d="M43 62 L57 62 L57 80 Q57 92 45 92 Q38 92 38 86 Q38 82 43 82 Q46 82 46 80 Z"
+        fill={ink.gris}
+        {...line}
+      />
+      <Circle cx={50} cy={44} r={26} fill={ink.gris} {...line} />
+      <Path d="M43 62 L57 62" stroke={ink.gris} strokeWidth={6} />
+      <Circle cx={40} cy={42} r={4.5} fill={ink.contorno} />
+      <Circle cx={60} cy={42} r={4.5} fill={ink.contorno} />
+      <Circle cx={41.5} cy={40.5} r={1.6} fill={ink.blanco} />
+      <Circle cx={61.5} cy={40.5} r={1.6} fill={ink.blanco} />
+      <Circle cx={34} cy={54} r={4} fill={ink.mejilla} opacity={0.8} />
+      <Circle cx={66} cy={54} r={4} fill={ink.mejilla} opacity={0.8} />
+    </>
+  ),
+  pulpo: (
+    <>
+      <Path
+        d="M24 54 Q20 70 10 74 Q22 82 32 64 Q34 78 28 88 Q42 84 42 64 Q46 80 50 90 Q54 80 58 64 Q58 84 72 88 Q66 78 68 64 Q78 82 90 74 Q80 70 76 54 Z"
+        fill={ink.morado}
+        {...line}
+      />
+      <Path
+        d="M22 58 C22 30 36 16 50 16 C64 16 78 30 78 58 Z"
+        fill={ink.morado}
+        {...line}
+      />
+      <Circle cx={40} cy={42} r={5} fill={ink.contorno} />
+      <Circle cx={60} cy={42} r={5} fill={ink.contorno} />
+      <Circle cx={41.6} cy={40.4} r={1.8} fill={ink.blanco} />
+      <Circle cx={61.6} cy={40.4} r={1.8} fill={ink.blanco} />
+      <Circle cx={32} cy={50} r={4} fill={ink.mejilla} opacity={0.8} />
+      <Circle cx={68} cy={50} r={4} fill={ink.mejilla} opacity={0.8} />
+      <Path d="M44 51 Q50 56 56 51" {...stroke} strokeWidth={2.5} />
+    </>
+  ),
+  abeja: (
+    <>
+      <Ellipse
+        cx={46}
+        cy={34}
+        rx={10}
+        ry={15}
+        fill={ink.celeste}
+        {...line}
+        strokeWidth={2}
+        transform="rotate(-20 46 34)"
+      />
+      <Ellipse
+        cx={62}
+        cy={32}
+        rx={10}
+        ry={15}
+        fill={ink.celeste}
+        {...line}
+        strokeWidth={2}
+        transform="rotate(20 62 32)"
+      />
+      <Ellipse cx={54} cy={58} rx={28} ry={20} fill={ink.amarillo} />
+      <Rect x={48} y={40} width={8} height={36} fill={ink.contorno} />
+      <Rect x={64} y={43} width={8} height={30} fill={ink.contorno} />
+      <Ellipse cx={54} cy={58} rx={28} ry={20} fill="none" {...line} />
+      <Path d="M82 56 L92 58 L82 62 Z" fill={ink.contorno} />
+      <Circle cx={26} cy={56} r={13} fill={ink.amarillo} {...line} />
+      <Circle cx={22} cy={53} r={3} fill={ink.contorno} />
+      <Path d="M20 61 Q24 64 28 61" {...stroke} strokeWidth={2} />
+      <Path
+        d="M24 44 Q20 34 14 32 M30 44 Q32 34 38 30"
+        {...stroke}
+        strokeWidth={2}
+      />
+    </>
+  ),
+  avion: (
+    <>
+      <Path d="M40 50 L56 20 L68 20 L62 50 Z" fill={ink.azul} {...line} />
+      <Path d="M14 46 L8 26 L20 26 L30 46 Z" fill={ink.azul} {...line} />
+      <Path
+        d="M10 52 Q10 44 20 44 L74 44 Q90 44 94 52 Q90 60 74 60 L20 60 Q10 60 10 52 Z"
+        fill={ink.blanco}
+        {...line}
+      />
+      <Path d="M40 54 L56 84 L68 84 L62 54 Z" fill={ink.azul} {...line} />
+      <Path
+        d="M80 47 Q88 48 91 52 L80 52 Z"
+        fill={ink.celeste}
+        {...line}
+        strokeWidth={2}
+      />
+      {[36, 48, 60, 72].map((cx) => (
+        <Circle
+          key={cx}
+          cx={cx}
+          cy={50}
+          r={2.6}
+          fill={ink.celeste}
+          {...line}
+          strokeWidth={1.5}
+        />
+      ))}
+    </>
+  ),
+  barco: (
+    <>
+      <Path d="M50 12 L50 66" {...stroke} />
+      <Path d="M54 16 L54 60 L86 60 Z" fill={ink.blanco} {...line} />
+      <Path d="M46 24 L46 60 L20 60 Z" fill={ink.amarillo} {...line} />
+      <Path d="M10 66 L90 66 L78 84 L22 84 Z" fill={ink.rojo} {...line} />
+      <Path
+        d="M6 92 Q16 86 26 92 Q36 98 46 92 Q56 86 66 92 Q76 98 94 92"
+        {...stroke}
+        stroke={ink.azul}
+      />
+    </>
+  ),
+  tren: (
+    <>
+      <Rect
+        x={20}
+        y={22}
+        width={12}
+        height={18}
+        rx={2}
+        fill={ink.gris}
+        {...line}
+      />
+      <Rect
+        x={10}
+        y={40}
+        width={58}
+        height={32}
+        rx={5}
+        fill={ink.rojo}
+        {...line}
+      />
+      <Rect
+        x={54}
+        y={24}
+        width={30}
+        height={48}
+        rx={5}
+        fill={ink.azul}
+        {...line}
+      />
+      <Rect
+        x={60}
+        y={32}
+        width={18}
+        height={14}
+        rx={3}
+        fill={ink.celeste}
+        {...line}
+        strokeWidth={2}
+      />
+      <Path d="M84 66 L92 66 L92 74 L84 74" fill={ink.gris} {...line} />
+      {[24, 46, 70].map((cx) => (
+        <G key={cx}>
+          <Circle cx={cx} cy={78} r={9} fill={ink.contorno} />
+          <Circle cx={cx} cy={78} r={3.5} fill={ink.gris} />
+        </G>
+      ))}
+    </>
+  ),
+  bus: (
+    <>
+      <Rect
+        x={6}
+        y={24}
+        width={88}
+        height={52}
+        rx={10}
+        fill={ink.amarillo}
+        {...line}
+      />
+      {[12, 32, 52].map((x) => (
+        <Rect
+          key={x}
+          x={x}
+          y={32}
+          width={16}
+          height={16}
+          rx={3}
+          fill={ink.celeste}
+          {...line}
+          strokeWidth={2}
+        />
+      ))}
+      <Rect
+        x={74}
+        y={32}
+        width={14}
+        height={30}
+        rx={3}
+        fill={ink.celeste}
+        {...line}
+        strokeWidth={2}
+      />
+      <Path d="M6 58 L70 58" stroke={ink.naranja} strokeWidth={4} />
+      {[26, 74].map((cx) => (
+        <G key={cx}>
+          <Circle cx={cx} cy={78} r={10} fill={ink.contorno} />
+          <Circle cx={cx} cy={78} r={4} fill={ink.gris} />
+        </G>
+      ))}
+    </>
+  ),
+  bicicleta: (
+    <>
+      <Circle cx={24} cy={66} r={18} fill="none" {...line} />
+      <Circle cx={76} cy={66} r={18} fill="none" {...line} />
+      <Path
+        d="M24 66 L42 40 L66 40 L76 66 M42 40 L50 66 L24 66 M50 66 L66 40"
+        fill="none"
+        stroke={ink.rojo}
+        strokeWidth={4}
+        strokeLinejoin="round"
+        strokeLinecap="round"
+      />
+      <Path d="M36 32 L48 32" {...stroke} strokeWidth={5} />
+      <Path d="M42 32 L42 40" {...stroke} />
+      <Path d="M66 40 L64 28 L74 26" {...stroke} />
+      <Circle cx={24} cy={66} r={3} fill={ink.contorno} />
+      <Circle cx={76} cy={66} r={3} fill={ink.contorno} />
+      <Circle cx={50} cy={66} r={4} fill={ink.contorno} />
+    </>
+  ),
+  globo: (
+    <>
+      <Path d="M50 74 Q42 84 52 96" {...stroke} strokeWidth={2.5} />
+      <Path
+        d="M45 76 L55 76 L50 70 Z"
+        fill={ink.rojo}
+        {...line}
+        strokeWidth={2}
+      />
+      <Ellipse cx={50} cy={40} rx={26} ry={31} fill={ink.rojo} {...line} />
+      <Ellipse cx={39} cy={30} rx={5} ry={9} fill={ink.blanco} opacity={0.6} />
+    </>
+  ),
+  cuchara: (
+    <>
+      <Path
+        d="M53 44 L60 50 L26 90 Q22 94 18 90 Q15 86 19 82 Z"
+        fill={ink.gris}
+        {...line}
+      />
+      <Ellipse
+        cx={68}
+        cy={30}
+        rx={15}
+        ry={21}
+        fill={ink.gris}
+        {...line}
+        transform="rotate(40 68 30)"
+      />
+      <Ellipse
+        cx={66}
+        cy={28}
+        rx={5}
+        ry={10}
+        fill={ink.blanco}
+        opacity={0.6}
+        transform="rotate(40 66 28)"
+      />
+    </>
+  ),
+  mar: (
+    <>
+      <Path
+        d="M6 48 Q18 32 32 44 Q42 54 52 44 Q62 34 72 44 Q82 54 94 42 L94 90 L6 90 Z"
+        fill={ink.azul}
+        {...line}
+      />
+      <Path
+        d="M6 66 Q18 56 30 66 Q42 76 54 66 Q66 56 78 66 Q86 72 94 66 L94 90 L6 90 Z"
+        fill={ink.celeste}
+        {...line}
+      />
+    </>
+  ),
+  gota: (
+    <>
+      <Path
+        d="M50 10 C40 32 22 48 22 64 C22 80 35 90 50 90 C65 90 78 80 78 64 C78 48 60 32 50 10 Z"
+        fill={ink.celeste}
+        {...line}
+      />
+      <Ellipse cx={38} cy={64} rx={4} ry={9} fill={ink.blanco} opacity={0.8} />
+    </>
+  ),
+  leche: (
+    <>
+      <Path d="M28 32 L28 90 L72 90 L72 32 Z" fill={ink.blanco} {...line} />
+      <Path d="M28 32 L36 14 L64 14 L72 32 Z" fill={ink.blanco} {...line} />
+      <Path
+        d="M44 14 L44 8 L56 8 L56 14"
+        fill={ink.azul}
+        {...line}
+        strokeWidth={2}
+      />
+      <Rect x={28} y={48} width={44} height={24} fill={ink.azul} {...line} />
+      <Path d="M50 52 Q44 60 50 66 Q56 60 50 52 Z" fill={ink.blanco} />
+    </>
+  ),
+  circuloAmarillo: (
+    <Circle cx={50} cy={50} r={36} fill={ink.amarillo} {...line} />
+  ),
   circuloRojo: <Circle cx={50} cy={50} r={36} fill={ink.rojo} {...line} />,
   circuloAzul: <Circle cx={50} cy={50} r={36} fill={ink.azul} {...line} />,
   circuloVerde: <Circle cx={50} cy={50} r={36} fill={ink.hoja} {...line} />,

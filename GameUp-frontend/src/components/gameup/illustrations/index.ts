@@ -5,4 +5,10 @@ export {
 } from './Illustration';
 export { contentDrawings, type ContentIllustration } from './contentDrawings';
 export { sceneDrawings, type SceneIllustration } from './sceneDrawings';
-export { illustrationFor, normalizeWord } from './illustrationLookup';
+export {
+  illustrationFor,
+  isEmojiOnly,
+  normalizeWord,
+  provisionalEmoji,
+  visibleText,
+} from './illustrationLookup';
