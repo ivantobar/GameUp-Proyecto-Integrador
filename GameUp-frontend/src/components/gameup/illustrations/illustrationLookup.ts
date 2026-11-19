@@ -5,9 +5,17 @@ import type { ContentIllustration } from './contentDrawings';
  * Diccionario de respaldo de `Pictogram`: qué dibujo propio va con cada
  * tarjeta cuando la fundación no subió una imagen.
  *
- * Regla: solo coincidencias EXACTAS. Si la palabra no está aquí, la tarjeta
- * muestra la palabra; nunca un dibujo «parecido» (un niño aprendiendo
- * vocabulario no debe ver un dibujo que no corresponde).
+ * Regla: solo coincidencias EXACTAS; nunca un dibujo «parecido» (un niño
+ * aprendiendo vocabulario no debe ver un dibujo que no corresponde).
+ *
+ * Qué muestra una tarjeta (ver `Pictogram`), en este orden:
+ * 1. la imagen de la fundación;
+ * 2. el dibujo propio de su emoji (o, si no trae emoji ni texto, el de su
+ *    palabra exacta);
+ * 3. el emoji, en grande, como imagen: los niños no leen, y en «¿Qué
+ *    palabra es?» la imagen de arriba no puede volverse palabra;
+ * 4. solo si no hay nada de lo anterior, la palabra.
+ * El emoji nunca aparece junto a un dibujo.
  *
  * Los datos (`src/data/**`) no se tocan: los emojis provisionales del
  * contenido de ejemplo se traducen aquí.
@@ -204,15 +212,18 @@ export function visibleText(face: PictureFace): string | undefined {
 }
 
 /**
- * Dibujo propio para una tarjeta, o `null` si no hay coincidencia exacta
- * (entonces se muestra la palabra). Primero el emoji provisional; después
- * la etiqueta.
+ * Dibujo propio para una tarjeta, o `null` si no le corresponde ninguno.
+ *
+ * - Con emoji provisional (en `emoji` o en `texto`): el dibujo de ESE
+ *   emoji. Si no hay, `null` y la tarjeta muestra el emoji en grande:
+ *   nunca se busca un dibujo por la palabra (podría no ser el mismo).
+ * - Con texto escrito (una palabra, un número): `null`. La tarjeta es para
+ *   leer («¿Qué palabra es?»): un dibujo al lado regalaría la respuesta.
+ * - Sin emoji ni texto: el dibujo de la palabra exacta de la etiqueta.
  */
 export function illustrationFor(face: PictureFace): ContentIllustration | null {
   const emoji = provisionalEmoji(face);
-  if (emoji) {
-    const fromEmoji = byEmoji[normalizeEmoji(emoji)];
-    if (fromEmoji) return fromEmoji;
-  }
+  if (emoji) return byEmoji[normalizeEmoji(emoji)] ?? null;
+  if (visibleText(face)) return null;
   return byWord[normalizeWord(face.label)] ?? null;
 }

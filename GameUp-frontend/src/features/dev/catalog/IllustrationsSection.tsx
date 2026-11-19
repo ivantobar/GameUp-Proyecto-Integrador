@@ -39,11 +39,15 @@ export function IllustrationsSection() {
         </View>
       </Card>
 
-      <CatalogLabel>Sin coincidencia exacta: la palabra</CatalogLabel>
+      <CatalogLabel>
+        Orden: dibujo, emoji (sin dibujo), palabra (sin nada más)
+      </CatalogLabel>
       <Card>
         <View style={styles.grid}>
           <Pictogram face={{ id: 'a', label: 'Plátano' }} />
-          <Pictogram face={{ id: 'b', label: 'trompo' }} />
+          <Pictogram face={{ id: 'b', label: 'canoa', text: '🛶' }} />
+          <Pictogram face={{ id: 'c', label: 'trompo' }} />
+          <Pictogram face={{ id: 'd', label: 'manzana', text: 'Manzana' }} />
         </View>
       </Card>
 

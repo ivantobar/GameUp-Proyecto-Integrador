@@ -9,8 +9,11 @@ import {
 
 /**
  * El backend siembra el dibujo provisional en `texto` («🍎»), no en
- * `emoji`. Antes la tarjeta mostraba el dibujo propio Y el emoji al lado.
- * Un emoji nunca se muestra: solo sirve para elegir el dibujo.
+ * `emoji`. Reglas:
+ * - si hay dibujo propio para el emoji, se ve el dibujo y NO el emoji (antes
+ *   salían los dos, uno al lado del otro);
+ * - si no hay dibujo, se ve el emoji en grande, como imagen (los niños no
+ *   leen); nunca se cambia por la palabra.
  */
 const hidden = { includeHiddenElements: true } as const;
 
@@ -50,11 +53,29 @@ describe('tarjeta de la API con el emoji en `texto`', () => {
     expect(screen.queryByText('☀️', hidden)).toBeNull();
   });
 
-  it('un emoji sin dibujo propio muestra la palabra, no el emoji', async () => {
+  it('un emoji sin dibujo propio (🛶) se muestra como imagen, no la palabra', async () => {
     await render(<Pictogram face={{ id: 'p', label: 'canoa', text: '🛶' }} />);
-    expect(screen.getByText('canoa', hidden)).toBeOnTheScreen();
-    expect(screen.queryByText('🛶', hidden)).toBeNull();
+    expect(screen.getByTestId('pictogram-emoji', hidden)).toHaveTextContent(
+      '🛶',
+    );
+    expect(screen.queryByText('canoa', hidden)).toBeNull();
     expect(screen.queryByTestId(/^illustration-/, hidden)).toBeNull();
+  });
+
+  it('nunca busca un dibujo por la palabra si el emoji no tiene dibujo', async () => {
+    // «barco» tiene dibujo, pero el emoji es 🛶: se ve 🛶, no el velero.
+    await render(<Pictogram face={{ id: 'p', label: 'barco', text: '🛶' }} />);
+    expect(screen.getByText('🛶', hidden)).toBeOnTheScreen();
+    expect(screen.queryByTestId('illustration-barco', hidden)).toBeNull();
+  });
+
+  it('una cantidad sin dibujo repite el emoji', async () => {
+    await render(
+      <Pictogram
+        face={{ id: 'p', label: 'dos canoas', text: '🛶', count: 2 }}
+      />,
+    );
+    expect(screen.getAllByTestId('pictogram-emoji', hidden)).toHaveLength(2);
   });
 
   it('una cantidad repite el dibujo, sin el emoji', async () => {
@@ -76,7 +97,7 @@ describe('tarjeta de la API con el emoji en `texto`', () => {
     expect(screen.getByText('3', hidden)).toBeOnTheScreen();
   });
 
-  it('la miniatura (grupos y casillas) tampoco muestra el emoji', async () => {
+  it('la miniatura (grupos y casillas): dibujo sin emoji; sin dibujo, el emoji', async () => {
     await render(<MiniPicture face={{ id: 'p', label: 'gato', text: '🐱' }} />);
     expect(screen.getByTestId('illustration-gato', hidden)).toBeOnTheScreen();
     expect(screen.queryByText('🐱', hidden)).toBeNull();
@@ -84,8 +105,28 @@ describe('tarjeta de la API con el emoji en `texto`', () => {
     await render(
       <MiniPicture face={{ id: 'q', label: 'canoa', text: '🛶' }} />,
     );
-    expect(screen.getByText('canoa', hidden)).toBeOnTheScreen();
-    expect(screen.queryByText('🛶', hidden)).toBeNull();
+    expect(screen.getByTestId('mini-picture-emoji', hidden)).toHaveTextContent(
+      '🛶',
+    );
+    expect(screen.queryByText('canoa', hidden)).toBeNull();
+  });
+
+  it('una tarjeta para leer («Manzana») muestra solo la palabra, sin dibujo', async () => {
+    // Si llevara el dibujo, en «¿Qué palabra es?» regalaría la respuesta.
+    await render(
+      <Pictogram face={{ id: 'p', label: 'manzana', text: 'Manzana' }} />,
+    );
+    expect(screen.getByText('Manzana', hidden)).toBeOnTheScreen();
+    expect(screen.queryByTestId(/^illustration-/, hidden)).toBeNull();
+    expect(
+      illustrationFor({ id: 'p', label: 'manzana', text: 'Manzana' }),
+    ).toBeNull();
+  });
+
+  it('solo sin imagen, dibujo ni emoji se muestra la palabra', async () => {
+    await render(<Pictogram face={{ id: 'p', label: 'trompo' }} />);
+    expect(screen.getByText('trompo', hidden)).toBeOnTheScreen();
+    expect(screen.queryByTestId('pictogram-emoji', hidden)).toBeNull();
   });
 
   it('visibleText descarta solo los emojis', () => {

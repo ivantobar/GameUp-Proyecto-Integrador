@@ -107,15 +107,15 @@ describe('Pictogram', () => {
     ).toBeNull();
   });
 
-  it('un emoji sin dibujo propio muestra la palabra, no el emoji', async () => {
+  it('un emoji sin dibujo propio se muestra como imagen, no la palabra', async () => {
     await render(
       <Pictogram face={{ id: 'p', label: 'trompo', emoji: '🪀' }} />,
     );
     expect(
-      screen.getByText('trompo', { includeHiddenElements: true }),
+      screen.getByText('🪀', { includeHiddenElements: true }),
     ).toBeOnTheScreen();
     expect(
-      screen.queryByText('🪀', { includeHiddenElements: true }),
+      screen.queryByText('trompo', { includeHiddenElements: true }),
     ).toBeNull();
   });
 });

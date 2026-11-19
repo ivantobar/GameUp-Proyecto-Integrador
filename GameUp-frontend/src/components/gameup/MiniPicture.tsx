@@ -2,7 +2,12 @@ import { Image, StyleSheet } from 'react-native';
 import { AppText } from '@/components/ui';
 import type { PictureFace } from '@/data/types';
 import { radii, sizes } from '@/theme';
-import { Illustration, illustrationFor, visibleText } from './illustrations';
+import {
+  Illustration,
+  illustrationFor,
+  provisionalEmoji,
+  visibleText,
+} from './illustrations';
 
 interface MiniPictureProps {
   face: PictureFace;
@@ -11,8 +16,9 @@ interface MiniPictureProps {
 
 /**
  * Miniatura de una tarjeta ya acomodada (en un grupo o en una casilla), con
- * la misma prioridad que `Pictogram`: imagen de la fundación, dibujo exacto
- * o, si no hay, la palabra. Es decorativa: el contenedor lee la lista.
+ * la misma prioridad que `Pictogram`: imagen de la fundación, dibujo
+ * exacto, emoji como imagen y, si no hay nada, la palabra. Es decorativa:
+ * el contenedor lee la lista.
  */
 export function MiniPicture({ face, size = 'sm' }: MiniPictureProps) {
   const side = sizes.miniPicture[size];
@@ -29,6 +35,17 @@ export function MiniPicture({ face, size = 'sm' }: MiniPictureProps) {
   }
   const drawing = illustrationFor(face);
   if (drawing) return <Illustration name={drawing} size={side} />;
+  const emoji = provisionalEmoji(face);
+  if (emoji) {
+    return (
+      <AppText
+        variant={size === 'xs' ? 'bodyStrong' : 'title'}
+        testID="mini-picture-emoji"
+      >
+        {emoji}
+      </AppText>
+    );
+  }
   return (
     <AppText variant="support" style={styles.word}>
       {visibleText(face) ?? face.label}

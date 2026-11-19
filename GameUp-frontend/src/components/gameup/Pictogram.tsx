@@ -3,9 +3,20 @@ import { Image, StyleSheet, View } from 'react-native';
 import { AppText } from '@/components/ui';
 import type { PictureFace } from '@/data/types';
 import { radii, sizes, spacing, type TextVariant } from '@/theme';
-import { Illustration, illustrationFor, visibleText } from './illustrations';
+import {
+  Illustration,
+  illustrationFor,
+  provisionalEmoji,
+  visibleText,
+} from './illustrations';
 
 export type PictogramSize = 'md' | 'lg';
+
+/** Emoji de respaldo: del tamaño de un dibujo (glifo grande). */
+const emojiVariant: Record<PictogramSize, TextVariant> = {
+  md: 'glyph',
+  lg: 'glyphLarge',
+};
 
 interface PictogramProps {
   face: PictureFace;
@@ -20,12 +31,15 @@ function textVariant(text: string): TextVariant {
 /**
  * Lo que muestra una tarjeta de juego, en este orden:
  * 1. la imagen de la fundación (`imageUri`), si la hay;
- * 2. si no, el dibujo propio de GameUP que corresponde EXACTAMENTE a su
- *    emoji provisional o a su palabra (`illustrationFor`);
- * 3. si no hay coincidencia exacta, la palabra (nunca un dibujo parecido).
- * El dibujo se repite si es una cantidad; el número o la palabra de
- * `face.text` va al lado. Si `face.text` es un emoji (así lo siembra el
- * backend), solo sirve para elegir el dibujo: nunca se muestra.
+ * 2. si no, el dibujo propio de GameUP que le corresponde EXACTAMENTE
+ *    (`illustrationFor`);
+ * 3. si no hay dibujo pero trae emoji (en `emoji` o en `texto`, como lo
+ *    siembra el backend), el emoji en grande, como imagen: los niños no
+ *    leen, y en «¿Qué palabra es?» la tarjeta de arriba no puede volverse
+ *    palabra;
+ * 4. solo si no hay nada de lo anterior, la palabra.
+ * La imagen se repite si es una cantidad. El número o la palabra escritos
+ * en `texto` van al lado. El emoji nunca aparece junto a un dibujo.
  *
  * Es decorativo: el elemento que lo contiene dice al lector de pantalla qué
  * es (`face.label`).
@@ -36,8 +50,10 @@ export function Pictogram({ face, size = 'md' }: PictogramProps) {
   const repeat = (render: (index: number) => ReactNode) =>
     Array.from({ length: count }, (_, index) => render(index));
   const drawing = face.imageUri ? null : illustrationFor(face);
+  const emoji = face.imageUri || drawing ? undefined : provisionalEmoji(face);
   const text = visibleText(face);
-  const fallbackText = !face.imageUri && !drawing && !text ? face.label : null;
+  const fallbackText =
+    !face.imageUri && !drawing && !emoji && !text ? face.label : null;
 
   return (
     <View
@@ -60,7 +76,18 @@ export function Pictogram({ face, size = 'md' }: PictogramProps) {
           ? repeat((index) => (
               <Illustration key={index} name={drawing} size={side} />
             ))
-          : null}
+          : emoji
+            ? // Respaldo: el emoji como imagen, cuando no hay dibujo propio.
+              repeat((index) => (
+                <AppText
+                  key={index}
+                  variant={emojiVariant[size]}
+                  testID="pictogram-emoji"
+                >
+                  {emoji}
+                </AppText>
+              ))
+            : null}
       {text ? <AppText variant={textVariant(text)}>{text}</AppText> : null}
       {fallbackText ? (
         <AppText variant={textVariant(fallbackText)} style={styles.word}>
