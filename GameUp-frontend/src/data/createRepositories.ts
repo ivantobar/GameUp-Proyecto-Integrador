@@ -4,7 +4,6 @@ import { createHttpRepositories } from './http/createHttpRepositories';
 import { createSecureTokenStore } from './http/secureTokenStore';
 import type { TokenStore } from './http/tokenStore';
 import { createSessionExpiry } from './sessionExpiry';
-import { createMockRepositories } from './mock/createMockRepositories';
 import type { Repositories } from './repositories';
 
 interface CreateRepositoriesOptions {
@@ -27,8 +26,14 @@ export function createRepositories({
 }: CreateRepositoriesOptions): Repositories {
   // Segunda barrera: aunque alguien pase `mock`, una versión publicada
   // siempre habla con la API (las cuentas simuladas tienen la contraseña en
-  // el código).
-  if (isDev && dataSource === 'mock') return createMockRepositories();
+  // el código). Los simulados se cargan solo aquí y solo con `__DEV__`: en
+  // una versión publicada el `require` desaparece y no entran en la APK.
+  if (__DEV__ && isDev && dataSource === 'mock') {
+    const { createMockRepositories } =
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      require('./mock/createMockRepositories') as typeof import('./mock/createMockRepositories');
+    return createMockRepositories();
+  }
 
   // Varias peticiones con 401 a la vez llevan a «Iniciar sesión» una sola
   // vez. Al guardar un token nuevo (inicio de sesión), se vuelve a armar.

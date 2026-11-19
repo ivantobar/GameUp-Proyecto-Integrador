@@ -1,27 +1,12 @@
-import { router } from 'expo-router';
-import { HeaderBackButton, Screen, ScreenHeader } from '@/components/ui';
-import { ActionsSection } from '@/features/dev/catalog/ActionsSection';
-import { ContainersSection } from '@/features/dev/catalog/ContainersSection';
-import { FoundationsSection } from '@/features/dev/catalog/FoundationsSection';
-import { GameUpSection } from '@/features/dev/catalog/GameUpSection';
-import { NavigationSection } from '@/features/dev/catalog/NavigationSection';
+import type { ComponentType } from 'react';
 
-/** Ruta de desarrollo: muestra cada componente en todos sus estados. */
-export default function CatalogScreen() {
-  return (
-    <Screen
-      header={
-        <ScreenHeader
-          left={<HeaderBackButton onPress={() => router.back()} />}
-          title="Catálogo"
-        />
-      }
-    >
-      <FoundationsSection />
-      <ActionsSection />
-      <NavigationSection />
-      <ContainersSection />
-      <GameUpSection />
-    </Screen>
-  );
-}
+/**
+ * Catálogo de componentes, solo en desarrollo (ver `dev/index.tsx`): en una
+ * versión publicada el `require` desaparece y la pantalla no entra en la APK.
+ */
+const CatalogScreen: ComponentType = __DEV__
+  ? // eslint-disable-next-line @typescript-eslint/no-require-imports
+    require('@/features/dev/CatalogScreen').CatalogScreen
+  : () => null;
+
+export default CatalogScreen;
