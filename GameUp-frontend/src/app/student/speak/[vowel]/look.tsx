@@ -3,6 +3,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 import { AppText, Button, Screen } from '@/components/ui';
 import { Character, GestureVideo } from '@/components/gameup';
+import { PopIn } from '@/components/gameup/motion';
 import { useNarration } from '@/features/narration/useNarration';
 import { PracticeHeader } from '@/features/speak/components/PracticeHeader';
 import { parseActivityId } from '@/features/games/delivery';
@@ -58,13 +59,14 @@ export default function LookStep() {
         </AppText>
       </View>
 
-      <View style={styles.center}>
+      {/* El personaje aparece con un rebote leve al llegar al paso. */}
+      <PopIn style={styles.center}>
         <Character
           mouth={mouth}
           size="lg"
           accessibilityLabel={`El personaje hace la boca de la ${letter}`}
         />
-      </View>
+      </PopIn>
 
       <AppText tone="secundario" style={styles.hint}>
         {hint}

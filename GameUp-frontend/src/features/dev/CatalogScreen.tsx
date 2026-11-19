@@ -6,6 +6,7 @@ import { FoundationsSection } from '@/features/dev/catalog/FoundationsSection';
 import { GameUpSection } from '@/features/dev/catalog/GameUpSection';
 import { IllustrationsSection } from '@/features/dev/catalog/IllustrationsSection';
 import { NavigationSection } from '@/features/dev/catalog/NavigationSection';
+import { SpeakGamesSection } from '@/features/dev/catalog/SpeakGamesSection';
 import { ThinkingGamesSection } from '@/features/dev/catalog/ThinkingGamesSection';
 
 /** Ruta de desarrollo: muestra cada componente en todos sus estados. */
@@ -26,6 +27,7 @@ export function CatalogScreen() {
       <GameUpSection />
       <IllustrationsSection />
       <ThinkingGamesSection />
+      <SpeakGamesSection />
     </Screen>
   );
 }

@@ -1,6 +1,7 @@
 import { act, render, screen } from '@testing-library/react-native';
 import { getAnimatedStyle } from 'react-native-reanimated';
 import { hintPillStyles, PictureCard } from '@/components/gameup';
+import { mouthOptionStates } from '@/components/gameup/MouthOption';
 import { pictureCardStates } from '@/components/gameup/PictureCard';
 import { memoryCardStyles } from '@/features/memory/components/MemoryCard';
 import { colors, motion } from '@/theme';
@@ -64,6 +65,7 @@ describe('el color de cada juego nunca marca el estado de una opción', () => {
     ['PictureCard', pictureCardStates],
     ['MemoryCard', memoryCardStyles],
     ['HintPill', hintPillStyles],
+    ['MouthOption', mouthOptionStates],
   ])('%s usa solo colores de estado de la guía', (_name, states) => {
     Object.values(states).forEach((style) => {
       Object.values(style).forEach((value) => {

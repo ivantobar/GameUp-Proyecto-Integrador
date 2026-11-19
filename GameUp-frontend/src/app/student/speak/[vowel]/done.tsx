@@ -11,8 +11,7 @@ import {
 } from '@/components/ui';
 import {
   AudioClipRow,
-  Celebration,
-  Character,
+  CelebrationHero,
   NarrationButton,
 } from '@/components/gameup';
 import { parseActivityId, PRACTICE_TEXT } from '@/features/games/delivery';
@@ -27,7 +26,7 @@ import {
   useSpeakDelivery,
 } from '@/features/speak/useSpeakDelivery';
 import { parseVowel } from '@/features/speak/vowelContent';
-import { colors, sizes, spacing } from '@/theme';
+import { colors, spacing } from '@/theme';
 
 /**
  * Pantalla 6 · Paso 3 «Listo». Siempre hay celebración por intentar. La app
@@ -139,36 +138,11 @@ export default function DoneStep() {
         </>
       }
     >
-      <View style={styles.center}>
-        <Celebration
-          width={sizes.character.lg + 80}
-          height={sizes.character.md + 24}
-        >
-          <Character mouth="smile" size="md" />
-        </Celebration>
-
-        <View
-          style={styles.stars}
-          accessible
-          accessibilityLabel="Tres estrellas por intentarlo"
-        >
-          <Icon name="star" size="xl" color={colors.marca.naranja} />
-          <Icon name="star" size="xl" color={colors.marca.naranja} />
-          <Icon name="star" size="xl" color={colors.marca.naranja} />
-        </View>
-
-        <AppText
-          variant="display"
-          tone="sobreOscuro"
-          accessibilityRole="header"
-          style={styles.text}
-        >
-          {cheer}
-        </AppText>
-        <AppText tone="sobreOscuro" style={styles.text}>
-          Dijiste la {letter}
-        </AppText>
-      </View>
+      <CelebrationHero
+        cheer={cheer}
+        message={`Dijiste la ${letter}`}
+        starsLabel="Tres estrellas por intentarlo"
+      />
 
       <Card>
         <AudioClipRow kind="model" label="Así suena" onPlay={playModel} />
@@ -223,18 +197,6 @@ export default function DoneStep() {
 }
 
 const styles = StyleSheet.create({
-  center: {
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  stars: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  text: {
-    textAlign: 'center',
-  },
   review: {
     flexDirection: 'row',
     alignItems: 'center',

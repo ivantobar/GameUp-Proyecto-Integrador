@@ -1,6 +1,6 @@
-import { Pressable, StyleSheet, View } from 'react-native';
-import { Icon } from '@/components/ui';
-import { colors, radii, sizes } from '@/theme';
+import { StyleSheet, View } from 'react-native';
+import { Icon, PressableSurface } from '@/components/ui';
+import { colors, depth, radii, sizes } from '@/theme';
 
 interface MicButtonProps {
   recording: boolean;
@@ -29,30 +29,34 @@ export function MicButton({
         },
       ]}
     >
-      <Pressable
+      <PressableSurface
+        colors={{
+          background: colors.marca.naranja,
+          pressedBackground: colors.naranja.presionado,
+          // Grabando: borde oscuro (forma), además del halo naranja.
+          border: recording ? colors.texto.principal : colors.marca.naranja,
+          pressedBorder: recording
+            ? colors.texto.principal
+            : colors.naranja.presionado,
+          edge: colors.relieve.naranja,
+        }}
         onPress={onPress}
         disabled={disabled}
-        accessibilityRole="button"
         accessibilityLabel={recording ? 'Terminar de grabar' : 'Grabar mi voz'}
-        accessibilityState={{ disabled, busy: recording }}
-        style={({ pressed }) => [
-          styles.button,
-          {
-            backgroundColor: pressed
-              ? colors.naranja.presionado
-              : colors.marca.naranja,
-            borderColor: recording
-              ? colors.texto.principal
-              : colors.marca.naranja,
-          },
-        ]}
+        accessibilityState={{ busy: recording }}
+        depth="md"
+        radius={radii.pill}
+        borderWidth={sizes.borderStrong + 1}
+        // Tamaño fijo: el botón y su relieve nunca se estiran.
+        style={{ width: sizes.mic, height: sizes.mic + depth.md }}
+        contentStyle={styles.button}
       >
         <Icon
           name={recording ? 'stop' : 'mic'}
           size="xl"
           color={colors.texto.principal}
         />
-      </Pressable>
+      </PressableSurface>
     </View>
   );
 }
@@ -68,8 +72,6 @@ const styles = StyleSheet.create({
   button: {
     width: sizes.mic,
     height: sizes.mic,
-    borderRadius: radii.pill,
-    borderWidth: sizes.borderStrong + 1,
     alignItems: 'center',
     justifyContent: 'center',
   },

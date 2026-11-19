@@ -139,6 +139,30 @@ describe('contraste de colores (WCAG AA)', () => {
     ).toBeGreaterThanOrEqual(AA.graphic);
   });
 
+  it.each([
+    ['gris', colors.marca.gris],
+    ['fondo del niño', colors.fondo.nino],
+    ['Habla conmigo', colors.verde.suave],
+    ['Emparejar', colors.identidad.emparejarFondo],
+    ['Clasificar', colors.identidad.clasificarFondo],
+    ['Secuenciar', colors.juego.fondoAmarillo],
+    ['Memoria', colors.identidad.memoriaFondo],
+    ['Busca la boca', colors.identidad.bocaFondo],
+  ])('los puntos de avance se ven sobre %s (gráficos ≥ 3:1)', (_n, bg) => {
+    // Actual, hecho y borde del pendiente (ProgressDots).
+    for (const dot of [
+      colors.relieve.naranja,
+      colors.verde.oscuro,
+      colors.texto.secundario,
+    ]) {
+      expect(contrastRatio(dot, bg)).toBeGreaterThanOrEqual(AA.graphic);
+    }
+    // «Toca para oír otra vez» (café) en Busca la boca y demás fondos.
+    expect(contrastRatio(colors.cafe.oscuro, bg)).toBeGreaterThanOrEqual(
+      AA.text,
+    );
+  });
+
   it('la estrella vacía también se ve sobre el fondo del niño', () => {
     expect(
       contrastRatio(colors.estrella.vacia, colors.fondo.nino),

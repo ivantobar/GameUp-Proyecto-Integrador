@@ -65,8 +65,11 @@ export function StepIndicator({ steps, current }: StepIndicatorProps) {
 }
 
 const styles = StyleSheet.create({
+  /** Con letra grande, los pasos bajan de línea en vez de salirse. */
   row: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
     gap: spacing.xxs,
   },
   pill: {

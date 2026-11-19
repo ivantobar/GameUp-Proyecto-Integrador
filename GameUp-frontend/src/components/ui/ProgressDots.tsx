@@ -52,13 +52,18 @@ const styles = StyleSheet.create({
   done: {
     backgroundColor: colors.verde.oscuro,
   },
+  /**
+   * Café-naranja: 3,7:1 o más sobre el gris y los fondos de los juegos (el
+   * naranja de marca daba 2:1, por debajo del 3:1 de los gráficos).
+   */
   current: {
     width: sizes.dotActiveWidth,
-    backgroundColor: colors.marca.naranja,
+    backgroundColor: colors.relieve.naranja,
   },
+  /** Borde gris oscuro: 5,6:1 o más (el borde suave daba 1,2:1). */
   pending: {
     backgroundColor: colors.superficie.blanca,
     borderWidth: sizes.border,
-    borderColor: colors.borde.suave,
+    borderColor: colors.texto.secundario,
   },
 });

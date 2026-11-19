@@ -9,11 +9,11 @@ import {
   Screen,
   ScreenHeader,
 } from '@/components/ui';
-import { GameIcon, gameThemes, NarrationButton } from '@/components/gameup';
+import { GameQuestion, gameThemes, NarrationButton } from '@/components/gameup';
 import { PopIn } from '@/components/gameup/motion';
 import type { GameId } from '@/data/types';
 import type { TurnPhase } from '../turnGame';
-import { radii, sizes, spacing, typography } from '@/theme';
+import { spacing, typography } from '@/theme';
 
 /** Juegos que usan este marco («Pensar y recordar»). */
 export type RoundGameId = Extract<
@@ -103,18 +103,7 @@ export function RoundGameScreen({
       }
     >
       <View style={styles.top}>
-        <View style={styles.questionRow}>
-          <View style={[styles.iconFrame, { borderColor: theme.accent }]}>
-            <GameIcon game={game} size="sm" />
-          </View>
-          <AppText
-            variant="title"
-            accessibilityRole="header"
-            style={styles.question}
-          >
-            {question}
-          </AppText>
-        </View>
+        <GameQuestion game={game} question={question} />
         {/* Espacio fijo: el juego no salta cuando aparece el mensaje. */}
         <View style={styles.message} accessibilityLiveRegion="polite">
           {message ? (
@@ -136,20 +125,6 @@ const styles = StyleSheet.create({
   top: {
     alignItems: 'center',
     gap: spacing.xxs,
-  },
-  /** Dibujo y pregunta en fila; con letra grande, la pregunta baja de línea. */
-  questionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  iconFrame: {
-    borderWidth: sizes.borderStrong,
-    borderRadius: radii.lg,
-    padding: spacing.xxs,
-  },
-  question: {
-    flexShrink: 1,
   },
   center: {
     textAlign: 'center',

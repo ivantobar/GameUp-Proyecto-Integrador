@@ -1,7 +1,9 @@
-import { Pressable, StyleSheet, View } from 'react-native';
-import { AppText, Icon, type IconName, type TextTone } from '@/components/ui';
+import { StyleSheet, View } from 'react-native';
+import { PressableSurface } from '@/components/ui';
 import { colors, radii, sizes, spacing, type ThemeColor } from '@/theme';
 import type { Vowel } from '@/data/types';
+import { HintPill } from './HintPill';
+import { Breathe } from './motion';
 import { Mouth } from './Mouth';
 import { mouthDescriptions } from './mouthShapes';
 
@@ -13,7 +15,9 @@ import { mouthDescriptions } from './mouthShapes';
  * - correct: la eligió bien («¡Es la O!» con ✓);
  * - dimmed: otra boca, cuando la ronda ya está resuelta.
  *
- * Nunca se marca una opción como «incorrecta» ni se usa rojo.
+ * Nunca se marca una opción como «incorrecta» ni se usa rojo, ni el color
+ * del juego: los estados usan los verdes de la guía. Misma tarjeta con
+ * relieve, «respiración» y píldora (con la manito) que los juegos de pensar.
  */
 export type MouthOptionState = 'idle' | 'hint' | 'correct' | 'dimmed';
 
@@ -21,53 +25,35 @@ interface StateStyle {
   background: ThemeColor;
   border: ThemeColor;
   borderStyle: 'solid' | 'dashed';
+  edge: ThemeColor;
 }
 
-const optionStates = {
+export const mouthOptionStates = {
   idle: {
     background: colors.superficie.blanca,
     border: colors.borde.suave,
     borderStyle: 'solid',
+    edge: colors.relieve.superficie,
   },
   hint: {
     background: colors.superficie.blanca,
     border: colors.verde.oscuro,
     borderStyle: 'dashed',
+    edge: colors.relieve.superficie,
   },
   correct: {
     background: colors.verde.suave,
     border: colors.verde.oscuro,
     borderStyle: 'solid',
+    edge: colors.verde.oscuro,
   },
   dimmed: {
     background: colors.superficie.blanca,
     border: colors.borde.suave,
     borderStyle: 'solid',
+    edge: colors.relieve.superficie,
   },
 } as const satisfies Record<MouthOptionState, StateStyle>;
-
-const pillStyles = {
-  hint: {
-    background: colors.verde.suave,
-    text: 'marca',
-    icon: 'hand',
-    iconColor: colors.verde.oscuro,
-  },
-  correct: {
-    background: colors.verde.oscuro,
-    text: 'sobreOscuro',
-    icon: 'check',
-    iconColor: colors.texto.sobreOscuro,
-  },
-} as const satisfies Record<
-  'hint' | 'correct',
-  {
-    background: ThemeColor;
-    text: TextTone;
-    icon: IconName;
-    iconColor: ThemeColor;
-  }
->;
 
 interface MouthOptionProps {
   vowel: Vowel;
@@ -77,14 +63,15 @@ interface MouthOptionProps {
 
 /** Tarjeta grande con una boca para tocar (mockup 7). */
 export function MouthOption({ vowel, state, onPress }: MouthOptionProps) {
-  const config = optionStates[state];
+  const config = mouthOptionStates[state];
   const letter = vowel.toUpperCase();
   const pill =
     state === 'correct'
-      ? { ...pillStyles.correct, label: `¡Es la ${letter}!` }
+      ? ({ kind: 'correct', label: `¡Es la ${letter}!` } as const)
       : state === 'hint'
-        ? { ...pillStyles.hint, label: 'Prueba esta' }
+        ? ({ kind: 'hint', label: 'Prueba esta' } as const)
         : null;
+  const locked = state === 'correct' || state === 'dimmed';
 
   const description = mouthDescriptions[vowel];
   const label =
@@ -95,61 +82,52 @@ export function MouthOption({ vowel, state, onPress }: MouthOptionProps) {
         : description;
 
   return (
-    <Pressable
-      onPress={onPress}
-      disabled={state === 'correct' || state === 'dimmed'}
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      accessibilityState={{
-        selected: state === 'correct',
-        disabled: state === 'correct' || state === 'dimmed',
-      }}
-      style={({ pressed }) => [
-        styles.card,
-        {
-          backgroundColor:
-            pressed && state === 'idle'
-              ? colors.verde.suave
-              : config.background,
-          borderColor: config.border,
-          borderStyle: config.borderStyle,
-          opacity: state === 'dimmed' ? 0.6 : 1,
-        },
-      ]}
-    >
-      <Mouth vowel={vowel} size="md" decorative />
-      <View style={styles.spacer} />
-      {pill ? (
-        <View style={[styles.pill, { backgroundColor: pill.background }]}>
-          <Icon name={pill.icon} size="sm" color={pill.iconColor} />
-          <AppText variant="bodyStrong" tone={pill.text}>
-            {pill.label}
-          </AppText>
-        </View>
-      ) : null}
-    </Pressable>
+    // Respira solo con la pista o al acertar: nunca antes.
+    <Breathe active={state === 'hint' || state === 'correct'}>
+      <PressableSurface
+        colors={{
+          background: config.background,
+          pressedBackground:
+            state === 'idle' ? colors.verde.suave : config.background,
+          border: config.border,
+          pressedBorder: colors.verde.oscuro,
+          edge: config.edge,
+        }}
+        onPress={onPress}
+        disabled={locked}
+        accessibilityLabel={label}
+        accessibilityState={{ selected: state === 'correct' }}
+        depth="md"
+        pressScale
+        radius={radii.card}
+        borderWidth={sizes.borderStrong + 1}
+        borderStyle={config.borderStyle}
+        opacity={state === 'dimmed' ? DIMMED_OPACITY : 1}
+        contentStyle={styles.card}
+      >
+        <Mouth vowel={vowel} size="md" decorative />
+        <View style={styles.spacer} />
+        {pill ? <HintPill kind={pill.kind} label={pill.label} /> : null}
+      </PressableSurface>
+    </Breathe>
   );
 }
 
+/** Opacidad de las bocas que ya no se pueden tocar (igual que PictureCard). */
+const DIMMED_OPACITY = 0.6;
+
 const styles = StyleSheet.create({
+  /** Con letra grande, la píldora baja debajo de la boca (flexWrap). */
   card: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     alignItems: 'center',
+    gap: spacing.xs,
     minHeight: sizes.mouthOption,
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.xxs,
-    borderRadius: radii.xl,
-    borderWidth: sizes.borderStrong + 1,
   },
   spacer: {
-    flex: 1,
-  },
-  pill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xxs,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xxs,
-    borderRadius: radii.pill,
+    flexGrow: 1,
   },
 });

@@ -12,10 +12,12 @@ import {
   StateView,
 } from '@/components/ui';
 import {
+  GameQuestion,
   MouthOption,
   NarrationButton,
   type MouthOptionState,
 } from '@/components/gameup';
+import { EnterStagger } from '@/components/gameup/motion';
 import type { Vowel } from '@/data/types';
 import type { RoundPhase } from '@/features/find-mouth/mouthQuiz';
 import { useFindMouthVowels } from '@/features/find-mouth/useFindMouthVowels';
@@ -49,7 +51,8 @@ export default function FindMouthScreen() {
   if (resource.status !== 'ready') {
     return (
       <Screen
-        tone="softOrange"
+        tone="findMouth"
+        backdrop="bubbles"
         header={
           <ScreenHeader
             left={<HeaderBackButton onPress={() => router.back()} />}
@@ -101,7 +104,8 @@ function FindMouthGame({ vowels, activityId }: FindMouthGameProps) {
 
   return (
     <Screen
-      tone="softOrange"
+      tone="findMouth"
+      backdrop="bubbles"
       header={
         <ScreenHeader
           left={<HeaderBackButton onPress={() => router.back()} />}
@@ -127,9 +131,9 @@ function FindMouthGame({ vowels, activityId }: FindMouthGameProps) {
         )
       }
     >
-      <AppText variant="title" accessibilityRole="header" style={styles.center}>
-        {QUESTION}
-      </AppText>
+      <View style={styles.question}>
+        <GameQuestion game="findMouth" question={QUESTION} />
+      </View>
 
       <View style={styles.listen}>
         <View style={styles.halo}>
@@ -149,14 +153,20 @@ function FindMouthGame({ vowels, activityId }: FindMouthGameProps) {
       {finished ? (
         <StateView kind="loading" title="¡Muy bien! Guardando…" />
       ) : round ? (
-        <View style={styles.options} accessibilityLiveRegion="polite">
-          {round.options.map((vowel) => (
-            <MouthOption
-              key={vowel}
-              vowel={vowel}
-              state={optionState(vowel, round.target, phase)}
-              onPress={() => choose(vowel)}
-            />
+        // `key` por ronda: las bocas nuevas entran escalonadas.
+        <View
+          key={index}
+          style={styles.options}
+          accessibilityLiveRegion="polite"
+        >
+          {round.options.map((vowel, position) => (
+            <EnterStagger key={vowel} index={position}>
+              <MouthOption
+                vowel={vowel}
+                state={optionState(vowel, round.target, phase)}
+                onPress={() => choose(vowel)}
+              />
+            </EnterStagger>
           ))}
         </View>
       ) : null}
@@ -165,8 +175,8 @@ function FindMouthGame({ vowels, activityId }: FindMouthGameProps) {
 }
 
 const styles = StyleSheet.create({
-  center: {
-    textAlign: 'center',
+  question: {
+    alignItems: 'center',
   },
   listen: {
     alignItems: 'center',
@@ -178,6 +188,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.superficie.blanca,
   },
   options: {
-    gap: spacing.md,
+    gap: spacing.option,
   },
 });

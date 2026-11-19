@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react-native';
 import { StyleSheet, Text, View } from 'react-native';
-import { NarrationButton } from '@/components/gameup';
+import { MicButton, NarrationButton } from '@/components/gameup';
 import { colors, depth, sizes } from '@/theme';
 import { Button } from '../Button';
 import { PressableCard } from '../Card';
@@ -86,6 +86,22 @@ describe('IconButton tiene siempre su tamaño (no se estira)', () => {
       width: sizes.iconButton.md,
       height: sizes.iconButton.md + depth.sm,
     });
+  });
+});
+
+describe('el micrófono de «Dilo» tiene siempre su tamaño', () => {
+  it.each([false, true])('grabando: %s', async (recording) => {
+    await render(<MicButton recording={recording} onPress={jest.fn()} />);
+    const button = host(
+      screen.getByRole('button', {
+        name: recording ? 'Terminar de grabar' : 'Grabar mi voz',
+      }),
+    );
+    expect(flat(button)).toMatchObject({
+      width: sizes.mic,
+      height: sizes.mic + depth.md,
+    });
+    expect(noneGrows(button)).toBe(true);
   });
 });
 

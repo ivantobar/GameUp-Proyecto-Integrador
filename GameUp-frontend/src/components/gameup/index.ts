@@ -1,8 +1,10 @@
 export { AudioClipRow, type AudioClipKind } from './AudioClipRow';
 export { Celebration } from './Celebration';
+export { CelebrationHero } from './CelebrationHero';
 export { Character, type CharacterEyes } from './Character';
 export { GameCard, type GameCardTone } from './GameCard';
 export { GameIcon } from './GameIcon';
+export { GameQuestion } from './GameQuestion';
 export { MicButton } from './MicButton';
 export { MirrorView } from './MirrorView';
 export { Mouth } from './Mouth';
