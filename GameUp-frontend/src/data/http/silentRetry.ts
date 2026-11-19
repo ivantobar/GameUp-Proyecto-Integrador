@@ -1,4 +1,8 @@
-import { ConnectionError, ServerError } from '@/services/apiErrors';
+import {
+  ConnectionError,
+  ServerError,
+  TimeoutError,
+} from '@/services/apiErrors';
 
 /** Reintentos de un envío al terminar un juego (Regla 11). */
 export const SUBMIT_ATTEMPTS = 3;
@@ -7,8 +11,13 @@ export const SUBMIT_RETRY_DELAY_MS = 1500;
 /**
  * ¿Vale la pena volver a intentarlo? Solo si no hubo respuesta o el
  * servidor falló (5xx). Un 4xx (datos o permisos) no mejora al repetirlo.
+ *
+ * Si se agotó la espera, NO se repite: el envío pudo llegar y guardarse, y
+ * repetirlo dejaría un intento duplicado. Se avisa al adulto, que puede
+ * reintentar a mano.
  */
 function isTransient(error: unknown): boolean {
+  if (error instanceof TimeoutError) return false;
   if (error instanceof ConnectionError) return true;
   return (
     error instanceof ServerError &&

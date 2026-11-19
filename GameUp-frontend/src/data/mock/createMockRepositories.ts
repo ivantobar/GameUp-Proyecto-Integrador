@@ -353,6 +353,8 @@ export function createMockRepositories({
 
   return {
     auth: {
+      // Los datos simulados no tienen servidor que despertar.
+      warmUp: () => Promise.resolve(),
       signOut: () => {
         state.session = null;
         return respond(undefined);

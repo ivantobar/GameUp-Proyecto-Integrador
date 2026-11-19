@@ -2,6 +2,8 @@ import { env, type DataSource } from '@/config/env';
 import { createApiClient } from '@/services/api';
 import { createHttpRepositories } from './http/createHttpRepositories';
 import { createSecureTokenStore } from './http/secureTokenStore';
+import type { TokenStore } from './http/tokenStore';
+import { createSessionExpiry } from './sessionExpiry';
 import { createMockRepositories } from './mock/createMockRepositories';
 import type { Repositories } from './repositories';
 
@@ -28,7 +30,18 @@ export function createRepositories({
   // el código).
   if (isDev && dataSource === 'mock') return createMockRepositories();
 
-  const tokens = createSecureTokenStore();
+  // Varias peticiones con 401 a la vez llevan a «Iniciar sesión» una sola
+  // vez. Al guardar un token nuevo (inicio de sesión), se vuelve a armar.
+  const expiry = createSessionExpiry(onSessionExpired);
+  const secureTokens = createSecureTokenStore();
+  const tokens: TokenStore = {
+    get: secureTokens.get,
+    clear: secureTokens.clear,
+    set: async (token) => {
+      await secureTokens.set(token);
+      expiry.reset();
+    },
+  };
   const api = createApiClient({
     baseUrl: env.apiUrl,
     getToken: tokens.get,
@@ -36,7 +49,7 @@ export function createRepositories({
       tokens.clear().catch(() => {
         // Si no se pudo borrar, el backend lo seguirá rechazando con 401.
       });
-      onSessionExpired();
+      expiry.notify();
     },
   });
   return createHttpRepositories(api, tokens);

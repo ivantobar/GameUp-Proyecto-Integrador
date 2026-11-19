@@ -31,6 +31,18 @@ export class ConnectionError extends ApiError {
   }
 }
 
+/**
+ * Se agotó la espera: la petición salió, pero no llegó respuesta a tiempo.
+ * El servidor pudo haberla recibido (por ejemplo, Render despertando), así
+ * que repetir un envío podría duplicarlo.
+ */
+export class TimeoutError extends ConnectionError {
+  constructor(message = 'El servidor no respondió a tiempo') {
+    super(message);
+    this.name = 'TimeoutError';
+  }
+}
+
 /** 401: falta la sesión, venció o el backend no la reconoce. */
 export class UnauthorizedError extends ApiError {
   constructor(message = 'La sesión no es válida o ya terminó') {

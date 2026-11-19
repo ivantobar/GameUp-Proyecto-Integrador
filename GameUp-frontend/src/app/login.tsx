@@ -166,6 +166,19 @@ export default function LoginScreen() {
               }
             />
 
+            {form.waking ? (
+              // El backend gratuito de Render se duerme: el primer «Entrar»
+              // del día puede tardar casi un minuto.
+              <View accessibilityLiveRegion="polite">
+                <Notice
+                  icon="time"
+                  tone="soft"
+                  title="Estamos despertando GameUP…"
+                  message="Puede tardar hasta un minuto. No cierres la app."
+                />
+              </View>
+            ) : null}
+
             {notice ? (
               <View accessibilityLiveRegion="polite">
                 <Notice

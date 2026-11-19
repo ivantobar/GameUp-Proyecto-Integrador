@@ -1,5 +1,7 @@
+import { LOGIN_TIMEOUT_MS } from '@/config/http';
 import type { ApiClient } from '@/services/api';
 import {
+  ConnectionError,
   ForbiddenError,
   ServerError,
   UnauthorizedError,
@@ -18,6 +20,15 @@ import { requireText } from './mappers/responseShape';
 import type { TokenStore } from './tokenStore';
 
 /**
+ * ¿El backend se estaba despertando? Sin respuesta (o se agotó la espera), o
+ * 503: el backend respondió, pero la API de seguridad no.
+ */
+function isWakingUp(error: unknown): boolean {
+  if (error instanceof ConnectionError) return true;
+  return error instanceof ServerError && error.status === 503;
+}
+
+/**
  * Inicio de sesión con `POST /auth/login` del backend GameUP (que a su vez
  * consulta la API de seguridad; la app nunca la llama directamente).
  */
@@ -26,6 +37,14 @@ export function createHttpAuthRepository(
   tokens: TokenStore,
 ): AuthRepository {
   return {
+    async warmUp() {
+      // GET /health es público. Solo despierta a Render: la respuesta no
+      // importa y un fallo no se muestra.
+      await api
+        .get('/health', { authenticated: false, timeoutMs: LOGIN_TIMEOUT_MS })
+        .catch(() => {});
+    },
+
     async signOut() {
       // El token lo emite la API de seguridad: GameUP no puede revocarlo,
       // solo olvidarlo. Se avisa al backend si hay sesión, sin esperar a que
@@ -41,10 +60,18 @@ export function createHttpAuthRepository(
       await tokens.clear();
 
       const body: LoginDto = { correo: email, contrasena: password };
+      const login = () =>
+        api.post<LoginRespuestaDto>('/auth/login', body, {
+          authenticated: false,
+          timeoutMs: LOGIN_TIMEOUT_MS,
+        });
       let response: LoginRespuestaDto;
       try {
-        response = await api.post<LoginRespuestaDto>('/auth/login', body, {
-          authenticated: false,
+        // Si el backend (o la API de seguridad) se estaba despertando, se
+        // intenta una vez más. Repetir el inicio de sesión no tiene riesgo.
+        response = await login().catch((error: unknown) => {
+          if (isWakingUp(error)) return login();
+          throw error;
         });
       } catch (error: unknown) {
         // Mismos errores que la versión simulada (sustitución de Liskov).

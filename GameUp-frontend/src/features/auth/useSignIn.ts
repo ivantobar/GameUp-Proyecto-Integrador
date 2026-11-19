@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { WAKE_HINT_MS } from '@/config/http';
 import {
   AccountNotAllowedError,
   InvalidCredentialsError,
@@ -7,6 +8,7 @@ import {
 } from '@/data/authErrors';
 import { useRepositories } from '@/data/RepositoryProvider';
 import type { AuthSession } from '@/data/types';
+import { TimeoutError } from '@/services/apiErrors';
 import {
   hasErrors,
   normalizeEmail,
@@ -23,15 +25,36 @@ function problemOf(error: unknown): SignInProblem {
   if (error instanceof AccountNotAllowedError) return 'notAllowed';
   if (error instanceof SignInUnavailableError) return 'unavailable';
   if (error instanceof TooManyAttemptsError) return 'tooMany';
+  // Ni reintentando respondió a tiempo: es el servidor, no el internet.
+  if (error instanceof TimeoutError) return 'unavailable';
   return 'connection';
 }
 
 /**
  * Estado del formulario «Iniciar sesión». Valida en la app y luego llama a
  * `auth.signIn` del repositorio (simulado o la API NestJS).
+ *
+ * Al abrir la pantalla despierta el backend. Si «Entrar» tarda, `waking`
+ * avisa «Estamos despertando GameUP…».
  */
 export function useSignIn() {
   const { auth } = useRepositories();
+  /** «Entrar» lleva un rato esperando: el servidor se está despertando. */
+  const [waking, setWaking] = useState(false);
+  const wakeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Mientras la persona escribe, el backend ya se va despertando.
+  useEffect(() => {
+    auth.warmUp().catch(() => {});
+  }, [auth]);
+
+  // Al salir de la pantalla no queda el temporizador del aviso.
+  useEffect(
+    () => () => {
+      if (wakeTimer.current) clearTimeout(wakeTimer.current);
+    },
+    [],
+  );
   const [email, setEmailValue] = useState('');
   const [password, setPasswordValue] = useState('');
   const [errors, setErrors] = useState<CredentialErrors>({});
@@ -73,6 +96,7 @@ export function useSignIn() {
     if (hasErrors(found)) return null;
 
     setSubmitting(true);
+    wakeTimer.current = setTimeout(() => setWaking(true), WAKE_HINT_MS);
     try {
       return await auth.signIn({ email: normalizeEmail(email), password });
     } catch (error: unknown) {
@@ -80,6 +104,9 @@ export function useSignIn() {
       setReason(error instanceof AccountNotAllowedError ? error.reason : null);
       return null;
     } finally {
+      if (wakeTimer.current) clearTimeout(wakeTimer.current);
+      wakeTimer.current = null;
+      setWaking(false);
       setSubmitting(false);
     }
   };
@@ -94,6 +121,7 @@ export function useSignIn() {
     problem,
     reason,
     submitting,
+    waking,
     submit,
   };
 }

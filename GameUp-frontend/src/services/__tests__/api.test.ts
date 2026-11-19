@@ -4,6 +4,7 @@ import {
   ForbiddenError,
   NotFoundError,
   ServerError,
+  TimeoutError,
   UnauthorizedError,
 } from '../apiErrors';
 import {
@@ -128,10 +129,39 @@ describe('cliente HTTP', () => {
       throw new TypeError('Network request failed');
     });
 
-    await expect(api.get('/x')).rejects.toBeInstanceOf(ConnectionError);
+    const error = await api.get('/x').catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(ConnectionError);
+    // No es una espera agotada: la petición no llegó a salir.
+    expect(error).not.toBeInstanceOf(TimeoutError);
   });
 
-  it('si el servidor no responde a tiempo: ConnectionError', async () => {
+  it('una petición puede esperar más que el resto (iniciar sesión)', async () => {
+    const fetchFn = jest.fn(
+      (_url: unknown, init?: RequestInit) =>
+        new Promise<Response>((resolve, reject) => {
+          const id = setTimeout(() => resolve(jsonResponse(200, {})), 3000);
+          init?.signal?.addEventListener('abort', () => {
+            clearTimeout(id);
+            reject(new Error('Aborted'));
+          });
+        }),
+    );
+    const api = createApiClient({
+      baseUrl: BASE,
+      getToken: () => Promise.resolve('t'),
+      timeoutMs: 1000,
+      fetchFn: fetchFn as unknown as typeof fetch,
+    });
+
+    const normal = api.get('/x').catch((e: unknown) => e);
+    const patient = api.get('/y', { timeoutMs: 5000 });
+    await jest.advanceTimersByTimeAsync(3000);
+
+    expect(await normal).toBeInstanceOf(TimeoutError);
+    await expect(patient).resolves.toEqual({});
+  });
+
+  it('si el servidor no responde a tiempo: TimeoutError (un ConnectionError)', async () => {
     // Nunca responde; solo termina cuando el cliente cancela la petición.
     const fetchFn = jest.fn(
       (_url: unknown, init?: RequestInit) =>
@@ -151,7 +181,9 @@ describe('cliente HTTP', () => {
     const outcome = slow.get('/x').catch((e: unknown) => e);
     await jest.advanceTimersByTimeAsync(1000);
 
-    expect(await outcome).toBeInstanceOf(ConnectionError);
+    const error = await outcome;
+    expect(error).toBeInstanceOf(TimeoutError);
+    expect(error).toBeInstanceOf(ConnectionError);
   });
 
   it('sin URL configurada no intenta conectarse', async () => {

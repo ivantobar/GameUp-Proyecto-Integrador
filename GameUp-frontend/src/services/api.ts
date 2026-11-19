@@ -5,6 +5,7 @@ import {
   ForbiddenError,
   NotFoundError,
   ServerError,
+  TimeoutError,
   UnauthorizedError,
   type ApiError,
 } from './apiErrors';
@@ -38,6 +39,11 @@ export interface RequestOptions {
    * Por defecto, `true`.
    */
   authenticated?: boolean;
+  /**
+   * Espera máxima de esta petición (ms). Por defecto, la del cliente; en
+   * `postForm`, la de subir un archivo.
+   */
+  timeoutMs?: number;
 }
 
 export interface ApiClientConfig {
@@ -130,9 +136,10 @@ export function createApiClient({
     method: Method,
     path: string,
     payload: Payload,
-    { authenticated = true }: RequestOptions = {},
-    waitMs = timeoutMs,
+    { authenticated = true, timeoutMs: requestTimeoutMs }: RequestOptions = {},
+    defaultWaitMs = timeoutMs,
   ): Promise<T> {
+    const waitMs = requestTimeoutMs ?? defaultWaitMs;
     const headers: Record<string, string> = { Accept: 'application/json' };
     // En multipart no se pone Content-Type: `fetch` agrega el separador.
     if (payload.kind === 'json') headers['Content-Type'] = 'application/json';
@@ -167,7 +174,9 @@ export function createApiClient({
         signal: controller.signal,
       });
     } catch {
-      // Sin red, servidor apagado o tiempo de espera agotado.
+      // Se agotó la espera: la petición pudo llegar al servidor.
+      if (controller.signal.aborted) throw new TimeoutError();
+      // Sin red o servidor apagado.
       throw new ConnectionError();
     } finally {
       clearTimeout(timer);

@@ -10,6 +10,7 @@ import { createMockRepositories } from '@/data/mock/createMockRepositories';
 import { MOCK_PASSWORD } from '@/data/mock/fixtures';
 import { RepositoryProvider } from '@/data/RepositoryProvider';
 import type { Repositories } from '@/data/repositories';
+import { TimeoutError } from '@/services/apiErrors';
 
 jest.mock('expo-router', () => ({
   router: { replace: jest.fn(), push: jest.fn() },
@@ -180,5 +181,72 @@ describe('Iniciar sesión (simulado)', () => {
     expect(
       screen.getByRole('button', { name: 'Ocultar la contraseña' }),
     ).toBeOnTheScreen();
+  });
+});
+
+describe('Iniciar sesión con el backend dormido (Render)', () => {
+  const WAKING = 'Estamos despertando GameUP…';
+
+  beforeEach(() => {
+    jest.mocked(router.replace).mockClear();
+  });
+
+  it('al abrir la pantalla despierta el backend', async () => {
+    const repositories = createMockRepositories({ delayMs: 0 });
+    const warmUp = jest.spyOn(repositories.auth, 'warmUp');
+
+    await renderLogin(repositories);
+
+    expect(warmUp).toHaveBeenCalledTimes(1);
+  });
+
+  it('si «Entrar» tarda, avisa que se está despertando; al entrar, el aviso se va', async () => {
+    const repositories = createMockRepositories({ delayMs: 0 });
+    let answer: () => void = () => {};
+    jest.spyOn(repositories.auth, 'signIn').mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          answer = () =>
+            resolve({ userId: 'd1', role: 'teacher', displayName: 'Ana' });
+        }),
+    );
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    await renderLogin(repositories);
+
+    await user.type(screen.getByTestId('login-email'), 'docente@gameup.test');
+    await user.type(screen.getByTestId('login-password'), MOCK_PASSWORD);
+    await user.press(screen.getByRole('button', { name: 'Entrar' }));
+
+    // Los primeros segundos no se dice nada.
+    await act(async () => {
+      await jest.advanceTimersByTimeAsync(4000);
+    });
+    expect(screen.queryByText(WAKING)).toBeNull();
+
+    await act(async () => {
+      await jest.advanceTimersByTimeAsync(1000);
+    });
+    expect(screen.getByText(WAKING)).toBeOnTheScreen();
+    expect(screen.queryByText('Sin conexión')).toBeNull();
+
+    await act(async () => {
+      answer();
+      await jest.runAllTimersAsync();
+    });
+    expect(screen.queryByText(WAKING)).toBeNull();
+    expect(router.replace).toHaveBeenCalledWith('/teacher');
+  });
+
+  it('si ni reintentando responde a tiempo, no culpa al internet del teléfono', async () => {
+    const repositories = createMockRepositories({ delayMs: 0 });
+    jest
+      .spyOn(repositories.auth, 'signIn')
+      .mockRejectedValue(new TimeoutError());
+    await renderLogin(repositories);
+
+    await signIn('docente@gameup.test', MOCK_PASSWORD);
+
+    expect(screen.getByText('GameUP no está disponible')).toBeOnTheScreen();
+    expect(screen.queryByText('Sin conexión')).toBeNull();
   });
 });
