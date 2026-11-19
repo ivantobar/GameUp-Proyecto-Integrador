@@ -13,6 +13,11 @@ export const spacing = {
   xxxl: 40,
   /** Margen lateral de las pantallas. */
   gutter: 24,
+  /**
+   * Separación mínima entre opciones de juego (motricidad fina: el niño no
+   * debe tocar la de al lado sin querer).
+   */
+  option: 12,
 } as const;
 
 export const radii = {
@@ -21,7 +26,22 @@ export const radii = {
   lg: 16,
   xl: 20,
   xxl: 28,
+  /** Tarjetas del niño: más redondeadas que las de los adultos (xl). */
+  card: 24,
   pill: 999,
+} as const;
+
+/**
+ * Relieve plano (sin sombras): alto del borde inferior sólido de lo que se
+ * toca. Al presionar, la cara baja `pressed` dp y «se hunde».
+ */
+export const depth = {
+  /** Botones y tarjetas de los adultos. */
+  sm: 3,
+  /** Botones grandes y tarjetas de juego del niño. */
+  md: 5,
+  /** Cuánto baja la cara al presionar (menos que `sm`: nunca tapa el borde). */
+  pressed: 2,
 } as const;
 
 export const sizes = {
@@ -39,6 +59,8 @@ export const sizes = {
   dot: 12,
   dotActiveWidth: 32,
   tabBarItem: 64,
+  /** Raya bajo la pestaña activa (el estado también se ve por forma). */
+  tabMark: 4,
   avatar: 48,
   stepNumber: 32,
   /** Círculo de cada vocal en «Vocales terminadas» (Habla conmigo). */
@@ -84,10 +106,14 @@ export const sizes = {
    * glifos: `md` en las opciones, `lg` en la tarjeta grande de arriba.
    */
   pictogramImage: { md: 64, lg: 112 },
+  /** Ilustraciones: estado vacío (sm), bienvenida y celebración (md/lg). */
+  illustration: { sm: 64, md: 120, lg: 200 },
   /** Logo completo de la fundación (guía: con lema, desde 200 px de ancho). */
   logo: 220,
 } as const;
 
+export type IllustrationSize = keyof typeof sizes.illustration;
+export type DepthSize = Exclude<keyof typeof depth, 'pressed'>;
 export type CharacterSize = keyof typeof sizes.character;
 export type MouthSize = keyof typeof sizes.mouth;
 export type GameIconSize = keyof typeof sizes.gameIcon;

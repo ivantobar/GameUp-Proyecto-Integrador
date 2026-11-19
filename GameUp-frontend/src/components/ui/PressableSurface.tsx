@@ -1,0 +1,163 @@
+import type { ReactNode } from 'react';
+import {
+  Pressable,
+  StyleSheet,
+  View,
+  type AccessibilityRole,
+  type AccessibilityState,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native';
+import Animated, {
+  interpolate,
+  interpolateColor,
+  useAnimatedStyle,
+} from 'react-native-reanimated';
+import {
+  depth as depthTokens,
+  motion,
+  type DepthSize,
+  type ThemeColor,
+} from '@/theme';
+import type { PressableBaseProps } from './types';
+import { usePressFeedback } from './usePressFeedback';
+
+/** Colores de una superficie tocable, en estado normal y presionado. */
+export interface SurfaceColors {
+  background: ThemeColor;
+  pressedBackground: ThemeColor;
+  border: ThemeColor;
+  pressedBorder: ThemeColor;
+  /** Borde inferior del relieve. */
+  edge: ThemeColor;
+}
+
+export interface PressableSurfaceProps extends PressableBaseProps {
+  colors: SurfaceColors;
+  children: ReactNode;
+  accessibilityLabel: string;
+  accessibilityRole?: AccessibilityRole;
+  accessibilityState?: AccessibilityState;
+  /** Alto del relieve; `none` para una superficie plana (enlaces). */
+  depth?: DepthSize | 'none';
+  radius: number;
+  borderWidth: number;
+  borderStyle?: 'solid' | 'dashed';
+  /** Rebote leve al presionar (tarjetas de juego del niño). */
+  pressScale?: boolean;
+  /** Opciones que ya no se pueden tocar en la ronda (más pálidas). */
+  opacity?: number;
+  /** Ubica la superficie (flex, márgenes, ancho). */
+  style?: StyleProp<ViewStyle>;
+  /** Distribuye el contenido de la cara (padding, dirección, alineación). */
+  contentStyle?: StyleProp<ViewStyle>;
+}
+
+/**
+ * Base de todo lo que se toca con relieve plano: una «cara» con su borde y,
+ * debajo, un borde inferior sólido más oscuro (sin sombras ni degradados,
+ * regla de la guía). Al presionar, la cara baja y tapa parte del relieve:
+ * se siente como un botón físico.
+ *
+ * Deshabilitada, la superficie queda plana: el relieve dice «se puede
+ * tocar». El estado nunca depende solo del relieve; también lo dicen el
+ * color, el borde y `accessibilityState`.
+ */
+export function PressableSurface({
+  colors: palette,
+  children,
+  onPress,
+  disabled = false,
+  accessibilityLabel,
+  accessibilityHint,
+  accessibilityRole = 'button',
+  accessibilityState,
+  testID,
+  depth = 'sm',
+  radius,
+  borderWidth,
+  borderStyle = 'solid',
+  pressScale = false,
+  opacity = 1,
+  style,
+  contentStyle,
+}: PressableSurfaceProps) {
+  const { progress, onPressIn, onPressOut } = usePressFeedback();
+  const edge = disabled || depth === 'none' ? 0 : depthTokens[depth];
+  const sink = edge === 0 ? 0 : depthTokens.pressed;
+  const scaleTo = pressScale ? motion.pressScale : 1;
+
+  const faceStyle = useAnimatedStyle(() => ({
+    backgroundColor: interpolateColor(
+      progress.value,
+      [0, 1],
+      [palette.background, palette.pressedBackground],
+    ),
+    borderColor: interpolateColor(
+      progress.value,
+      [0, 1],
+      [palette.border, palette.pressedBorder],
+    ),
+    transform: [
+      { translateY: interpolate(progress.value, [0, 1], [0, sink]) },
+      { scale: interpolate(progress.value, [0, 1], [1, scaleTo]) },
+    ],
+  }));
+
+  return (
+    <Pressable
+      onPress={onPress}
+      onPressIn={onPressIn}
+      onPressOut={onPressOut}
+      disabled={disabled}
+      accessibilityRole={accessibilityRole}
+      accessibilityLabel={accessibilityLabel}
+      accessibilityHint={accessibilityHint}
+      accessibilityState={{ disabled, ...accessibilityState }}
+      testID={testID}
+      style={[styles.pressable, { opacity }, style]}
+    >
+      <View style={[styles.frame, { paddingBottom: edge }]}>
+        {edge > 0 ? (
+          <View
+            style={[
+              styles.edge,
+              {
+                top: edge,
+                borderRadius: radius,
+                backgroundColor: palette.edge,
+              },
+            ]}
+          />
+        ) : null}
+        <Animated.View
+          style={[
+            styles.face,
+            { borderRadius: radius, borderWidth, borderStyle },
+            contentStyle,
+            faceStyle,
+          ]}
+        >
+          {children}
+        </Animated.View>
+      </View>
+    </Pressable>
+  );
+}
+
+const styles = StyleSheet.create({
+  pressable: {
+    flexGrow: 0,
+  },
+  /** Crece con su contenedor (tarjetas en fila del mismo alto). */
+  frame: {
+    flexGrow: 1,
+  },
+  /** El relieve: misma forma que la cara, corrido hacia abajo. */
+  edge: {
+    ...StyleSheet.absoluteFill,
+  },
+  face: {
+    flexGrow: 1,
+  },
+});

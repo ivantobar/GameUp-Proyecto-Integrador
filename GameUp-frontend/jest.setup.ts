@@ -1,4 +1,9 @@
 import { act } from '@testing-library/react-native';
+import { setUpTests } from 'react-native-reanimated';
+
+// Reanimated 4: matchers de estilos animados y animaciones con los
+// temporizadores simulados de Jest.
+setUpTests();
 
 /**
  * Configuración común de Jest.

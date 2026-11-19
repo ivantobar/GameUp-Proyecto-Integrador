@@ -1,8 +1,8 @@
-import { Animated, Pressable, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { colors, radii, sizes, type IconSize, type ThemeColor } from '@/theme';
 import { Icon, type IconName } from './Icon';
+import { PressableSurface } from './PressableSurface';
 import type { PressableBaseProps } from './types';
-import { pressColor, usePressFeedback } from './usePressFeedback';
 
 export type IconButtonVariant = 'neutral' | 'soft' | 'solid' | 'accent';
 export type IconButtonSize = 'sm' | 'md' | 'lg';
@@ -12,6 +12,8 @@ interface VariantStyle {
   pressedBackground: ThemeColor;
   border: ThemeColor;
   pressedBorder: ThemeColor;
+  /** Relieve plano (borde inferior sólido). */
+  edge: ThemeColor;
   icon: ThemeColor;
 }
 
@@ -22,6 +24,7 @@ export const iconButtonVariants = {
     pressedBackground: colors.verde.suave,
     border: colors.borde.suave,
     pressedBorder: colors.verde.oscuro,
+    edge: colors.relieve.superficie,
     icon: colors.verde.oscuro,
   },
   /** Verde suave: parlante de las instrucciones. */
@@ -30,6 +33,7 @@ export const iconButtonVariants = {
     pressedBackground: colors.verde.suave,
     border: colors.borde.suave,
     pressedBorder: colors.verde.oscuro,
+    edge: colors.relieve.verdeSuave,
     icon: colors.verde.oscuro,
   },
   /** Verde oscuro: reproducir el modelo, oír el sonido en Busca la boca. */
@@ -38,6 +42,7 @@ export const iconButtonVariants = {
     pressedBackground: colors.texto.principal,
     border: colors.verde.oscuro,
     pressedBorder: colors.texto.principal,
+    edge: colors.verde.profundo,
     icon: colors.texto.sobreOscuro,
   },
   /** Naranja con ícono oscuro: reproducir la voz del niño. */
@@ -46,6 +51,7 @@ export const iconButtonVariants = {
     pressedBackground: colors.naranja.presionado,
     border: colors.marca.naranja,
     pressedBorder: colors.naranja.presionado,
+    edge: colors.relieve.naranja,
     icon: colors.texto.principal,
   },
 } as const satisfies Record<IconButtonVariant, VariantStyle>;
@@ -76,48 +82,37 @@ export function IconButton({
   accessibilityHint,
   testID,
 }: IconButtonProps) {
-  const { progress, onPressIn, onPressOut } = usePressFeedback();
   const config = iconButtonVariants[variant];
   const diameter = sizes.iconButton[size];
+  const palette = disabled
+    ? {
+        background: colors.marca.gris,
+        pressedBackground: colors.marca.gris,
+        border: colors.borde.suave,
+        pressedBorder: colors.borde.suave,
+        edge: colors.borde.suave,
+      }
+    : config;
 
   return (
-    <Pressable
+    <PressableSurface
+      colors={palette}
       onPress={onPress}
-      onPressIn={onPressIn}
-      onPressOut={onPressOut}
       disabled={disabled}
-      accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
       accessibilityHint={accessibilityHint}
-      accessibilityState={{ disabled }}
       testID={testID}
+      depth="sm"
+      radius={radii.pill}
+      borderWidth={sizes.border}
+      contentStyle={[styles.base, { width: diameter, height: diameter }]}
     >
-      <Animated.View
-        style={[
-          styles.base,
-          {
-            width: diameter,
-            height: diameter,
-            backgroundColor: disabled
-              ? colors.marca.gris
-              : pressColor(
-                  progress,
-                  config.background,
-                  config.pressedBackground,
-                ),
-            borderColor: disabled
-              ? colors.borde.suave
-              : pressColor(progress, config.border, config.pressedBorder),
-          },
-        ]}
-      >
-        <Icon
-          name={icon}
-          size={iconSizeFor[size]}
-          color={disabled ? colors.texto.secundario : config.icon}
-        />
-      </Animated.View>
-    </Pressable>
+      <Icon
+        name={icon}
+        size={iconSizeFor[size]}
+        color={disabled ? colors.texto.secundario : config.icon}
+      />
+    </PressableSurface>
   );
 }
 
@@ -125,7 +120,5 @@ const styles = StyleSheet.create({
   base: {
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: radii.pill,
-    borderWidth: sizes.border,
   },
 });

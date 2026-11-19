@@ -16,6 +16,7 @@ import { useRefreshOnFocus } from '@/data/useRefreshOnFocus';
 import { leaveAssignedNotice, leaveLevelNotice } from '../assignmentNotice';
 import { StudentDetailView } from '../components/StudentDetailView';
 import { directorRoutes, teacherRoutes } from '../staffRoutes';
+import { settle } from '@/test-utils/settle';
 
 jest.mock('expo-router', () => ({
   router: { push: jest.fn(), back: jest.fn() },
@@ -40,11 +41,6 @@ function focusAgain() {
     });
   })();
 }
-
-const settle = () =>
-  act(async () => {
-    await jest.runAllTimersAsync();
-  });
 
 async function renderDetail(repos: Repositories, studentId = mockStudent.id) {
   await render(

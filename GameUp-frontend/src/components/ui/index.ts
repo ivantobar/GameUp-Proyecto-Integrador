@@ -1,4 +1,5 @@
 export { AppText, textTones, type TextTone } from './AppText';
+export { Backdrop, type BackdropKind } from './Backdrop';
 export { Badge, type BadgeTone } from './Badge';
 export { BottomTabBar, type BottomTabItem } from './BottomTabBar';
 export { Button, type ButtonVariant, type ButtonSize } from './Button';
@@ -31,4 +32,10 @@ export { SegmentedTabs, type SegmentedTabOption } from './SegmentedTabs';
 export { StateView, type StateKind } from './StateView';
 export { TextField } from './TextField';
 export type { PressableBaseProps } from './types';
-export { pressColor, usePressFeedback } from './usePressFeedback';
+export {
+  PressableSurface,
+  type PressableSurfaceProps,
+  type SurfaceColors,
+} from './PressableSurface';
+export { usePressFeedback, type PressFeedback } from './usePressFeedback';
+export { curves } from './motionCurves';

@@ -1,10 +1,11 @@
-import { act, render, screen, userEvent } from '@testing-library/react-native';
+import { render, screen, userEvent } from '@testing-library/react-native';
 import { router } from 'expo-router';
 import { createMockRepositories } from '@/data/mock/createMockRepositories';
 import { MOCK_PASSWORD, mockStudent } from '@/data/mock/fixtures';
 import { RepositoryProvider } from '@/data/RepositoryProvider';
 import type { Repositories } from '@/data/repositories';
 import { ReviewQueueView } from '@/features/review/components/ReviewQueueView';
+import { settle } from '@/test-utils/settle';
 
 jest.mock('expo-router', () => ({
   router: { push: jest.fn(), back: jest.fn(), replace: jest.fn() },
@@ -17,11 +18,6 @@ jest.mock('expo-secure-store', () => ({
   setItemAsync: jest.fn(() => Promise.resolve()),
   deleteItemAsync: jest.fn(() => Promise.resolve()),
 }));
-
-const settle = () =>
-  act(async () => {
-    await jest.runAllTimersAsync();
-  });
 
 async function asTeacher(): Promise<Repositories> {
   const repos = createMockRepositories({ delayMs: 0 });

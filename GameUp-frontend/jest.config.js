@@ -20,6 +20,8 @@ module.exports = {
     'node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|native-base|react-native-svg|standard-navigation)',
   ],
   setupFilesAfterEnv: ['./jest.setup.ts'],
+  // Reanimated 4: resuelve sus módulos y los de Worklets para Node.
+  resolver: 'react-native-reanimated/jest/resolver',
   moduleNameMapper: {
     '^expo-modules-core$': expoModulesCore,
     '^expo-modules-core/(.*)$': `${expoModulesCore}/$1`,

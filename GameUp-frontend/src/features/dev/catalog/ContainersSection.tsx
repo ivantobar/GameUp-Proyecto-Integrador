@@ -32,7 +32,7 @@ export function ContainersSection() {
     <>
       <CatalogSection
         title="Tarjetas"
-        note="Planas, sin sombras. Las que se tocan muestran un borde al presionar."
+        note="Sin sombras ni degradados. La que solo se lee es plana; la que se toca lleva relieve plano (borde inferior sólido) y se hunde al presionar."
       >
         {cardTones.map(({ tone, name, onDark }) => (
           <Card key={tone} tone={tone}>

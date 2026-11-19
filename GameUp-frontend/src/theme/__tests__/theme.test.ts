@@ -76,6 +76,71 @@ describe('contraste de colores (WCAG AA)', () => {
     );
   });
 
+  it.each([
+    ['fondo del niño', colors.fondo.nino],
+    ['Emparejar', colors.identidad.emparejarFondo],
+    ['Clasificar', colors.identidad.clasificarFondo],
+    ['Secuenciar', colors.juego.fondoAmarillo],
+    ['Memoria', colors.identidad.memoriaFondo],
+    ['Busca la boca', colors.identidad.bocaFondo],
+  ])(
+    'textos principal, secundario y de marca cumplen AA sobre %s',
+    (_name, background) => {
+      expect(
+        contrastRatio(colors.texto.principal, background),
+      ).toBeGreaterThanOrEqual(AA.text);
+      expect(
+        contrastRatio(colors.texto.secundario, background),
+      ).toBeGreaterThanOrEqual(AA.text);
+      expect(
+        contrastRatio(colors.verde.oscuro, background),
+      ).toBeGreaterThanOrEqual(AA.text);
+    },
+  );
+
+  it.each([
+    [
+      'Emparejar',
+      colors.identidad.emparejarAcento,
+      colors.identidad.emparejarFondo,
+    ],
+    [
+      'Clasificar',
+      colors.identidad.clasificarAcento,
+      colors.identidad.clasificarFondo,
+    ],
+    [
+      'Secuenciar',
+      colors.identidad.secuenciarAcento,
+      colors.juego.fondoAmarillo,
+    ],
+    ['Memoria', colors.identidad.memoriaAcento, colors.identidad.memoriaFondo],
+    ['Busca la boca', colors.identidad.bocaAcento, colors.identidad.bocaFondo],
+  ])(
+    'el acento de %s cumple AA para texto sobre su fondo y sobre blanco',
+    (_name, accent, background) => {
+      expect(contrastRatio(accent, background)).toBeGreaterThanOrEqual(AA.text);
+      expect(
+        contrastRatio(accent, colors.superficie.blanca),
+      ).toBeGreaterThanOrEqual(AA.text);
+    },
+  );
+
+  it('el relieve del botón naranja se distingue del fondo (gráficos)', () => {
+    expect(
+      contrastRatio(colors.relieve.naranja, colors.marca.gris),
+    ).toBeGreaterThanOrEqual(AA.graphic);
+    expect(
+      contrastRatio(colors.relieve.naranja, colors.fondo.nino),
+    ).toBeGreaterThanOrEqual(AA.graphic);
+  });
+
+  it('la estrella vacía también se ve sobre el fondo del niño', () => {
+    expect(
+      contrastRatio(colors.estrella.vacia, colors.fondo.nino),
+    ).toBeGreaterThanOrEqual(AA.graphic);
+  });
+
   it('la estrella vacía cumple el mínimo para gráficos sobre blanco', () => {
     expect(
       contrastRatio(colors.estrella.vacia, colors.superficie.blanca),

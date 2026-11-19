@@ -95,6 +95,8 @@ export const colors = {
    * [PENDIENTE DE APROBACIÓN] Colores vivos de los dibujos de cada juego
    * (`GameIcon`): estilo infantil para que el niño reconozca el juego sin
    * leer. Solo decoran; el texto de la tarjeta dice qué juego es.
+   * Sobre blanco dan entre 1,4:1 y 3,5:1: sirven como relleno de un dibujo
+   * con contorno, nunca como texto ni como único indicador de algo.
    */
   juego: {
     rojo: '#FF5A5F',
@@ -106,6 +108,59 @@ export const colors = {
     morado: '#9B6BFF',
     moradoClaro: '#C9B3FF',
     fondoAmarillo: '#FFF1C7',
+  },
+  /**
+   * [PENDIENTE DE APROBACIÓN] Fondo cálido de las pantallas del niño (los
+   * adultos siguen sobre el gris de la guía). Texto secundario 6,5:1;
+   * estrella vacía 3,06:1.
+   */
+  fondo: {
+    nino: '#FFFBF4',
+  },
+  /**
+   * [PENDIENTE DE APROBACIÓN] Relieve plano: borde inferior sólido, más
+   * oscuro, que hace ver «tocable» un botón o una tarjeta (sin sombras ni
+   * degradados, regla de la guía). Es decorativo: el estado nunca depende
+   * de él. El relieve del botón principal es `verde.profundo` y el de la
+   * tarjeta verde oscuro también.
+   */
+  relieve: {
+    /** Botón naranja. 3,7:1 sobre gris; 4,2:1 sobre el fondo del niño. */
+    naranja: '#B5650A',
+    /** Superficies blancas. Decorativo (1,3:1 sobre gris). */
+    superficie: '#C9CFCD',
+    /** Botón verde suave. Decorativo (1,2:1). */
+    verdeSuave: '#BFDCD7',
+    /** Botón naranja suave. Decorativo (1,2:1). */
+    naranjaSuave: '#F2D3A6',
+  },
+  /**
+   * [PENDIENTE DE APROBACIÓN] Identidad de cada juego: un fondo suave y un
+   * acento para que el niño reconozca el juego sin leer.
+   *
+   * Regla: SOLO identidad (fondo de la pantalla, franja del encabezado,
+   * recuadro del dibujo). Nunca marcan el estado de una opción: elegido,
+   * pista y acierto siempre usan los verdes de la guía.
+   *
+   * Contraste: texto principal sobre cada fondo ≥ 12,3:1; texto secundario
+   * ≥ 5,6:1; cada acento sobre su fondo ≥ 4,5:1 y sobre blanco ≥ 5,1:1.
+   * Habla conmigo usa los verdes de la guía.
+   */
+  identidad: {
+    /** Emparejar: coral. Acento 5,1:1 sobre su fondo, 5,9:1 sobre blanco. */
+    emparejarFondo: '#FFE9E5',
+    emparejarAcento: '#B23A2B',
+    /** Clasificar: azul. Acento 4,6:1 sobre su fondo, 5,2:1 sobre blanco. */
+    clasificarFondo: '#E3F1FF',
+    clasificarAcento: '#1F6FB8',
+    /** Secuenciar: miel. Fondo = `juego.fondoAmarillo`. Acento 4,5:1 y 5,1:1. */
+    secuenciarAcento: '#9A6200',
+    /** Memoria: lila. Acento 5,3:1 sobre su fondo, 6,3:1 sobre blanco. */
+    memoriaFondo: '#EFE8FF',
+    memoriaAcento: '#6B45C9',
+    /** Busca la boca: rosa. Acento 4,7:1 sobre su fondo, 5,4:1 sobre blanco. */
+    bocaFondo: '#FDEBF1',
+    bocaAcento: '#B83C6A',
   },
   /** Sin color de fondo (enlaces, bordes invisibles). */
   transparente: 'transparent',

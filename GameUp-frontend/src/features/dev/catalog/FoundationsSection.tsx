@@ -1,5 +1,5 @@
 import { StyleSheet, View } from 'react-native';
-import { AppText, Card } from '@/components/ui';
+import { AppText, Backdrop, Card, type BackdropKind } from '@/components/ui';
 import {
   colors,
   radii,
@@ -32,6 +32,70 @@ const swatches: readonly Swatch[] = [
   { token: 'cafe.oscuro · derivado', value: colors.cafe.oscuro },
   { token: 'borde.suave · derivado', value: colors.borde.suave },
   { token: 'estrella.vacia · derivado', value: colors.estrella.vacia },
+  { token: 'fondo.nino · pendiente', value: colors.fondo.nino },
+  { token: 'relieve.naranja · pendiente', value: colors.relieve.naranja },
+  { token: 'relieve.superficie · pendiente', value: colors.relieve.superficie },
+];
+
+/** Fondos decorativos sobre el color donde se usan. */
+const backdrops: readonly {
+  kind: BackdropKind;
+  name: string;
+  background: ThemeColor;
+}[] = [
+  {
+    kind: 'clouds',
+    name: 'Nubes · fondo del niño',
+    background: colors.fondo.nino,
+  },
+  {
+    kind: 'hills',
+    name: 'Colinas · Inicio y ¡Listo!',
+    background: colors.fondo.nino,
+  },
+  {
+    kind: 'bubbles',
+    name: 'Burbujas · juegos (Clasificar)',
+    background: colors.identidad.clasificarFondo,
+  },
+];
+
+/** Identidad de cada juego (pendiente de aprobación): fondo y acento. */
+const gameIdentities: readonly {
+  name: string;
+  background: ThemeColor;
+  accent: ThemeColor;
+}[] = [
+  {
+    name: 'Emparejar',
+    background: colors.identidad.emparejarFondo,
+    accent: colors.identidad.emparejarAcento,
+  },
+  {
+    name: 'Clasificar',
+    background: colors.identidad.clasificarFondo,
+    accent: colors.identidad.clasificarAcento,
+  },
+  {
+    name: 'Secuenciar',
+    background: colors.juego.fondoAmarillo,
+    accent: colors.identidad.secuenciarAcento,
+  },
+  {
+    name: 'Memoria',
+    background: colors.identidad.memoriaFondo,
+    accent: colors.identidad.memoriaAcento,
+  },
+  {
+    name: 'Habla conmigo',
+    background: colors.verde.suave,
+    accent: colors.verde.oscuro,
+  },
+  {
+    name: 'Busca la boca',
+    background: colors.identidad.bocaFondo,
+    accent: colors.identidad.bocaAcento,
+  },
 ];
 
 function formatRatio(ratio: number): string {
@@ -78,6 +142,41 @@ export function FoundationsSection() {
           </View>
         ))}
       </CatalogSection>
+      <CatalogSection
+        title="Fondos"
+        note="Formas planas de contraste muy bajo (1,1:1 a 1,2:1): decoran sin distraer. No se mueven ni las lee el lector de pantalla."
+      >
+        {backdrops.map((item) => (
+          <View
+            key={item.kind}
+            style={[styles.backdropBox, { backgroundColor: item.background }]}
+          >
+            <Backdrop kind={item.kind} />
+            <AppText variant="bodyStrong">{item.name}</AppText>
+          </View>
+        ))}
+      </CatalogSection>
+      <CatalogSection
+        title="Identidad de cada juego"
+        note="Solo para reconocer el juego (fondo y encabezado). Nunca marcan un estado: elegido, pista y acierto usan siempre los verdes de la guía. Pendiente de aprobación."
+      >
+        {gameIdentities.map((game) => (
+          <View
+            key={game.name}
+            style={[styles.identity, { backgroundColor: game.background }]}
+          >
+            <View
+              style={[styles.identityAccent, { backgroundColor: game.accent }]}
+            />
+            <AppText variant="bodyStrong" style={styles.flex}>
+              {game.name}
+            </AppText>
+            <AppText variant="support" tone="secundario">
+              acento {formatRatio(contrastRatio(game.accent, game.background))}
+            </AppText>
+          </View>
+        ))}
+      </CatalogSection>
 
       <CatalogSection
         title="Tipografía"
@@ -108,6 +207,28 @@ export function FoundationsSection() {
 }
 
 const styles = StyleSheet.create({
+  backdropBox: {
+    minHeight: sizes.categoryBin,
+    padding: spacing.md,
+    borderRadius: radii.xl,
+    overflow: 'hidden',
+  },
+  identity: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: spacing.sm,
+    padding: spacing.md,
+    borderRadius: radii.xl,
+  },
+  identityAccent: {
+    width: sizes.icon.lg,
+    height: sizes.icon.lg,
+    borderRadius: radii.pill,
+  },
+  flex: {
+    flex: 1,
+  },
   swatchRow: {
     flexDirection: 'row',
     alignItems: 'center',

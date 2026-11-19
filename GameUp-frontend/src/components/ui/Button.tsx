@@ -1,14 +1,9 @@
-import {
-  ActivityIndicator,
-  Animated,
-  Pressable,
-  StyleSheet,
-} from 'react-native';
+import { ActivityIndicator, StyleSheet } from 'react-native';
 import { colors, radii, sizes, spacing, type ThemeColor } from '@/theme';
 import { AppText, textTones, type TextTone } from './AppText';
 import { Icon, type IconName } from './Icon';
+import { PressableSurface } from './PressableSurface';
 import type { PressableBaseProps } from './types';
-import { pressColor, usePressFeedback } from './usePressFeedback';
 
 export type ButtonVariant =
   'primary' | 'secondary' | 'accent' | 'link' | 'soft' | 'warm';
@@ -19,6 +14,8 @@ interface VariantStyle {
   pressedBackground: ThemeColor;
   border: ThemeColor;
   pressedBorder: ThemeColor;
+  /** Relieve plano: borde inferior sólido (ver `PressableSurface`). */
+  edge: ThemeColor;
   text: TextTone;
   /** Color del ícono; si no se indica, el del texto. */
   icon?: ThemeColor;
@@ -37,6 +34,7 @@ export const buttonVariants = {
     pressedBackground: colors.texto.principal,
     border: colors.verde.oscuro,
     pressedBorder: colors.texto.principal,
+    edge: colors.verde.profundo,
     text: 'sobreOscuro',
     underline: false,
   },
@@ -46,6 +44,7 @@ export const buttonVariants = {
     pressedBackground: colors.verde.suave,
     border: colors.verde.oscuro,
     pressedBorder: colors.verde.profundo,
+    edge: colors.verde.oscuro,
     text: 'marca',
     underline: false,
   },
@@ -59,6 +58,7 @@ export const buttonVariants = {
     pressedBackground: colors.naranja.presionado,
     border: colors.marca.naranja,
     pressedBorder: colors.naranja.presionado,
+    edge: colors.relieve.naranja,
     text: 'principal',
     underline: false,
   },
@@ -68,6 +68,7 @@ export const buttonVariants = {
     pressedBackground: colors.verde.suave,
     border: colors.transparente,
     pressedBorder: colors.verde.suave,
+    edge: colors.transparente,
     text: 'marca',
     underline: true,
   },
@@ -77,6 +78,7 @@ export const buttonVariants = {
     pressedBackground: colors.verde.suave,
     border: colors.verde.suave,
     pressedBorder: colors.verde.oscuro,
+    edge: colors.relieve.verdeSuave,
     text: 'principal',
     icon: colors.verde.oscuro,
     underline: false,
@@ -87,6 +89,7 @@ export const buttonVariants = {
     pressedBackground: colors.naranja.suave,
     border: colors.naranja.suave,
     pressedBorder: colors.cafe.oscuro,
+    edge: colors.relieve.naranjaSuave,
     text: 'principal',
     icon: colors.cafe.oscuro,
     underline: false,
@@ -126,7 +129,6 @@ export function Button({
   accessibilityLabel,
   testID,
 }: ButtonProps) {
-  const { progress, onPressIn, onPressOut } = usePressFeedback();
   const config = buttonVariants[variant];
   const isDisabled = disabled || loading;
   const isLink = variant === 'link';
@@ -134,56 +136,54 @@ export function Button({
   const textTone: TextTone = disabled ? buttonDisabled.text : config.text;
   const iconColor =
     !disabled && 'icon' in config ? config.icon : textTones[textTone];
-  const background =
+  // Deshabilitado: gris y plano (sin relieve), salvo el enlace.
+  const palette =
     disabled && !isLink
-      ? buttonDisabled.background
-      : pressColor(progress, config.background, config.pressedBackground);
-  const border =
-    disabled && !isLink
-      ? buttonDisabled.border
-      : pressColor(progress, config.border, config.pressedBorder);
+      ? {
+          background: buttonDisabled.background,
+          pressedBackground: buttonDisabled.background,
+          border: buttonDisabled.border,
+          pressedBorder: buttonDisabled.border,
+          edge: buttonDisabled.border,
+        }
+      : config;
 
   return (
-    <Pressable
+    <PressableSurface
+      colors={palette}
       onPress={onPress}
-      onPressIn={onPressIn}
-      onPressOut={onPressOut}
       disabled={isDisabled}
-      accessibilityRole="button"
       accessibilityLabel={accessibilityLabel ?? label}
       accessibilityHint={accessibilityHint}
-      accessibilityState={{ disabled: isDisabled, busy: loading }}
+      accessibilityState={{ busy: loading }}
       testID={testID}
+      // El botón grande del niño tiene más relieve; el enlace, ninguno.
+      depth={isLink ? 'none' : size === 'large' ? 'md' : 'sm'}
+      radius={radii.lg}
+      borderWidth={sizes.borderStrong}
+      contentStyle={[
+        styles.base,
+        { minHeight: size === 'large' ? sizes.buttonLarge : sizes.button },
+      ]}
     >
-      <Animated.View
-        style={[
-          styles.base,
-          {
-            minHeight: size === 'large' ? sizes.buttonLarge : sizes.button,
-            backgroundColor: background,
-            borderColor: border,
-          },
-        ]}
-      >
-        {loading ? (
-          <ActivityIndicator color={textTones[textTone]} />
-        ) : (
-          <>
-            {icon ? <Icon name={icon} color={iconColor} /> : null}
-            <AppText
-              variant="button"
-              tone={textTone}
-              style={[
-                styles.label,
-                config.underline && !disabled ? styles.underline : undefined,
-              ]}
-            >
-              {label}
-            </AppText>
-          </>
-        )}
-      </Animated.View>
-    </Pressable>
+      {loading ? (
+        <ActivityIndicator color={textTones[textTone]} />
+      ) : (
+        <>
+          {icon ? <Icon name={icon} color={iconColor} /> : null}
+          <AppText
+            variant="button"
+            tone={textTone}
+            style={[
+              styles.label,
+              config.underline && !disabled ? styles.underline : undefined,
+            ]}
+          >
+            {label}
+          </AppText>
+        </>
+      )}
+    </PressableSurface>
   );
 }
 
@@ -195,8 +195,6 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
-    borderRadius: radii.lg,
-    borderWidth: sizes.borderStrong,
   },
   /** En botones lado a lado, el texto baja de línea en vez de salirse. */
   label: {

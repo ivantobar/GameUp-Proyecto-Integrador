@@ -1,8 +1,7 @@
-import { Animated, Pressable, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 import {
   AppText,
-  pressColor,
-  usePressFeedback,
+  PressableSurface,
   type PressableBaseProps,
 } from '@/components/ui';
 import { colors, radii, sizes, spacing, type ThemeColor } from '@/theme';
@@ -18,6 +17,8 @@ interface LevelStyle {
   background: ThemeColor;
   pressedBackground: ThemeColor;
   border: ThemeColor;
+  /** Relieve plano (borde inferior sólido). */
+  edge: ThemeColor;
 }
 
 /**
@@ -29,16 +30,19 @@ export const soundTileLevels = {
     background: colors.superficie.blanca,
     pressedBackground: colors.verde.suave,
     border: colors.borde.suave,
+    edge: colors.relieve.superficie,
   },
   inProgress: {
     background: colors.superficie.blanca,
     pressedBackground: colors.naranja.suave,
     border: colors.marca.naranja,
+    edge: colors.relieve.naranja,
   },
   practiced: {
     background: colors.verde.suave,
     pressedBackground: colors.verde.suave,
     border: colors.verde.oscuro,
+    edge: colors.verde.oscuro,
   },
 } as const satisfies Record<PracticeLevel, LevelStyle>;
 
@@ -57,40 +61,27 @@ export function SoundTile({
   accessibilityHint,
   testID,
 }: SoundTileProps) {
-  const { progress, onPressIn, onPressOut } = usePressFeedback();
   const level = practiceLevel(stars);
   const config = soundTileLevels[level];
 
   return (
-    <Pressable
+    <PressableSurface
+      colors={{ ...config, pressedBorder: config.border }}
       onPress={onPress}
-      onPressIn={onPressIn}
-      onPressOut={onPressOut}
       disabled={disabled}
-      accessibilityRole="button"
       accessibilityLabel={`${letter}. ${practiceLevelLabels[level]}, ${stars} de 3 estrellas`}
       accessibilityHint={accessibilityHint}
-      accessibilityState={{ disabled }}
       testID={testID}
+      depth="md"
+      pressScale
+      radius={radii.xl}
+      borderWidth={sizes.borderStrong + 1}
       style={styles.pressable}
+      contentStyle={styles.tile}
     >
-      <Animated.View
-        style={[
-          styles.tile,
-          {
-            borderColor: config.border,
-            backgroundColor: pressColor(
-              progress,
-              config.background,
-              config.pressedBackground,
-            ),
-          },
-        ]}
-      >
-        <AppText variant="glyph">{letter}</AppText>
-        <StarRow count={stars} />
-      </Animated.View>
-    </Pressable>
+      <AppText variant="glyph">{letter}</AppText>
+      <StarRow count={stars} />
+    </PressableSurface>
   );
 }
 
@@ -105,7 +96,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: spacing.xxs,
     paddingVertical: spacing.sm,
-    borderRadius: radii.xl,
-    borderWidth: sizes.borderStrong + 1,
   },
 });
