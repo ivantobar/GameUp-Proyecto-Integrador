@@ -129,9 +129,11 @@ function ReviewCardBody({
   const mustListen = item.speech?.remoteAudio === true && !listened;
   const listenHint = 'Primero escucha la grabación del intento.';
 
+  /** Cierra el panel si se guardó, y dice si se guardó. */
   const closeOnSuccess = async (action: Promise<boolean>) => {
-    if (await action) setPanel('decide');
-    return true;
+    const saved = await action;
+    if (saved) setPanel('decide');
+    return saved;
   };
 
   return (

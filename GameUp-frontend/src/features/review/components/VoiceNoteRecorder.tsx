@@ -73,7 +73,8 @@ export function VoiceNoteRecorder({
             icon="check"
             loading={busy}
             onPress={() => {
-              if (note.uri) onSave(note.uri).catch(() => {});
+              // Si se guardó, la nota se borra del teléfono.
+              note.save(onSave).catch(() => {});
             }}
           />
           <Button

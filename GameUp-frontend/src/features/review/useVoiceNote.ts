@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { deleteRecording } from '@/features/audio/recordingFiles';
 import { useVoiceRecorder } from '@/features/speak/useVoiceRecorder';
 
 /** Tope de una nota de voz para la familia. */
@@ -35,6 +36,24 @@ export function useVoiceNote() {
     return () => clearTimeout(id);
   }, [phase, stop]);
 
+  /**
+   * Envía la nota con `onSave`. Si se guardó, el archivo se borra del
+   * teléfono en ese momento; si no, se conserva para volver a intentarlo.
+   */
+  const save = useCallback(
+    async (onSave: (audioUri: string) => Promise<boolean>) => {
+      if (!uri) return false;
+      const saved = await onSave(uri);
+      if (saved) {
+        deleteRecording(uri);
+        setUri(null);
+        setPhase('idle');
+      }
+      return saved;
+    },
+    [uri],
+  );
+
   return {
     phase,
     uri,
@@ -42,5 +61,6 @@ export function useVoiceNote() {
     level: recorder.level,
     start,
     stop,
+    save,
   };
 }

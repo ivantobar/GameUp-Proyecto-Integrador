@@ -247,6 +247,47 @@ describe('«Listo»: «Reintentar envío» para el adulto', () => {
     ).toBeOnTheScreen();
   });
 
+  it.each([
+    ['termina bien', true],
+    ['falla', false],
+  ])(
+    'al salir durante un reintento, la voz se borra cuando el envío %s',
+    async (_name, succeeds) => {
+      const user = userEvent.setup({
+        advanceTimers: jest.advanceTimersByTime,
+      });
+      mockParams.actividadId = '8';
+      const outcome = taskOutcome('notSent');
+      const repositories = createMockRepositories({ delayMs: 0 });
+      let finishSend: () => void = () => {};
+      repositories.recordings.submitSpeechAttempt = () =>
+        new Promise<SpeechAttempt>((resolve, reject) => {
+          finishSend = () =>
+            succeeds
+              ? resolve({ ...outcome.attempt, sentForReview: true })
+              : reject(new Error('sin red'));
+        });
+      const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+      const view = await renderDone('granted', outcome, repositories);
+
+      await user.press(
+        screen.getByRole('button', { name: 'Reintentar envío' }),
+      );
+      await view.unmount();
+
+      // El envío sigue leyendo el archivo: todavía no se borra.
+      expect(mockFiles().has(outcome.attempt.audioUri!)).toBe(true);
+
+      await act(async () => {
+        finishSend();
+        await jest.runAllTimersAsync();
+      });
+
+      expect(mockFiles().has(outcome.attempt.audioUri!)).toBe(false);
+      warn.mockRestore();
+    },
+  );
+
   it('si el reintento falla, lo dice y deja reintentar otra vez', async () => {
     const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
     mockParams.actividadId = '8';
