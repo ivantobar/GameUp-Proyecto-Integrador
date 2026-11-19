@@ -13,7 +13,8 @@ interface TeacherNoteCardProps {
 export function TeacherNoteCard({ note }: TeacherNoteCardProps) {
   const player = useClipPlayer(note.audioUri);
   return (
-    <Card tone="soft">
+    // Destacada: barra verde oscuro a la izquierda (forma, no solo color).
+    <Card tone="soft" style={styles.card}>
       <View style={styles.body}>
         <View style={styles.title}>
           <Icon name="note" color={colors.verde.oscuro} />
@@ -36,6 +37,10 @@ export function TeacherNoteCard({ note }: TeacherNoteCardProps) {
 }
 
 const styles = StyleSheet.create({
+  card: {
+    borderLeftWidth: spacing.xxs,
+    borderLeftColor: colors.verde.oscuro,
+  },
   body: {
     gap: spacing.sm,
   },

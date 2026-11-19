@@ -1,14 +1,8 @@
 import { StyleSheet } from 'react-native';
-import {
-  colors,
-  depth,
-  radii,
-  sizes,
-  type IconSize,
-  type ThemeColor,
-} from '@/theme';
+import { colors, radii, sizes, type IconSize, type ThemeColor } from '@/theme';
 import { Icon, type IconName } from './Icon';
-import { PressableSurface } from './PressableSurface';
+import { useAdultSurfaces } from './AdultSurfaces';
+import { PressableSurface, surfaceDepth } from './PressableSurface';
 import type { PressableBaseProps } from './types';
 
 export type IconButtonVariant = 'neutral' | 'soft' | 'solid' | 'accent';
@@ -91,6 +85,7 @@ export function IconButton({
 }: IconButtonProps) {
   const config = iconButtonVariants[variant];
   const diameter = sizes.iconButton[size];
+  const edge = surfaceDepth('sm', useAdultSurfaces());
   const palette = disabled
     ? {
         background: colors.marca.gris,
@@ -114,7 +109,7 @@ export function IconButton({
       borderWidth={sizes.border}
       // Tamaño fijo: el círculo y su relieve nunca se estiran, esté donde
       // esté (encabezado, filas, pie).
-      style={{ width: diameter, height: diameter + depth.sm }}
+      style={{ width: diameter, height: diameter + edge }}
       contentStyle={[styles.base, { width: diameter, height: diameter }]}
     >
       <Icon

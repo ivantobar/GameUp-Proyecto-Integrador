@@ -19,8 +19,22 @@ import {
   type DepthSize,
   type ThemeColor,
 } from '@/theme';
+import { useAdultSurfaces } from './AdultSurfaces';
 import type { PressableBaseProps } from './types';
 import { usePressFeedback } from './usePressFeedback';
+
+/**
+ * Alto del relieve de una superficie: el del niño o, en las pantallas de
+ * adultos (`AdultSurfaces`), el discreto. Lo usan los botones de tamaño fijo
+ * (IconButton, MicButton) para medir su alto total.
+ */
+export function surfaceDepth(
+  depth: DepthSize | 'none',
+  adult: boolean,
+): number {
+  if (depth === 'none') return 0;
+  return adult ? depthTokens.adult[depth] : depthTokens[depth];
+}
 
 /** Colores de una superficie tocable, en estado normal y presionado. */
 export interface SurfaceColors {
@@ -93,10 +107,13 @@ export function PressableSurface({
   const { progress, onPressIn, onPressOut } = usePressFeedback();
   // El espacio del relieve se reserva siempre (también deshabilitada): así
   // un botón que se habilita no cambia de alto ni mueve la pantalla.
-  const reserved = depth === 'none' ? 0 : depthTokens[depth];
+  const adult = useAdultSurfaces();
+  const reserved = surfaceDepth(depth, adult);
   const edge = disabled ? 0 : reserved;
-  const sink = edge === 0 ? 0 : depthTokens.pressed;
-  const scaleTo = pressScale ? motion.pressScale : 1;
+  const sink =
+    edge === 0 ? 0 : adult ? depthTokens.adult.pressed : depthTokens.pressed;
+  // En las pantallas de adultos no hay rebote: se ven sobrias.
+  const scaleTo = pressScale && !adult ? motion.pressScale : 1;
 
   const faceStyle = useAnimatedStyle(() => ({
     backgroundColor: interpolateColor(

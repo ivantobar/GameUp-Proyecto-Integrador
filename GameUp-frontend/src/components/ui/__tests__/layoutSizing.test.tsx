@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react-native';
 import { StyleSheet, Text, View } from 'react-native';
 import { MicButton, NarrationButton } from '@/components/gameup';
 import { colors, depth, sizes } from '@/theme';
+import { AdultSurfaces } from '../AdultSurfaces';
 import { Button } from '../Button';
 import { PressableCard } from '../Card';
 import { FilterChip } from '../FilterChip';
@@ -137,6 +138,46 @@ describe('el encabezado mide lo que su contenido', () => {
     for (const name of ['Volver', 'Oír la instrucción', 'Cerrar sesión']) {
       expect(noneGrows(host(screen.getByRole('button', { name })))).toBe(true);
     }
+  });
+});
+
+describe('pantallas de adultos: relieve discreto (AdultSurfaces)', () => {
+  const reservedOf = (name: string) =>
+    descendants(host(screen.getByRole('button', { name })))
+      .map((node) => flat(node).paddingBottom)
+      .find((value) => value !== undefined);
+
+  it('el botón y la tarjeta tienen menos relieve que en las del niño', async () => {
+    await render(
+      <AdultSurfaces>
+        <Button label="Entrar" onPress={jest.fn()} />
+        <PressableCard accessibilityLabel="Martín" onPress={jest.fn()}>
+          <Text>Martín</Text>
+        </PressableCard>
+      </AdultSurfaces>,
+    );
+    expect(reservedOf('Entrar')).toBe(depth.adult.sm);
+    expect(reservedOf('Martín')).toBe(depth.adult.md);
+    expect(depth.adult.sm).toBeLessThan(depth.sm);
+    expect(depth.adult.md).toBeLessThan(depth.md);
+  });
+
+  it('el botón redondo sigue con su tamaño (diámetro + relieve discreto)', async () => {
+    await render(
+      <AdultSurfaces>
+        <IconButton
+          icon="logout"
+          accessibilityLabel="Cerrar sesión"
+          onPress={jest.fn()}
+        />
+      </AdultSurfaces>,
+    );
+    const button = host(screen.getByRole('button', { name: 'Cerrar sesión' }));
+    expect(flat(button)).toMatchObject({
+      width: sizes.iconButton.md,
+      height: sizes.iconButton.md + depth.adult.sm,
+    });
+    expect(noneGrows(button)).toBe(true);
   });
 });
 

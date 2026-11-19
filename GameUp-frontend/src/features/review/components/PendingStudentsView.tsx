@@ -10,6 +10,7 @@ import {
   ScreenHeader,
   StateView,
 } from '@/components/ui';
+import { Illustration } from '@/components/gameup';
 import type { PendingReviewSummary } from '@/data/types';
 import { useRefreshOnFocus } from '@/data/useRefreshOnFocus';
 import { SignOutButton } from '@/features/auth/components/SignOutButton';
@@ -20,7 +21,7 @@ import {
 } from '@/features/review/reviewText';
 import { usePendingSummary } from '@/features/review/usePendingSummary';
 import type { StaffRoutes } from '@/features/students/staffRoutes';
-import { spacing } from '@/theme';
+import { colors, radii, sizes, spacing } from '@/theme';
 import { errorOf, LoadErrorState } from '@/features/errors/LoadErrorState';
 
 interface PendingStudentsViewProps {
@@ -76,6 +77,7 @@ export function PendingStudentsView({
               kind="empty"
               title="No hay nada por revisar"
               message="Cuando un estudiante termine una actividad, aparecerá aquí."
+              visual={<Illustration name="inboxDone" size="md" />}
             />
           ) : (
             <View style={styles.list}>
@@ -140,6 +142,16 @@ function PendingStudentCard({ row, onPress }: PendingStudentCardProps) {
             Espera desde {formatSubmittedAt(row.oldestAt)}
           </AppText>
         </View>
+        {/* Cuántas faltan, a simple vista (lo dice también el texto). */}
+        <View
+          style={styles.count}
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+        >
+          <AppText variant="bodyStrong" tone="sobreOscuro">
+            {String(row.pending)}
+          </AppText>
+        </View>
       </View>
     </PressableCard>
   );
@@ -157,5 +169,14 @@ const styles = StyleSheet.create({
   texts: {
     flex: 1,
     gap: spacing.xxs,
+  },
+  count: {
+    minWidth: sizes.touchMin - spacing.xs,
+    minHeight: sizes.touchMin - spacing.xs,
+    paddingHorizontal: spacing.xs,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radii.pill,
+    backgroundColor: colors.verde.oscuro,
   },
 });

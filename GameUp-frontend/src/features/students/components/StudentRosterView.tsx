@@ -18,6 +18,7 @@ import { spacing } from '@/theme';
 import type { StaffRoutes } from '../staffRoutes';
 import { useStudentRoster, type RosterRow } from '../useStudentRoster';
 import { errorOf, LoadErrorState } from '@/features/errors/LoadErrorState';
+import { Illustration } from '@/components/gameup';
 
 interface StudentRosterViewProps {
   title: string;
@@ -67,7 +68,12 @@ export function StudentRosterView({
         />
       ) : null}
       {resource.status === 'ready' && resource.data.length === 0 ? (
-        <StateView kind="empty" title={emptyTitle} message={emptyMessage} />
+        <StateView
+          kind="empty"
+          title={emptyTitle}
+          message={emptyMessage}
+          visual={<Illustration name="people" size="md" />}
+        />
       ) : null}
       {resource.status === 'ready' && resource.data.length > 0 ? (
         <>

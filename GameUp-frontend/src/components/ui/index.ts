@@ -1,4 +1,5 @@
 export { AppText, textTones, type TextTone } from './AppText';
+export { AdultSurfaces, useAdultSurfaces } from './AdultSurfaces';
 export { Backdrop, type BackdropKind } from './Backdrop';
 export { Badge, type BadgeTone } from './Badge';
 export { BottomTabBar, type BottomTabItem } from './BottomTabBar';
@@ -34,6 +35,7 @@ export { TextField } from './TextField';
 export type { PressableBaseProps } from './types';
 export {
   PressableSurface,
+  surfaceDepth,
   type PressableSurfaceProps,
   type SurfaceColors,
 } from './PressableSurface';

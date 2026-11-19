@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import { HeaderBackButton, Screen, ScreenHeader } from '@/components/ui';
 import { ActionsSection } from '@/features/dev/catalog/ActionsSection';
+import { AdultSection } from '@/features/dev/catalog/AdultSection';
 import { ContainersSection } from '@/features/dev/catalog/ContainersSection';
 import { FoundationsSection } from '@/features/dev/catalog/FoundationsSection';
 import { GameUpSection } from '@/features/dev/catalog/GameUpSection';
@@ -30,6 +31,7 @@ export function CatalogScreen() {
       <ThinkingGamesSection />
       <SpeakGamesSection />
       <StudentSection />
+      <AdultSection />
     </Screen>
   );
 }

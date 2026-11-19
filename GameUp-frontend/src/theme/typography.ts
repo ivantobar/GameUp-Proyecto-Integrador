@@ -22,7 +22,8 @@ export type TextVariant =
   | 'label'
   | 'support'
   | 'glyph'
-  | 'glyphLarge';
+  | 'glyphLarge'
+  | 'number';
 
 /** Tamaño mínimo de texto de la guía. */
 export const MIN_FONT_SIZE = 15;
@@ -68,6 +69,8 @@ export const typography: Record<TextVariant, TextStyle> = {
    * La guía no define este tamaño; se toma del mockup.
    */
   glyph: { fontFamily: fontFamilies.extraBold, fontSize: 52, lineHeight: 60 },
+  /** [derivado GameUP] Cifras destacadas del Resumen de la directora. */
+  number: { fontFamily: fontFamilies.extraBold, fontSize: 40, lineHeight: 48 },
   /** [derivado GameUP] Letra del paso «Mira» (mockup 4). */
   glyphLarge: {
     fontFamily: fontFamilies.extraBold,

@@ -36,12 +36,18 @@ export const radii = {
  * toca. Al presionar, la cara baja `pressed` dp y «se hunde».
  */
 export const depth = {
-  /** Botones y tarjetas de los adultos. */
+  /** Botones y botones redondos del niño. */
   sm: 3,
   /** Botones grandes y tarjetas de juego del niño. */
   md: 5,
   /** Cuánto baja la cara al presionar (menos que `sm`: nunca tapa el borde). */
   pressed: 2,
+  /**
+   * Pantallas de los adultos (login, tallerista, directora, acudiente):
+   * relieve más discreto y sin rebote, para que se vean sobrias. Lo aplica
+   * `AdultSurfaces` a todo lo que se toca dentro de esas pantallas.
+   */
+  adult: { sm: 2, md: 3, pressed: 1 },
 } as const;
 
 export const sizes = {
@@ -127,7 +133,7 @@ export const sizes = {
 } as const;
 
 export type IllustrationSize = keyof typeof sizes.illustration;
-export type DepthSize = Exclude<keyof typeof depth, 'pressed'>;
+export type DepthSize = Exclude<keyof typeof depth, 'pressed' | 'adult'>;
 export type CharacterSize = keyof typeof sizes.character;
 export type MouthSize = keyof typeof sizes.mouth;
 export type GameIconSize = keyof typeof sizes.gameIcon;

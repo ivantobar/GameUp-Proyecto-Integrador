@@ -21,6 +21,7 @@ import {
 import { useReviewQueue } from '@/features/review/useReviewQueue';
 import { spacing } from '@/theme';
 import { errorOf, LoadErrorState } from '@/features/errors/LoadErrorState';
+import { Illustration } from '@/components/gameup';
 
 interface ReviewQueueViewProps {
   /** «Por revisar» (docente) o «Por validar» (directora). */
@@ -121,6 +122,7 @@ export function ReviewQueueView({
               message="Cuando vuelva a jugar, sus actividades aparecerán aquí."
               // Vuelve a donde estaba: la lista o el detalle del estudiante.
               action={{ label: 'Listo', onPress: () => router.back() }}
+              visual={<Illustration name="inboxDone" size="md" />}
             />
           ) : items.length === 0 ? (
             <StateView

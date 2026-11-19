@@ -15,25 +15,18 @@ import {
 import { NoLinkedStudentsError } from '@/data/guardianErrors';
 import { firstName } from '@/data/studentName';
 import { useRefreshOnFocus } from '@/data/useRefreshOnFocus';
-import type { PracticeDay } from '@/data/types';
 import { SignOutButton } from '@/features/auth/components/SignOutButton';
 import { ActivityFeedbackCard } from '@/features/home-practice/components/ActivityFeedbackCard';
 import { TeacherNoteCard } from '@/features/home-practice/components/TeacherNoteCard';
 import { TeacherVideoCard } from '@/features/home-practice/components/TeacherVideoCard';
+import { WeekSoundCard } from '@/features/home-practice/components/WeekSoundCard';
+import { WeekStreak } from '@/features/home-practice/components/WeekStreak';
 import { homeSteps } from '@/features/home-practice/homeSteps';
 import { useWeeklyPractice } from '@/features/home-practice/useWeeklyPractice';
 import { StudentLevels } from '@/features/levels/components/StudentLevels';
-import { colors, radii, spacing } from '@/theme';
+import { spacing } from '@/theme';
 import { errorOf, LoadErrorState } from '@/features/errors/LoadErrorState';
-
-/** «Esta semana practicaron 2 días.» */
-function daysText(days: readonly PracticeDay[]): string {
-  const count = days.filter((day) => day.practiced).length;
-  if (count === 0) return 'Esta semana todavía no han practicado en casa.';
-  return count === 1
-    ? 'Esta semana practicaron 1 día.'
-    : `Esta semana practicaron ${count} días.`;
-}
+import { Illustration } from '@/components/gameup';
 
 /** Pantalla 9 · Acudiente: «Practicar en casa». */
 export default function GuardianPracticeScreen() {
@@ -99,6 +92,7 @@ export default function GuardianPracticeScreen() {
             kind="empty"
             title="Aún no tienes niños vinculados"
             message="Pide a la Fundación que te vincule en ASISCO UP y vuelve a entrar."
+            visual={<Illustration name="people" size="md" />}
           />
         ) : (
           <LoadErrorState
@@ -126,25 +120,14 @@ export default function GuardianPracticeScreen() {
             </View>
           ) : null}
 
-          <View
-            style={styles.pill}
-            accessible
-            accessibilityRole="header"
-            accessibilityLabel={
-              week.vowel
-                ? `${week.student.displayName}. Esta semana practican el sonido ${week.vowel}.`
-                : `${week.student.displayName}. Esta semana no hay un sonido asignado.`
-            }
-          >
-            <AppText variant="bodyStrong" tone="marca">
-              {week.student.initials}
-            </AppText>
-            <AppText variant="bodyStrong" tone="marca">
-              {week.vowel
-                ? `${firstName(week.student.displayName)} · esta semana: sonido ${week.vowel.toUpperCase()}`
-                : `${firstName(week.student.displayName)} · esta semana: sin sonido asignado`}
-            </AppText>
-          </View>
+          <WeekSoundCard
+            studentName={week.student.displayName}
+            firstName={firstName(week.student.displayName)}
+            vowel={week.vowel}
+          />
+
+          {/* Los días que practicaron, como una racha (sin culpa). */}
+          {week.days ? <WeekStreak days={week.days} /> : null}
 
           {week.vowel ? (
             <>
@@ -184,12 +167,6 @@ export default function GuardianPracticeScreen() {
             title={`Juegos de ${firstName(week.student.displayName)}`}
           />
 
-          {week.days ? (
-            <AppText variant="support" tone="secundario">
-              {daysText(week.days)}
-            </AppText>
-          ) : null}
-
           {markState === 'error' ? (
             <Notice
               icon="offline"
@@ -204,17 +181,6 @@ export default function GuardianPracticeScreen() {
 }
 
 const styles = StyleSheet.create({
-  pill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.md,
-    borderRadius: radii.pill,
-    backgroundColor: colors.verde.suave,
-  },
   steps: {
     gap: spacing.md,
   },

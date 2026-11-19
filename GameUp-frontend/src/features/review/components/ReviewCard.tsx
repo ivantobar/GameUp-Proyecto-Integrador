@@ -7,9 +7,10 @@ import {
   IconButton,
   InitialsAvatar,
 } from '@/components/ui';
+import { GameIconFrame } from '@/components/gameup';
 import type { ReviewItem } from '@/data/types';
 import { spacing } from '@/theme';
-import { reviewSummary } from '../reviewText';
+import { reviewGameId, reviewSummary } from '../reviewText';
 import { FeedbackForm, type FeedbackOptions } from './FeedbackForm';
 import { ReviewEvidence } from './ReviewEvidence';
 import { VoiceNoteRecorder } from './VoiceNoteRecorder';
@@ -42,8 +43,8 @@ interface ReviewCardProps {
 }
 
 /**
- * Tarjeta de «Por revisar». Cerrada: nombre, juego y fecha, con un botón
- * para abrirla. Abierta: el modelo y la grabación, y la decisión del
+ * Tarjeta de «Por revisar». Cerrada: el dibujo del juego, el nombre, el
+ * juego y la fecha, con un botón para abrirla. Abierta: el modelo y la grabación, y la decisión del
  * docente («Lo logró» o «Practicar más»).
  */
 export function ReviewCard({
@@ -61,10 +62,16 @@ export function ReviewCard({
   details,
 }: ReviewCardProps) {
   const name = item.student.displayName;
+  const game = reviewGameId(item);
   return (
     <Card>
       <View style={styles.header}>
-        <InitialsAvatar initials={item.student.initials} />
+        {/* De qué juego es, a simple vista (el nombre ya está en el título). */}
+        {game ? (
+          <GameIconFrame game={game} />
+        ) : (
+          <InitialsAvatar initials={item.student.initials} />
+        )}
         <View style={styles.texts}>
           <AppText variant="bodyStrong">{name}</AppText>
           <AppText variant="support" tone="secundario">
