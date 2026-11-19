@@ -14,6 +14,7 @@ import { speakSelectionNarration } from '@/features/speak/practice';
 import { useVowelSelection } from '@/features/speak/useVowelSelection';
 import { spacing } from '@/theme';
 import { useRefreshOnFocus } from '@/data/useRefreshOnFocus';
+import { errorOf, LoadErrorState } from '@/features/errors/LoadErrorState';
 
 const INSTRUCTION = 'Toca un sonido para practicar';
 
@@ -65,8 +66,8 @@ export default function SpeakSelectionScreen() {
         <StateView kind="loading" title="Preparando los sonidos…" />
       ) : null}
       {resource.status === 'error' ? (
-        <StateView
-          kind="error"
+        <LoadErrorState
+          error={errorOf(resource)}
           title="Vamos a intentarlo otra vez"
           action={{ label: 'Intentar de nuevo', onPress: reload }}
         />

@@ -22,6 +22,7 @@ import { useFindMouthVowels } from '@/features/find-mouth/useFindMouthVowels';
 import { useMouthQuiz } from '@/features/find-mouth/useMouthQuiz';
 import { parseActivityId, type Delivery } from '@/features/games/delivery';
 import { colors, radii, spacing } from '@/theme';
+import { errorOf, LoadErrorState } from '@/features/errors/LoadErrorState';
 
 const QUESTION = '¿Qué boca hace este sonido?';
 
@@ -58,8 +59,8 @@ export default function FindMouthScreen() {
         {resource.status === 'loading' ? (
           <StateView kind="loading" title="Preparando el juego…" />
         ) : (
-          <StateView
-            kind="error"
+          <LoadErrorState
+            error={errorOf(resource)}
             title="Vamos a intentarlo otra vez"
             action={{ label: 'Intentar de nuevo', onPress: reload }}
           />

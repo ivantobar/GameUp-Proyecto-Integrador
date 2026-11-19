@@ -7,6 +7,7 @@ import {
   StateView,
 } from '@/components/ui';
 import type { Resource } from '@/data/useResource';
+import { errorOf, LoadErrorState } from '@/features/errors/LoadErrorState';
 
 interface GameContentGateProps<T> {
   resource: Resource<T>;
@@ -37,8 +38,8 @@ export function GameContentGate<T>({
       {resource.status === 'loading' ? (
         <StateView kind="loading" title="Preparando el juego…" />
       ) : (
-        <StateView
-          kind="error"
+        <LoadErrorState
+          error={errorOf(resource)}
           title="Vamos a intentarlo otra vez"
           action={{ label: 'Intentar de nuevo', onPress: reload }}
         />

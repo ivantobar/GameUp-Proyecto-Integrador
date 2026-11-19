@@ -1,0 +1,16 @@
+import { Stack } from 'expo-router';
+import { RoleGate } from '@/features/auth/RoleGate';
+import { useStackScreenOptions } from '@/features/motion/useStackScreenOptions';
+
+/**
+ * Espacio del acudiente («Practicar en casa»). Solo para una sesión de
+ * acudiente (`RoleGate`).
+ */
+export default function GuardianLayout() {
+  const screenOptions = useStackScreenOptions();
+  return (
+    <RoleGate role="guardian">
+      <Stack screenOptions={screenOptions} />
+    </RoleGate>
+  );
+}

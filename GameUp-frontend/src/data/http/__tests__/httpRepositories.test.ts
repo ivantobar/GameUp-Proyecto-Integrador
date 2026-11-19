@@ -239,6 +239,20 @@ describe('AuthRepository (HTTP)', () => {
   });
 });
 
+describe('olvidar la sesión al abrir «Iniciar sesión» (H7)', () => {
+  it('borra el token guardado sin llamar al backend', async () => {
+    const { repos, tokens, requests } = setup(
+      () => jsonResponse(200, {}),
+      'token-viejo',
+    );
+
+    await repos.auth.forgetSession();
+
+    await expect(tokens.get()).resolves.toBeNull();
+    expect(requests).toHaveLength(0);
+  });
+});
+
 describe('despertar el backend al abrir «Iniciar sesión»', () => {
   it('pide GET /health sin token', async () => {
     const { repos, requests } = setup(() => jsonResponse(200, {}));

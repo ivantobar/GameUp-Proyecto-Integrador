@@ -24,6 +24,7 @@ import { homeSteps } from '@/features/home-practice/homeSteps';
 import { useWeeklyPractice } from '@/features/home-practice/useWeeklyPractice';
 import { StudentLevels } from '@/features/levels/components/StudentLevels';
 import { colors, radii, spacing } from '@/theme';
+import { errorOf, LoadErrorState } from '@/features/errors/LoadErrorState';
 
 /** «Esta semana practicaron 2 días.» */
 function daysText(days: readonly PracticeDay[]): string {
@@ -100,8 +101,8 @@ export default function GuardianPracticeScreen() {
             message="Pide a la Fundación que te vincule en ASISCO UP y vuelve a entrar."
           />
         ) : (
-          <StateView
-            kind="error"
+          <LoadErrorState
+            error={errorOf(resource)}
             title="No pudimos cargar la práctica"
             message="Revisa la conexión."
             action={{ label: 'Intentar de nuevo', onPress: reload }}

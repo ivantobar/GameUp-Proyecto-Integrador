@@ -1,8 +1,10 @@
+import type { ReactNode } from 'react';
 import { Text } from 'react-native';
 import { act, screen, userEvent } from '@testing-library/react-native';
 import { renderRouter } from 'expo-router/testing-library';
 import TeacherTabsLayout from '@/app/teacher/(tabs)/_layout';
 import TeacherLayout from '@/app/teacher/_layout';
+import { SessionProvider } from '@/features/auth/SessionProvider';
 
 // Cargar el router real la primera vez puede tardar más de 30 s.
 jest.setTimeout(90000);
@@ -21,7 +23,17 @@ async function renderTeacher(initialUrl: string) {
       'teacher/(tabs)/students': stub('pantalla Mis estudiantes'),
       'teacher/student/[id]/index': stub('pantalla detalle'),
     },
-    { initialUrl },
+    {
+      initialUrl,
+      // El espacio del docente solo abre con una sesión de docente.
+      wrapper: ({ children }: { children: ReactNode }) => (
+        <SessionProvider
+          initialSession={{ userId: 'd1', role: 'teacher', displayName: 'Ana' }}
+        >
+          {children}
+        </SessionProvider>
+      ),
+    },
   );
   await act(async () => {
     await jest.runOnlyPendingTimersAsync();

@@ -15,6 +15,7 @@ import {
   useDirectorOverview,
   type DirectorOverview,
 } from '../useDirectorOverview';
+import { errorOf, LoadErrorState } from '@/features/errors/LoadErrorState';
 
 interface Figure {
   key: keyof DirectorOverview;
@@ -44,8 +45,8 @@ export function OverviewView() {
         <StateView kind="loading" title="Contando…" />
       ) : null}
       {resource.status === 'error' ? (
-        <StateView
-          kind="error"
+        <LoadErrorState
+          error={errorOf(resource)}
           title="No pudimos cargar el resumen"
           message="Revisa la conexión."
           action={{ label: 'Intentar de nuevo', onPress: reload }}

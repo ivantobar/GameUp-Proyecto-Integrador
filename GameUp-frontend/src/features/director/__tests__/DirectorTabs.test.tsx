@@ -1,8 +1,10 @@
+import type { ReactNode } from 'react';
 import { Text } from 'react-native';
 import { act, screen, userEvent } from '@testing-library/react-native';
 import { renderRouter } from 'expo-router/testing-library';
 import DirectorTabsLayout from '@/app/director/(tabs)/_layout';
 import DirectorLayout from '@/app/director/_layout';
+import { SessionProvider } from '@/features/auth/SessionProvider';
 
 // Cargar el router real la primera vez puede tardar más de 30 s.
 jest.setTimeout(90000);
@@ -21,7 +23,21 @@ async function renderDirector() {
       'director/(tabs)/review': stub('pantalla Por validar'),
       'director/(tabs)/summary': stub('pantalla Resumen'),
     },
-    { initialUrl: '/director' },
+    {
+      initialUrl: '/director',
+      // El espacio de la directora solo abre con una sesión de directora.
+      wrapper: ({ children }: { children: ReactNode }) => (
+        <SessionProvider
+          initialSession={{
+            userId: 'dir1',
+            role: 'director',
+            displayName: 'Directora',
+          }}
+        >
+          {children}
+        </SessionProvider>
+      ),
+    },
   );
   await act(async () => {
     await jest.runOnlyPendingTimersAsync();

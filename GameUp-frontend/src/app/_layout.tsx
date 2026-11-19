@@ -4,6 +4,7 @@ import { useFonts } from 'expo-font';
 import { env } from '@/config/env';
 import { createRepositories } from '@/data/createRepositories';
 import { deleteAllRecordings } from '@/features/audio/recordingFiles';
+import { SessionProvider } from '@/features/auth/SessionProvider';
 import { ConfigErrorScreen } from '@/features/config/ConfigErrorScreen';
 import { RepositoryProvider } from '@/data/RepositoryProvider';
 import { useStackScreenOptions } from '@/features/motion/useStackScreenOptions';
@@ -60,7 +61,9 @@ export default function RootLayout() {
 
   return (
     <RepositoryProvider repositories={repositories}>
-      <Stack screenOptions={screenOptions} />
+      <SessionProvider>
+        <Stack screenOptions={screenOptions} />
+      </SessionProvider>
     </RepositoryProvider>
   );
 }

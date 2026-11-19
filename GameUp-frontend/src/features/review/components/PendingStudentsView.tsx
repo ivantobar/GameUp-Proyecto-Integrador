@@ -21,6 +21,7 @@ import {
 import { usePendingSummary } from '@/features/review/usePendingSummary';
 import type { StaffRoutes } from '@/features/students/staffRoutes';
 import { spacing } from '@/theme';
+import { errorOf, LoadErrorState } from '@/features/errors/LoadErrorState';
 
 interface PendingStudentsViewProps {
   routes: StaffRoutes;
@@ -56,8 +57,8 @@ export function PendingStudentsView({
         <StateView kind="loading" title="Buscando actividades…" />
       ) : null}
       {resource.status === 'error' ? (
-        <StateView
-          kind="error"
+        <LoadErrorState
+          error={errorOf(resource)}
           title="No pudimos cargar las actividades"
           message="Revisa la conexión."
           action={{ label: 'Intentar de nuevo', onPress: reload }}

@@ -17,6 +17,7 @@ import { env } from '@/config/env';
 import { useDevSettings } from '@/data/mock/devSettings';
 import { MOCK_PASSWORD } from '@/data/mock/fixtures';
 import { useRepositories } from '@/data/RepositoryProvider';
+import { useSession } from '@/features/auth/SessionProvider';
 import { colors, spacing } from '@/theme';
 
 interface RoleEntry {
@@ -76,12 +77,19 @@ const roles: readonly RoleEntry[] = [
 export function DevHome() {
   const { settings, update } = useDevSettings();
   const { auth } = useRepositories();
+  const { setSession } = useSession();
 
-  /** Con datos simulados, entra con la cuenta ficticia del rol y abre su espacio. */
+  /**
+   * Con datos simulados, entra con la cuenta ficticia del rol y abre su
+   * espacio. Con la API no hay cuentas ficticias: cada espacio pide iniciar
+   * sesión.
+   */
   const enterAs = async (href: Href, mockEmail?: string) => {
     if (env.dataSource === 'mock' && mockEmail) {
       try {
-        await auth.signIn({ email: mockEmail, password: MOCK_PASSWORD });
+        setSession(
+          await auth.signIn({ email: mockEmail, password: MOCK_PASSWORD }),
+        );
       } catch {
         // Solo desarrollo: si falla, se abre igual con la sesión anterior.
       }

@@ -45,6 +45,13 @@ export function createHttpAuthRepository(
         .catch(() => {});
     },
 
+    async forgetSession() {
+      await tokens.clear().catch(() => {
+        // Si no se pudo borrar, el backend lo seguirá validando en cada
+        // petición; al iniciar sesión se reemplaza.
+      });
+    },
+
     async signOut() {
       // El token lo emite la API de seguridad: GameUP no puede revocarlo,
       // solo olvidarlo. Se avisa al backend si hay sesión, sin esperar a que

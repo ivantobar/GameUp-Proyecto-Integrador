@@ -17,6 +17,7 @@ import { ModuleProgressCard } from '@/features/progress/components/ModuleProgres
 import { useProgressOverview } from '@/features/progress/useProgressOverview';
 import { useRefreshOnFocus } from '@/data/useRefreshOnFocus';
 import { colors, spacing } from '@/theme';
+import { errorOf, LoadErrorState } from '@/features/errors/LoadErrorState';
 
 /**
  * Pestaña «Mi progreso» (según la imagen de referencia del equipo).
@@ -75,8 +76,8 @@ export default function ProgressScreen() {
         <StateView kind="loading" title="Mirando tu progreso…" />
       ) : null}
       {resource.status === 'error' ? (
-        <StateView
-          kind="error"
+        <LoadErrorState
+          error={errorOf(resource)}
           title="Vamos a intentarlo otra vez"
           action={{ label: 'Intentar de nuevo', onPress: reload }}
         />

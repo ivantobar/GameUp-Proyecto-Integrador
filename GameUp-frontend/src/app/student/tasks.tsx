@@ -14,6 +14,7 @@ import { TaskCard } from '@/features/games/components/TaskCard';
 import { moduleBadge, tasksCountText } from '@/features/games/moduleTasks';
 import { useModuleTasks } from '@/features/games/useModuleTasks';
 import { spacing } from '@/theme';
+import { errorOf, LoadErrorState } from '@/features/errors/LoadErrorState';
 
 const TITLE = 'Tareas de mi profe';
 const EMPTY_TITLE = 'Hoy no tienes tareas';
@@ -50,8 +51,8 @@ export default function TasksScreen() {
         <StateView kind="loading" title="Buscando tus tareas…" />
       ) : null}
       {resource.status === 'error' ? (
-        <StateView
-          kind="error"
+        <LoadErrorState
+          error={errorOf(resource)}
           title="Vamos a intentarlo otra vez"
           action={{ label: 'Intentar de nuevo', onPress: reload }}
         />

@@ -9,6 +9,7 @@ import {
 import { useRepositories } from '@/data/RepositoryProvider';
 import type { AuthSession } from '@/data/types';
 import { TimeoutError } from '@/services/apiErrors';
+import { useSession } from './SessionProvider';
 import {
   hasErrors,
   normalizeEmail,
@@ -43,10 +44,16 @@ export function useSignIn() {
   const [waking, setWaking] = useState(false);
   const wakeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Mientras la persona escribe, el backend ya se va despertando.
+  const { setSession } = useSession();
+
+  // Cada vez que se abre «Iniciar sesión» (también al llegar por un 401),
+  // se olvida la sesión anterior: el token guardado y el rol en memoria. Y,
+  // mientras la persona escribe, el backend ya se va despertando.
   useEffect(() => {
+    setSession(null);
+    auth.forgetSession().catch(() => {});
     auth.warmUp().catch(() => {});
-  }, [auth]);
+  }, [auth, setSession]);
 
   // Al salir de la pantalla no queda el temporizador del aviso.
   useEffect(
@@ -98,7 +105,13 @@ export function useSignIn() {
     setSubmitting(true);
     wakeTimer.current = setTimeout(() => setWaking(true), WAKE_HINT_MS);
     try {
-      return await auth.signIn({ email: normalizeEmail(email), password });
+      const session = await auth.signIn({
+        email: normalizeEmail(email),
+        password,
+      });
+      // El rol queda en memoria: cada espacio solo abre para su rol.
+      setSession(session);
+      return session;
     } catch (error: unknown) {
       setProblem(problemOf(error));
       setReason(error instanceof AccountNotAllowedError ? error.reason : null);
