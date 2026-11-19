@@ -94,13 +94,23 @@ export function useSayStep(
     if (started) setPhase('recording');
   }, [phase, finish, recorder]);
 
+  // La versión más reciente de `finish`, para el tope de grabación.
+  const finishRef = useRef(finish);
+  useEffect(() => {
+    finishRef.current = finish;
+  }, [finish]);
+
+  // Tope de grabación. Depende SOLO de `phase`: mientras graba, el medidor
+  // de volumen vuelve a dibujar la pantalla cada 100 ms y `finish` cambia
+  // en cada dibujo; si el temporizador dependiera de `finish`, se
+  // reiniciaría cada 100 ms y nunca llegaría a los 10 s.
   useEffect(() => {
     if (phase !== 'recording') return;
     const id = setTimeout(() => {
-      finish().catch(() => {});
+      finishRef.current().catch(() => {});
     }, MAX_RECORDING_MS);
     return () => clearTimeout(id);
-  }, [phase, finish]);
+  }, [phase]);
 
   return {
     consentLoading: consentResource.status === 'loading',
