@@ -35,3 +35,15 @@ export class SignInUnavailableError extends Error {
     this.name = 'SignInUnavailableError';
   }
 }
+
+/**
+ * 429: se intentó entrar demasiadas veces seguidas (con el mismo correo o
+ * desde la misma red). El backend bloquea un momento para frenar a quien
+ * adivina contraseñas. No es un problema de conexión.
+ */
+export class TooManyAttemptsError extends Error {
+  constructor() {
+    super('Demasiados intentos de inicio de sesión');
+    this.name = 'TooManyAttemptsError';
+  }
+}

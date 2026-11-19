@@ -4,6 +4,7 @@ import LoginScreen from '@/app/login';
 import {
   AccountNotAllowedError,
   SignInUnavailableError,
+  TooManyAttemptsError,
 } from '@/data/authErrors';
 import { createMockRepositories } from '@/data/mock/createMockRepositories';
 import { MOCK_PASSWORD } from '@/data/mock/fixtures';
@@ -128,6 +129,24 @@ describe('Iniciar sesión (simulado)', () => {
     await signIn('docente@gameup.test', MOCK_PASSWORD);
 
     expect(screen.getByText('GameUP no está disponible')).toBeOnTheScreen();
+    expect(screen.queryByText('Sin conexión')).toBeNull();
+    expect(router.replace).not.toHaveBeenCalled();
+  });
+
+  it('demasiados intentos (429): lo dice, sin hablar de la conexión', async () => {
+    const repositories = createMockRepositories({ delayMs: 0 });
+    jest
+      .spyOn(repositories.auth, 'signIn')
+      .mockRejectedValue(new TooManyAttemptsError());
+    await renderLogin(repositories);
+
+    await signIn('docente@gameup.test', 'equivocada');
+
+    expect(
+      screen.getByText(
+        'Demasiados intentos. Espera un momento y vuelve a intentarlo.',
+      ),
+    ).toBeOnTheScreen();
     expect(screen.queryByText('Sin conexión')).toBeNull();
     expect(router.replace).not.toHaveBeenCalled();
   });
