@@ -85,9 +85,10 @@ const typeSamples: readonly { variant: TextVariant; name: string }[] = [
   { variant: 'button', name: 'Botón' },
   { variant: 'label', name: 'Etiqueta' },
   { variant: 'support', name: 'Apoyo' },
+  { variant: 'number', name: 'Cifra (Resumen de la directora)' },
 ];
 
-/** Colores con su contraste y las ocho variantes de texto. */
+/** Colores con su contraste y las variantes de texto. */
 export function FoundationsSection() {
   return (
     <>

@@ -89,9 +89,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.sm,
   },
+  /** Tamaño mínimo (no fijo): con letra grande «123» o «Aa» no se cortan. */
   badge: {
-    width: sizes.moduleBadge,
-    height: sizes.moduleBadge,
+    minWidth: sizes.moduleBadge,
+    minHeight: sizes.moduleBadge,
+    paddingHorizontal: spacing.xxs,
     borderRadius: radii.md,
     alignItems: 'center',
     justifyContent: 'center',
