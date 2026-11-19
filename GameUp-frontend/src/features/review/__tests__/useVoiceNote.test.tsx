@@ -1,7 +1,7 @@
 import { act, renderHook } from '@testing-library/react-native';
 import { useAudioRecorder } from 'expo-audio';
 import { createRecording, mockFiles } from '@/test-utils/mockFiles';
-import { useVoiceNote } from '../useVoiceNote';
+import { MAX_VOICE_NOTE_MS, useVoiceNote } from '../useVoiceNote';
 
 /** La grabadora simulada de `__mocks__/expo-audio.ts` (la misma siempre). */
 const recorder = (
@@ -58,6 +58,38 @@ describe('nota de voz de la docente', () => {
     });
 
     expect(mockFiles().has(uri)).toBe(true);
+    expect(result.current.phase).toBe('recorded');
+    expect(result.current.uri).toBe(uri);
+  });
+});
+
+describe('nota de voz: tope de 60 s', () => {
+  it('se detiene sola al minuto aunque la pantalla se redibuje cada 100 ms', async () => {
+    const uri = createRecording('gameup-grabacion-nota-larga');
+    recorder.prepareToRecordAsync.mockImplementationOnce(() => {
+      recorder.uri = uri;
+      return Promise.resolve();
+    });
+    const { result, rerender } = await renderHook(() => useVoiceNote());
+    await act(async () => {
+      await result.current.start();
+    });
+    expect(result.current.phase).toBe('recording');
+
+    // En el teléfono, el medidor de volumen redibuja cada 100 ms.
+    const recordFor = async (ms: number) => {
+      for (let elapsed = 0; elapsed < ms; elapsed += 100) {
+        await act(async () => {
+          await jest.advanceTimersByTimeAsync(100);
+        });
+        await rerender(undefined);
+      }
+    };
+
+    await recordFor(MAX_VOICE_NOTE_MS - 100);
+    expect(result.current.phase).toBe('recording');
+
+    await recordFor(200);
     expect(result.current.phase).toBe('recorded');
     expect(result.current.uri).toBe(uri);
   });
