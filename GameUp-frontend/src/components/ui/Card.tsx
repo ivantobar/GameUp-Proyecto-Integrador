@@ -114,6 +114,9 @@ export function PressableCard({
       depth="md"
       radius={radii.xl}
       borderWidth={sizes.borderStrong}
+      // Llena su espacio (como antes): dos tarjetas en fila miden lo mismo.
+      // Las tarjetas que se tocan van en el contenido desplazable.
+      fill
       style={style}
       contentStyle={styles.base}
     >

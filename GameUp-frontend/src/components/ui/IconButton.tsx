@@ -1,5 +1,12 @@
 import { StyleSheet } from 'react-native';
-import { colors, radii, sizes, type IconSize, type ThemeColor } from '@/theme';
+import {
+  colors,
+  depth,
+  radii,
+  sizes,
+  type IconSize,
+  type ThemeColor,
+} from '@/theme';
 import { Icon, type IconName } from './Icon';
 import { PressableSurface } from './PressableSurface';
 import type { PressableBaseProps } from './types';
@@ -105,6 +112,9 @@ export function IconButton({
       depth="sm"
       radius={radii.pill}
       borderWidth={sizes.border}
+      // Tamaño fijo: el círculo y su relieve nunca se estiran, esté donde
+      // esté (encabezado, filas, pie).
+      style={{ width: diameter, height: diameter + depth.sm }}
       contentStyle={[styles.base, { width: diameter, height: diameter }]}
     >
       <Icon

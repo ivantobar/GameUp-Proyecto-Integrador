@@ -45,7 +45,7 @@ export function CategoryBin({
     .join('. ');
 
   return (
-    <Breathe active={hint} style={styles.flex}>
+    <Breathe active={hint} style={styles.grow}>
       <PressableSurface
         colors={{
           background: colors.superficie.blanca,
@@ -61,7 +61,9 @@ export function CategoryBin({
         radius={radii.card}
         borderWidth={sizes.borderStrong + 1}
         borderStyle={hint ? 'dashed' : 'solid'}
-        style={styles.flex}
+        // Los de una misma fila miden lo mismo.
+        fill
+        style={styles.grow}
         contentStyle={[styles.bin, compact && styles.compact]}
       >
         <View style={styles.title}>
@@ -90,8 +92,13 @@ export function CategoryBin({
 }
 
 const styles = StyleSheet.create({
-  flex: {
-    flex: 1,
+  /**
+   * Crece para llenar el alto de su fila, con base en su contenido. No es
+   * `flex: 1`: en vertical, `flex: 1` (base 0) puede colapsar a alto 0
+   * dentro del contenido desplazable.
+   */
+  grow: {
+    flexGrow: 1,
   },
   bin: {
     minHeight: sizes.categoryBin,

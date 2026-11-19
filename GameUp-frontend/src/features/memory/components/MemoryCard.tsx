@@ -116,7 +116,7 @@ export function MemoryCard({
 
   return (
     // La pareja encontrada respira dos veces; antes, nada se mueve solo.
-    <Breathe active={view === 'matched'} style={styles.flex}>
+    <Breathe active={view === 'matched'} style={styles.grow}>
       <PressableSurface
         colors={{
           background: config.background,
@@ -135,7 +135,9 @@ export function MemoryCard({
         radius={radii.card}
         borderWidth={sizes.borderStrong + 1}
         borderStyle={config.borderStyle}
-        style={styles.flex}
+        // Los de una misma fila miden lo mismo.
+        fill
+        style={styles.grow}
         contentStyle={[styles.card, compact && styles.compact]}
       >
         <Animated.View style={[styles.face, flip]}>
@@ -176,8 +178,13 @@ function useFlip(isUp: boolean) {
 }
 
 const styles = StyleSheet.create({
-  flex: {
-    flex: 1,
+  /**
+   * Crece para llenar el alto de su fila, con base en su contenido. No es
+   * `flex: 1`: en vertical, `flex: 1` (base 0) puede colapsar a alto 0
+   * dentro del contenido desplazable.
+   */
+  grow: {
+    flexGrow: 1,
   },
   card: {
     alignItems: 'center',

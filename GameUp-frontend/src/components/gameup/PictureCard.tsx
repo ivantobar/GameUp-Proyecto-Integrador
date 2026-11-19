@@ -103,7 +103,7 @@ export function PictureCard({
     // respuesta).
     <Breathe
       active={state === 'hint' || state === 'correct'}
-      style={isTile ? styles.flex : undefined}
+      style={isTile ? styles.grow : undefined}
       testID="picture-card-breathe"
     >
       <PressableSurface
@@ -125,7 +125,9 @@ export function PictureCard({
         borderWidth={sizes.borderStrong + 1}
         borderStyle={config.borderStyle}
         opacity={state === 'dimmed' ? DIMMED_OPACITY : 1}
-        style={isTile ? styles.flex : undefined}
+        // En cuadrícula, las tarjetas de una fila miden lo mismo.
+        fill={isTile}
+        style={isTile ? styles.grow : undefined}
         contentStyle={[styles.card, isTile ? styles.tile : styles.row]}
       >
         <Pictogram face={face} />
@@ -145,6 +147,14 @@ export function PictureCard({
 }
 
 const styles = StyleSheet.create({
+  /**
+   * Crece para llenar el alto de su fila, con base en su contenido. No es
+   * `flex: 1`: en vertical, `flex: 1` (base 0) puede colapsar a alto 0
+   * dentro del contenido desplazable.
+   */
+  grow: {
+    flexGrow: 1,
+  },
   card: {
     gap: spacing.xs,
   },

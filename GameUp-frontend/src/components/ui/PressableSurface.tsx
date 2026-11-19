@@ -45,6 +45,13 @@ export interface PressableSurfaceProps extends PressableBaseProps {
   borderStyle?: 'solid' | 'dashed';
   /** Rebote leve al presionar (tarjetas de juego del niño). */
   pressScale?: boolean;
+  /**
+   * La cara crece para llenar a la superficie (tarjetas del mismo alto en
+   * una fila). Solo dentro de un contenedor con alto definido o dentro del
+   * contenido desplazable de `Screen`; NUNCA en el encabezado ni en el pie
+   * de botones: ahí crecería hasta ocupar toda la pantalla.
+   */
+  fill?: boolean;
   /** Opciones que ya no se pueden tocar en la ronda (más pálidas). */
   opacity?: number;
   /** Ubica la superficie (flex, márgenes, ancho). */
@@ -78,12 +85,16 @@ export function PressableSurface({
   borderWidth,
   borderStyle = 'solid',
   pressScale = false,
+  fill = false,
   opacity = 1,
   style,
   contentStyle,
 }: PressableSurfaceProps) {
   const { progress, onPressIn, onPressOut } = usePressFeedback();
-  const edge = disabled || depth === 'none' ? 0 : depthTokens[depth];
+  // El espacio del relieve se reserva siempre (también deshabilitada): así
+  // un botón que se habilita no cambia de alto ni mueve la pantalla.
+  const reserved = depth === 'none' ? 0 : depthTokens[depth];
+  const edge = disabled ? 0 : reserved;
   const sink = edge === 0 ? 0 : depthTokens.pressed;
   const scaleTo = pressScale ? motion.pressScale : 1;
 
@@ -115,9 +126,9 @@ export function PressableSurface({
       accessibilityHint={accessibilityHint}
       accessibilityState={{ disabled, ...accessibilityState }}
       testID={testID}
-      style={[styles.pressable, { opacity }, style]}
+      style={[{ opacity }, style]}
     >
-      <View style={[styles.frame, { paddingBottom: edge }]}>
+      <View style={[fill && styles.fill, { paddingBottom: reserved }]}>
         {edge > 0 ? (
           <View
             style={[
@@ -132,7 +143,7 @@ export function PressableSurface({
         ) : null}
         <Animated.View
           style={[
-            styles.face,
+            fill && styles.fill,
             { borderRadius: radius, borderWidth, borderStyle },
             contentStyle,
             faceStyle,
@@ -145,19 +156,17 @@ export function PressableSurface({
   );
 }
 
+/**
+ * Sin `fill`, ninguna vista de la superficie tiene `flexGrow`: mide lo que
+ * su contenido. (Con `flexGrow` en una zona sin alto fijo, como el
+ * encabezado, Yoga la estira hasta llenar la pantalla.)
+ */
 const styles = StyleSheet.create({
-  pressable: {
-    flexGrow: 0,
-  },
-  /** Crece con su contenedor (tarjetas en fila del mismo alto). */
-  frame: {
+  fill: {
     flexGrow: 1,
   },
   /** El relieve: misma forma que la cara, corrido hacia abajo. */
   edge: {
     ...StyleSheet.absoluteFill,
-  },
-  face: {
-    flexGrow: 1,
   },
 });

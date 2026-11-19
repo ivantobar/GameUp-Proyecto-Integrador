@@ -54,28 +54,37 @@ export function ThinkingGamesSection() {
       </CatalogLabel>
       <GameBackground background={gameThemes.classify.background}>
         <View style={styles.row}>
-          <CategoryBin
-            category={{ id: 'frutas', label: 'Frutas', emoji: '🍎' }}
-            items={[]}
-            hint
-            disabled={false}
-            onPress={noop}
-          />
-          <CategoryBin
-            category={{ id: 'animales', label: 'Animales', emoji: '🐶' }}
-            items={[
-              {
-                id: 'gato',
-                label: 'gato',
-                emoji: '🐱',
-                categoryId: 'animales',
-              },
-              { id: 'pez', label: 'pez', emoji: '🐟', categoryId: 'animales' },
-            ]}
-            hint={false}
-            disabled={false}
-            onPress={noop}
-          />
+          <View style={styles.cell}>
+            <CategoryBin
+              category={{ id: 'frutas', label: 'Frutas', emoji: '🍎' }}
+              items={[]}
+              hint
+              disabled={false}
+              onPress={noop}
+            />
+          </View>
+          <View style={styles.cell}>
+            <CategoryBin
+              category={{ id: 'animales', label: 'Animales', emoji: '🐶' }}
+              items={[
+                {
+                  id: 'gato',
+                  label: 'gato',
+                  emoji: '🐱',
+                  categoryId: 'animales',
+                },
+                {
+                  id: 'pez',
+                  label: 'pez',
+                  emoji: '🐟',
+                  categoryId: 'animales',
+                },
+              ]}
+              hint={false}
+              disabled={false}
+              onPress={noop}
+            />
+          </View>
         </View>
       </GameBackground>
 
@@ -92,17 +101,30 @@ export function ThinkingGamesSection() {
       </CatalogLabel>
       <GameBackground background={gameThemes.memory.background}>
         <View style={styles.row}>
-          <MemoryCard position={1} face={apple} view="down" onPress={noop} />
-          <MemoryCard position={2} face={apple} view="up" onPress={noop} />
+          <View style={styles.cell}>
+            <MemoryCard position={1} face={apple} view="down" onPress={noop} />
+          </View>
+          <View style={styles.cell}>
+            <MemoryCard position={2} face={apple} view="up" onPress={noop} />
+          </View>
         </View>
         <View style={styles.row}>
-          <MemoryCard
-            position={3}
-            face={apple}
-            view="mismatch"
-            onPress={noop}
-          />
-          <MemoryCard position={4} face={apple} view="matched" onPress={noop} />
+          <View style={styles.cell}>
+            <MemoryCard
+              position={3}
+              face={apple}
+              view="mismatch"
+              onPress={noop}
+            />
+          </View>
+          <View style={styles.cell}>
+            <MemoryCard
+              position={4}
+              face={apple}
+              view="matched"
+              onPress={noop}
+            />
+          </View>
         </View>
       </GameBackground>
       <AppText variant="support" tone="secundario">
@@ -122,5 +144,9 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     gap: spacing.option,
+  },
+  /** Celda de una fila: todas del mismo ancho. */
+  cell: {
+    flex: 1,
   },
 });
