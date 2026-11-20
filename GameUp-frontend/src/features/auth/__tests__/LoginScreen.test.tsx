@@ -19,6 +19,8 @@ jest.mock('expo-router', () => ({
   router: { replace: jest.fn(), push: jest.fn() },
 }));
 
+const DESPERTANDO = 'GameUP todavía se está despertando';
+
 async function renderLogin(
   repositories: Repositories,
   initialSession: AuthSession | null = null,
@@ -144,9 +146,46 @@ describe('Iniciar sesión (simulado)', () => {
 
     await signIn('docente@gameup.test', MOCK_PASSWORD);
 
-    expect(screen.getByText('GameUP no está disponible')).toBeOnTheScreen();
+    expect(screen.getByText(DESPERTANDO)).toBeOnTheScreen();
     expect(screen.queryByText('Sin conexión')).toBeNull();
     expect(router.replace).not.toHaveBeenCalled();
+  });
+
+  it('servicio de cuentas despertando: «Intentar de nuevo» vuelve a entrar', async () => {
+    const repositories = createMockRepositories({ delayMs: 0 });
+    const entrar = jest
+      .spyOn(repositories.auth, 'signIn')
+      .mockRejectedValueOnce(new SignInUnavailableError());
+    await renderLogin(repositories);
+
+    await signIn('docente@gameup.test', MOCK_PASSWORD);
+    expect(
+      screen.getByText(/Espera unos 30 segundos y toca «Intentar de nuevo»/),
+    ).toBeOnTheScreen();
+
+    const user = userEvent.setup();
+    await user.press(
+      screen.getByRole('button', { name: 'Intentar entrar de nuevo' }),
+    );
+    await act(async () => {
+      await jest.runAllTimersAsync();
+    });
+
+    expect(entrar).toHaveBeenCalledTimes(2);
+    expect(screen.queryByText(DESPERTANDO)).toBeNull();
+    expect(router.replace).toHaveBeenCalledWith('/teacher');
+  });
+
+  it('el botón «Intentar de nuevo» solo sale cuando GameUP se está despertando', async () => {
+    const repositories = createMockRepositories({ delayMs: 0 });
+    await renderLogin(repositories);
+
+    await signIn('docente@gameup.test', 'equivocada');
+
+    expect(screen.getByText('No pudimos entrar')).toBeOnTheScreen();
+    expect(
+      screen.queryByRole('button', { name: 'Intentar entrar de nuevo' }),
+    ).toBeNull();
   });
 
   it('demasiados intentos (429): lo dice, sin hablar de la conexión', async () => {
@@ -299,7 +338,7 @@ describe('Iniciar sesión con el backend dormido (Render)', () => {
 
     await signIn('docente@gameup.test', MOCK_PASSWORD);
 
-    expect(screen.getByText('GameUP no está disponible')).toBeOnTheScreen();
+    expect(screen.getByText(DESPERTANDO)).toBeOnTheScreen();
     expect(screen.queryByText('Sin conexión')).toBeNull();
   });
 });
