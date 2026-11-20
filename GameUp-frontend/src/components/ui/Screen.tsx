@@ -1,9 +1,12 @@
 import type { ReactNode } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, spacing, type ThemeColor } from '@/theme';
 import { Backdrop, type BackdropKind } from './Backdrop';
+import { Button } from './Button';
+import { Notice } from './Notice';
+import type { ScreenRefresh } from './types';
 
 export type ScreenTone =
   'gray' | 'white' | 'softGreen' | 'softOrange' | 'brand';
@@ -48,6 +51,12 @@ interface ScreenProps {
    * desplaza como siempre: no agrega alto de más.
    */
   centerContent?: boolean;
+  /**
+   * Recarga (de `useScreenRefresh`): deslizar hacia abajo con el verde de
+   * la guía y, si falla, un aviso suave con «Intentar de nuevo» arriba del
+   * contenido, que sigue visible.
+   */
+  refresh?: ScreenRefresh;
 }
 
 /** Marco común de toda pantalla: fondo, área segura, encabezado y acciones. */
@@ -60,6 +69,7 @@ export function Screen({
   safeAreaBottom = true,
   backdrop,
   centerContent = false,
+  refresh,
 }: ScreenProps) {
   const config = screenTones[tone];
   return (
@@ -82,7 +92,20 @@ export function Screen({
             centerContent && styles.centered,
           ]}
           keyboardShouldPersistTaps="handled"
+          testID="screen-scroll"
+          refreshControl={
+            refresh ? (
+              <RefreshControl
+                refreshing={refresh.pulling}
+                onRefresh={refresh.onRefresh}
+                colors={[colors.verde.oscuro]}
+                tintColor={colors.verde.oscuro}
+                accessibilityLabel="Desliza hacia abajo para actualizar"
+              />
+            ) : undefined
+          }
         >
+          {refresh?.failed ? <RefreshFailedNotice refresh={refresh} /> : null}
           {children}
         </ScrollView>
       ) : (
@@ -130,3 +153,29 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
 });
+
+/**
+ * La recarga falló: lo dice con calma y deja reintentar. Lo que ya se veía
+ * sigue en pantalla (no se borra nada).
+ */
+function RefreshFailedNotice({ refresh }: { refresh: ScreenRefresh }) {
+  return (
+    <View accessibilityLiveRegion="polite">
+      <Notice
+        icon="offline"
+        tone="warm"
+        title="No pudimos actualizar"
+        message="Ves lo último que cargó. Revisa la conexión."
+        action={
+          <Button
+            label="Intentar de nuevo"
+            icon="replay"
+            variant="secondary"
+            loading={refresh.refreshing}
+            onPress={refresh.onRefresh}
+          />
+        }
+      />
+    </View>
+  );
+}
