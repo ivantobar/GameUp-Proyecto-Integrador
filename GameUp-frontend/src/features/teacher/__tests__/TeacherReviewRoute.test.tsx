@@ -7,6 +7,8 @@ import { mockStudent } from '@/data/mock/fixtures';
 import { RepositoryProvider } from '@/data/RepositoryProvider';
 
 jest.mock('expo-router', () => ({
+  // La pantalla está visible (recarga al volver la app al frente).
+  useIsFocused: () => true,
   router: {
     push: jest.fn(),
     back: jest.fn(),

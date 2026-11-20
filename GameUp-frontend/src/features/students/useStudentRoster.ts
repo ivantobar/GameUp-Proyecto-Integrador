@@ -56,7 +56,13 @@ export function useStudentRoster({
 }: RosterOptions = {}) {
   const { directory, teacherLinks } = useRepositories();
   const load = useCallback(() => directory.listStudents(), [directory]);
-  const { resource, reload, refresh: refreshList } = useResource(load);
+  const {
+    resource,
+    reload,
+    refresh: refreshList,
+    refreshing,
+    refreshFailed,
+  } = useResource(load);
 
   const [query, setQueryValue] = useState('');
   const [limit, setLimit] = useState(ROSTER_PAGE_SIZE);
@@ -137,8 +143,8 @@ export function useStudentRoster({
 
   /** Vuelve a pedir la lista y el progreso visible, sin ocultar lo que se ve. */
   const refresh = useCallback(() => {
-    refreshList();
     setVersion((value) => value + 1);
+    return refreshList();
   }, [refreshList]);
 
   const rows: RosterRow[] = visible.map((student) => ({
@@ -151,6 +157,8 @@ export function useStudentRoster({
     resource,
     reload,
     refresh,
+    refreshing,
+    refreshFailed,
     query,
     setQuery,
     rows,

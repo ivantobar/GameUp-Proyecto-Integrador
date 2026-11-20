@@ -14,7 +14,7 @@ import { LevelUpCelebration } from '@/features/games/components/LevelUpCelebrati
 import { gameHref, ladderHref } from '@/features/games/catalog';
 import { useGameList, type GameListItem } from '@/features/games/useGameList';
 import { useLevelCelebration } from '@/features/games/useLevelCelebration';
-import { useRefreshOnFocus } from '@/data/useRefreshOnFocus';
+import { useScreenRefresh } from '@/features/refresh/useScreenRefresh';
 import { useLargeText } from '@/features/accessibility/useLargeText';
 import { spacing } from '@/theme';
 import { errorOf, LoadErrorState } from '@/features/errors/LoadErrorState';
@@ -48,10 +48,15 @@ function cardHref({ game, level }: GameListItem) {
  * los de sonidos, el juego libre. Las tareas de la profe no salen aquí.
  */
 export default function LevelsScreen() {
-  const { resource, reload, refresh } = useGameList();
+  const { resource, reload, refresh, refreshing, refreshFailed } =
+    useGameList();
   const perRow = useLargeText() ? 1 : 2;
   // Al volver de un juego, las estrellas se actualizan.
-  useRefreshOnFocus(refresh);
+  const screenRefresh = useScreenRefresh({
+    refresh,
+    refreshing,
+    refreshFailed,
+  });
   const list = resource.status === 'ready' ? resource.data : null;
   const celebration = useLevelCelebration(
     list?.studentId ?? null,
@@ -60,6 +65,7 @@ export default function LevelsScreen() {
 
   return (
     <Screen
+      refresh={screenRefresh}
       backdrop="clouds"
       header={
         <ScreenHeader

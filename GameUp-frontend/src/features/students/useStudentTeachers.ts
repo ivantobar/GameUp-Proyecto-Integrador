@@ -25,7 +25,8 @@ export function useStudentTeachers(studentId: string, enabled: boolean) {
         : Promise.resolve([]),
     [teacherLinks, studentId, enabled],
   );
-  const { resource, reload, refresh } = useResource(load);
+  const { resource, reload, refresh, refreshing, refreshFailed } =
+    useResource(load);
 
   /** Primer paso: pedir confirmación (pierde el acceso al estudiante). */
   const askRemove = useCallback((teacherId: string) => {
@@ -73,6 +74,8 @@ export function useStudentTeachers(studentId: string, enabled: boolean) {
     resource,
     reload,
     refresh,
+    refreshing,
+    refreshFailed,
     message,
     confirmingId,
     busyId,

@@ -7,6 +7,8 @@ import { StudentRosterView } from '../components/StudentRosterView';
 import { directorRoutes, teacherRoutes } from '../staffRoutes';
 
 jest.mock('expo-router', () => ({
+  // La pantalla está visible (recarga al volver la app al frente).
+  useIsFocused: () => true,
   router: { push: jest.fn(), back: jest.fn() },
 }));
 

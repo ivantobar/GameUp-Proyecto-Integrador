@@ -19,6 +19,8 @@ import { directorRoutes, teacherRoutes } from '../staffRoutes';
 import { settle } from '@/test-utils/settle';
 
 jest.mock('expo-router', () => ({
+  // La pantalla está visible (recarga al volver la app al frente).
+  useIsFocused: () => true,
   router: { push: jest.fn(), back: jest.fn() },
 }));
 
@@ -28,9 +30,15 @@ jest.mock('@/data/useRefreshOnFocus', () => ({
 }));
 
 function focusAgain() {
-  const calls = jest.mocked(useRefreshOnFocus).mock.calls;
-  const onFocus = calls[calls.length - 1]?.[0];
-  if (!onFocus) throw new Error('La pantalla no registró el foco');
+  // Al volver, la app ejecuta TODO lo registrado con useRefreshOnFocus:
+  // los avisos de la pantalla y su recarga (useScreenRefresh).
+  const onFocusAll = [
+    ...new Set(jest.mocked(useRefreshOnFocus).mock.calls.map(([fn]) => fn)),
+  ];
+  if (onFocusAll.length === 0) {
+    throw new Error('La pantalla no registró el foco');
+  }
+  const onFocus = () => onFocusAll.forEach((fn) => fn());
   return (async () => {
     // React aplica el cambio al salir de `act`; después se avanza el reloj.
     await act(async () => {

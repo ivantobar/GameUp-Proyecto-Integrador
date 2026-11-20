@@ -8,6 +8,8 @@ import type { Repositories } from '@/data/repositories';
 import type { Assignment } from '@/data/types';
 
 jest.mock('expo-router', () => ({
+  // La pantalla está visible (recarga al volver la app al frente).
+  useIsFocused: () => true,
   router: {
     push: jest.fn(),
     navigate: jest.fn(),

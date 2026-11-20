@@ -6,6 +6,8 @@ import type { Repositories } from '@/data/repositories';
 import { OverviewView } from '../components/OverviewView';
 
 jest.mock('expo-router', () => ({
+  // La pantalla está visible (recarga al volver la app al frente).
+  useIsFocused: () => true,
   router: { push: jest.fn(), back: jest.fn(), replace: jest.fn() },
 }));
 jest.mock('@/data/useRefreshOnFocus', () => ({

@@ -13,7 +13,7 @@ import {
   StateView,
   TextField,
 } from '@/components/ui';
-import { useRefreshOnFocus } from '@/data/useRefreshOnFocus';
+import { useScreenRefresh } from '@/features/refresh/useScreenRefresh';
 import { spacing } from '@/theme';
 import type { StaffRoutes } from '../staffRoutes';
 import { useStudentRoster, type RosterRow } from '../useStudentRoster';
@@ -48,13 +48,20 @@ export function StudentRosterView({
   showTeacherStatus = false,
 }: StudentRosterViewProps) {
   const roster = useStudentRoster({ withTeacherStatus: showTeacherStatus });
-  const { resource, reload, refresh, rows } = roster;
-  useRefreshOnFocus(refresh);
+  const { resource, reload, rows } = roster;
+  const screenRefresh = useScreenRefresh(roster);
 
   return (
     <Screen
+      refresh={screenRefresh}
       safeAreaBottom={false}
-      header={<ScreenHeader title={title} right={headerRight} />}
+      header={
+        <ScreenHeader
+          title={title}
+          right={headerRight}
+          refresh={screenRefresh}
+        />
+      }
     >
       {resource.status === 'loading' ? (
         <StateView kind="loading" title="Buscando estudiantes…" />

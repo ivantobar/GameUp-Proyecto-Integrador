@@ -32,7 +32,7 @@ export {
 export { SegmentedTabs, type SegmentedTabOption } from './SegmentedTabs';
 export { StateView, type StateKind } from './StateView';
 export { TextField } from './TextField';
-export type { PressableBaseProps } from './types';
+export type { PressableBaseProps, ScreenRefresh } from './types';
 export {
   PressableSurface,
   surfaceDepth,

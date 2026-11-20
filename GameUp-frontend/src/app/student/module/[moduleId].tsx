@@ -13,7 +13,7 @@ import { Character, NarrationButton } from '@/components/gameup';
 import { EnterStagger } from '@/components/gameup/motion';
 import { useRepositories } from '@/data/RepositoryProvider';
 import { useResource } from '@/data/useResource';
-import { useRefreshOnFocus } from '@/data/useRefreshOnFocus';
+import { useScreenRefresh } from '@/features/refresh/useScreenRefresh';
 import { assignmentHref, findGame } from '@/features/games/catalog';
 import { TaskCard } from '@/features/games/components/TaskCard';
 import {
@@ -42,9 +42,14 @@ export default function ModuleTasksScreen() {
     return groupByModule(pending).find((g) => g.moduleId === moduleId) ?? null;
   }, [students, assignments, moduleId]);
 
-  const { resource, reload, refresh } = useResource(load);
+  const { resource, reload, refresh, refreshing, refreshFailed } =
+    useResource(load);
   // Al volver de una actividad, la lista se actualiza.
-  useRefreshOnFocus(refresh);
+  const screenRefresh = useScreenRefresh({
+    refresh,
+    refreshing,
+    refreshFailed,
+  });
 
   const group = resource.status === 'ready' ? resource.data : null;
   const title = group?.title ?? 'Tareas de tu profe';
@@ -54,6 +59,7 @@ export default function ModuleTasksScreen() {
 
   return (
     <Screen
+      refresh={screenRefresh}
       backdrop="clouds"
       header={
         <ScreenHeader

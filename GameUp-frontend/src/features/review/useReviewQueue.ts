@@ -61,7 +61,8 @@ export function useReviewQueue(studentId?: string) {
     return { teacher, items };
   }, [staff, reviews, studentId]);
 
-  const { resource, reload, refresh } = useResource(load);
+  const { resource, reload, refresh, refreshing, refreshFailed } =
+    useResource(load);
 
   /** Ejecuta una acción, muestra el aviso y actualiza la lista. */
   const run = useCallback(
@@ -165,6 +166,8 @@ export function useReviewQueue(studentId?: string) {
     resource,
     reload,
     refresh,
+    refreshing,
+    refreshFailed,
     message,
     busyId,
     validate,

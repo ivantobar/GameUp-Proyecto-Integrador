@@ -40,6 +40,10 @@ import { Section } from './Section';
 import { StudentRecordingsSection } from './StudentRecordingsSection';
 import { StudentTeachersSection } from './StudentTeachersSection';
 import { Illustration } from '@/components/gameup';
+import {
+  combineRefreshables,
+  useScreenRefresh,
+} from '@/features/refresh/useScreenRefresh';
 
 interface StudentDetailViewProps {
   studentId: string;
@@ -68,55 +72,55 @@ export function StudentDetailView({
   manageRecordings = false,
 }: StudentDetailViewProps) {
   const detail = useStudentDetail(studentId);
-  const { resource, reload, refresh, message, showAssignedNotice, showNotice } =
-    detail;
+  const { resource, reload, message, showAssignedNotice, showNotice } = detail;
   // Niveles por juego: se recargan al volver de «Cambiar nivel».
   const levels = useStudentLevels(studentId);
-  const refreshLevels = levels.refresh;
   const teachers = useStudentTeachers(studentId, manageTeachers);
-  const { refresh: refreshTeachers, showAssignedNotice: showTeacherNotice } =
-    teachers;
+  const { showAssignedNotice: showTeacherNotice } = teachers;
   // Cuántas actividades suyas esperan revisión (las mismas de su bandeja).
   const pendingSummary = usePendingSummary();
-  const refreshPending = pendingSummary.refresh;
   const pendingCount =
     pendingSummary.resource.status === 'ready'
       ? (pendingSummary.resource.data.find((r) => r.student.id === studentId)
           ?.pending ?? 0)
       : 0;
 
-  // Al volver de «Asignar»: aviso y datos nuevos, sin ocultar los de ahora.
+  // Al volver de «Asignar», «Cambiar nivel» o «Tallerista»: el aviso de lo
+  // que se hizo. Los datos se recargan con `useScreenRefresh` (abajo).
   const onFocus = useCallback(() => {
     const assignedTitle = takeAssignedNotice(studentId);
     if (assignedTitle !== null) showAssignedNotice(assignedTitle);
     const levelNotice = takeLevelNotice(studentId);
     if (levelNotice !== null) showNotice(levelNotice);
-    refresh();
-    refreshLevels();
-    refreshPending();
-    if (manageTeachers) {
-      if (takeTeacherNotice(studentId)) showTeacherNotice();
-      refreshTeachers();
-    }
+    if (manageTeachers && takeTeacherNotice(studentId)) showTeacherNotice();
   }, [
     studentId,
-    refresh,
-    refreshPending,
     showAssignedNotice,
     showNotice,
-    refreshLevels,
     manageTeachers,
-    refreshTeachers,
     showTeacherNotice,
   ]);
   useRefreshOnFocus(onFocus);
 
+  // Recargar: el estudiante, sus niveles, sus pendientes y (si la
+  // directora las gestiona) sus talleristas. Al volver a la pantalla, al
+  // volver la app, al deslizar o con «Actualizar».
+  const screenRefresh = useScreenRefresh(
+    combineRefreshables(
+      manageTeachers
+        ? [detail, levels, pendingSummary, teachers]
+        : [detail, levels, pendingSummary],
+    ),
+  );
+
   return (
     <Screen
+      refresh={screenRefresh}
       header={
         <ScreenHeader
           left={<HeaderBackButton onPress={() => router.back()} />}
           title="Estudiante"
+          refresh={screenRefresh}
         />
       }
       footer={

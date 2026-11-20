@@ -8,7 +8,7 @@ import {
   StateView,
   type IconName,
 } from '@/components/ui';
-import { useRefreshOnFocus } from '@/data/useRefreshOnFocus';
+import { useScreenRefresh } from '@/features/refresh/useScreenRefresh';
 import { SignOutButton } from '@/features/auth/components/SignOutButton';
 import { colors, radii, sizes, spacing } from '@/theme';
 import { useLargeText } from '@/features/accessibility/useLargeText';
@@ -34,14 +34,26 @@ const figures: readonly Figure[] = [
 
 /** Directora · «Resumen»: cifras generales de la fundación. */
 export function OverviewView() {
-  const { resource, reload, refresh } = useDirectorOverview();
-  useRefreshOnFocus(refresh);
+  const { resource, reload, refresh, refreshing, refreshFailed } =
+    useDirectorOverview();
+  const screenRefresh = useScreenRefresh({
+    refresh,
+    refreshing,
+    refreshFailed,
+  });
   const largeText = useLargeText();
 
   return (
     <Screen
+      refresh={screenRefresh}
       safeAreaBottom={false}
-      header={<ScreenHeader title="Resumen" right={<SignOutButton />} />}
+      header={
+        <ScreenHeader
+          title="Resumen"
+          right={<SignOutButton />}
+          refresh={screenRefresh}
+        />
+      }
     >
       {resource.status === 'loading' ? (
         <StateView kind="loading" title="Contando…" />

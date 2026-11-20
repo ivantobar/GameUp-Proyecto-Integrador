@@ -12,7 +12,7 @@ import {
 } from '@/components/ui';
 import { Illustration } from '@/components/gameup';
 import type { PendingReviewSummary } from '@/data/types';
-import { useRefreshOnFocus } from '@/data/useRefreshOnFocus';
+import { useScreenRefresh } from '@/features/refresh/useScreenRefresh';
 import { SignOutButton } from '@/features/auth/components/SignOutButton';
 import { formatSubmittedAt } from '@/features/review/formatTime';
 import {
@@ -43,15 +43,25 @@ export function PendingStudentsView({
   routes,
   showGestureNotice = true,
 }: PendingStudentsViewProps) {
-  const { resource, reload, refresh } = usePendingSummary();
-  useRefreshOnFocus(refresh);
+  const { resource, reload, refresh, refreshing, refreshFailed } =
+    usePendingSummary();
+  const screenRefresh = useScreenRefresh({
+    refresh,
+    refreshing,
+    refreshFailed,
+  });
 
   return (
     <Screen
+      refresh={screenRefresh}
       // Dentro de las pestañas: la barra inferior ya respeta el borde.
       safeAreaBottom={false}
       header={
-        <ScreenHeader title={routes.reviewTitle} right={<SignOutButton />} />
+        <ScreenHeader
+          title={routes.reviewTitle}
+          right={<SignOutButton />}
+          refresh={screenRefresh}
+        />
       }
     >
       {resource.status === 'loading' ? (

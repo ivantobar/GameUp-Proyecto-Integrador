@@ -7,6 +7,8 @@ import type { Repositories } from '@/data/repositories';
 import { createRecording, mockFiles } from '@/test-utils/mockFiles';
 
 jest.mock('expo-router', () => ({
+  // La pantalla está visible (recarga al volver la app al frente).
+  useIsFocused: () => true,
   router: { replace: jest.fn(), navigate: jest.fn() },
 }));
 jest.mock('@/data/useRefreshOnFocus', () => ({

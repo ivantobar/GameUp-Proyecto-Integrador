@@ -9,6 +9,8 @@ import { useRefreshOnFocus } from '@/data/useRefreshOnFocus';
 import { CELEBRATION_MS } from '../components/LevelUpCelebration';
 
 jest.mock('expo-router', () => ({
+  // La pantalla está visible (recarga al volver la app al frente).
+  useIsFocused: () => true,
   router: { push: jest.fn(), navigate: jest.fn(), back: jest.fn() },
 }));
 

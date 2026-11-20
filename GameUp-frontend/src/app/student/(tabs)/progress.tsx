@@ -15,7 +15,7 @@ import { SignOutButton } from '@/features/auth/components/SignOutButton';
 import { SignOutConfirm } from '@/features/auth/components/SignOutConfirm';
 import { ModuleProgressCard } from '@/features/progress/components/ModuleProgressCard';
 import { useProgressOverview } from '@/features/progress/useProgressOverview';
-import { useRefreshOnFocus } from '@/data/useRefreshOnFocus';
+import { useScreenRefresh } from '@/features/refresh/useScreenRefresh';
 import { sizes, spacing } from '@/theme';
 import { errorOf, LoadErrorState } from '@/features/errors/LoadErrorState';
 
@@ -24,9 +24,14 @@ import { errorOf, LoadErrorState } from '@/features/errors/LoadErrorState';
  * Cada tema muestra el porcentaje de actividades validadas por el docente.
  */
 export default function ProgressScreen() {
-  const { resource, reload, refresh } = useProgressOverview();
+  const { resource, reload, refresh, refreshing, refreshFailed } =
+    useProgressOverview();
   // Al volver, se ve lo que la profe validó mientras tanto.
-  useRefreshOnFocus(refresh);
+  const screenRefresh = useScreenRefresh({
+    refresh,
+    refreshing,
+    refreshFailed,
+  });
   // «Cerrar sesión» primero pregunta: el niño no sale por un toque.
   const [askingSignOut, setAskingSignOut] = useState(false);
 
@@ -42,6 +47,7 @@ export default function ProgressScreen() {
 
   return (
     <Screen
+      refresh={screenRefresh}
       backdrop="clouds"
       safeAreaBottom={false}
       header={

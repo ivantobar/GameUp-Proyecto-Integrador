@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import { sizes, spacing } from '@/theme';
 import { AppText } from './AppText';
 import { IconButton } from './IconButton';
+import type { ScreenRefresh } from './types';
 
 interface ScreenHeaderProps {
   /** Botón izquierdo: `HeaderBackButton` o `HeaderCloseButton`. */
@@ -15,6 +16,12 @@ interface ScreenHeaderProps {
   right?: ReactNode;
   /** Color del título cuando el fondo es oscuro. */
   onDark?: boolean;
+  /**
+   * Botón «Actualizar» (solo pantallas de adultos). Va en el lado libre:
+   * a la izquierda si no hay «Volver»; si no, a la derecha; si los dos
+   * lados están ocupados, junto al botón de la derecha.
+   */
+  refresh?: ScreenRefresh;
 }
 
 /**
@@ -27,11 +34,25 @@ export function ScreenHeader({
   center,
   right,
   onDark = false,
+  refresh,
 }: ScreenHeaderProps) {
+  const refreshButton = refresh ? <RefreshButton refresh={refresh} /> : null;
+  const leftContent = left ?? refreshButton;
+  const rightContent =
+    !refreshButton || leftContent === refreshButton ? (
+      right
+    ) : right ? (
+      <View style={styles.pair}>
+        {refreshButton}
+        {right}
+      </View>
+    ) : (
+      refreshButton
+    );
   return (
     <View style={styles.row} testID="screen-header">
       <View style={styles.side} testID="screen-header-left">
-        {left}
+        {leftContent}
       </View>
       <View style={styles.center} testID="screen-header-center">
         {center ??
@@ -49,9 +70,27 @@ export function ScreenHeader({
           ) : null)}
       </View>
       <View style={[styles.side, styles.right]} testID="screen-header-right">
-        {right}
+        {rightContent}
       </View>
     </View>
+  );
+}
+
+/**
+ * «Actualizar»: vuelve a pedir los datos de la pantalla. Mientras recarga
+ * queda deshabilitado (una sola petición a la vez) y TalkBack lo dice.
+ */
+function RefreshButton({ refresh }: { refresh: ScreenRefresh }) {
+  return (
+    <IconButton
+      icon="replay"
+      variant="soft"
+      accessibilityLabel={refresh.refreshing ? 'Actualizando' : 'Actualizar'}
+      accessibilityHint="Vuelve a cargar los datos de esta pantalla"
+      disabled={refresh.refreshing}
+      onPress={refresh.onRefresh}
+      testID="header-refresh"
+    />
   );
 }
 
@@ -101,6 +140,11 @@ const styles = StyleSheet.create({
   },
   right: {
     alignItems: 'flex-end',
+  },
+  /** Dos botones en un lado (solo si los dos lados ya están ocupados). */
+  pair: {
+    flexDirection: 'row',
+    gap: spacing.xs,
   },
   /**
    * Lo único flexible del encabezado: crece a lo ANCHO (está en una fila).

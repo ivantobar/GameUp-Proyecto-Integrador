@@ -10,7 +10,7 @@ import {
 } from '@/components/ui';
 import { Character, NarrationButton } from '@/components/gameup';
 import { EnterStagger } from '@/components/gameup/motion';
-import { useRefreshOnFocus } from '@/data/useRefreshOnFocus';
+import { useScreenRefresh } from '@/features/refresh/useScreenRefresh';
 import { TaskCard } from '@/features/games/components/TaskCard';
 import { moduleBadge, tasksCountText } from '@/features/games/moduleTasks';
 import { useModuleTasks } from '@/features/games/useModuleTasks';
@@ -25,13 +25,19 @@ const EMPTY_TITLE = 'Hoy no tienes tareas';
  * progreso de su módulo; no suben los niveles.
  */
 export default function TasksScreen() {
-  const { resource, reload, refresh } = useModuleTasks();
+  const { resource, reload, refresh, refreshing, refreshFailed } =
+    useModuleTasks();
   // Al volver de un módulo, la lista se actualiza.
-  useRefreshOnFocus(refresh);
+  const screenRefresh = useScreenRefresh({
+    refresh,
+    refreshing,
+    refreshFailed,
+  });
   const modules = resource.status === 'ready' ? resource.data : null;
 
   return (
     <Screen
+      refresh={screenRefresh}
       backdrop="clouds"
       header={
         <ScreenHeader
