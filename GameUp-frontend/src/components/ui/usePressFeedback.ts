@@ -1,26 +1,35 @@
-import { useState } from 'react';
-import { Animated } from 'react-native';
+import {
+  useSharedValue,
+  withTiming,
+  type SharedValue,
+} from 'react-native-reanimated';
 import { motion } from '@/theme';
+import { curves } from './motionCurves';
+
+export interface PressFeedback {
+  /** 0 = normal, 1 = presionado. Se lee en `useAnimatedStyle`. */
+  progress: SharedValue<number>;
+  onPressIn: () => void;
+  onPressOut: () => void;
+}
 
 /**
- * Animación de 150 ms entre el estado normal (0) y el presionado (1), como
- * pide la guía para botones, opciones, chips y tarjetas.
+ * Estado presionado de botones, opciones, chips y tarjetas: un valor de 0 a
+ * 1 que se anima en el hilo de la interfaz (Reanimated), así el toque se
+ * siente inmediato también en celulares de gama baja.
  *
- * Es un cambio de color, no un movimiento, así que no depende de
- * «reducir movimiento».
+ * Con «reducir movimiento» activo, Reanimated salta directo al valor final
+ * (`ReduceMotion.System`, el valor por defecto): el cambio de color y el
+ * hundimiento se ven, pero sin transición.
  */
-export function usePressFeedback() {
-  // useState con inicializador: el valor animado se crea una sola vez.
-  const [progress] = useState(() => new Animated.Value(0));
+export function usePressFeedback(): PressFeedback {
+  const progress = useSharedValue(0);
 
   const animateTo = (toValue: 0 | 1) => {
-    Animated.timing(progress, {
-      toValue,
-      duration: motion.duration.state,
-      easing: motion.easing.out,
-      // Los colores no se pueden animar con el driver nativo.
-      useNativeDriver: false,
-    }).start();
+    progress.value = withTiming(toValue, {
+      duration: motion.duration.press,
+      easing: curves.out,
+    });
   };
 
   return {
@@ -28,16 +37,4 @@ export function usePressFeedback() {
     onPressIn: () => animateTo(1),
     onPressOut: () => animateTo(0),
   };
-}
-
-/** Interpola un color entre el estado normal y el presionado. */
-export function pressColor(
-  progress: Animated.Value,
-  normal: string,
-  pressed: string,
-) {
-  return progress.interpolate({
-    inputRange: [0, 1],
-    outputRange: [normal, pressed],
-  });
 }

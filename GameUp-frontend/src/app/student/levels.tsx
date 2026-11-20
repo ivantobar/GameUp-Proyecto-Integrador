@@ -8,22 +8,28 @@ import {
   StateView,
 } from '@/components/ui';
 import { GameCard, NarrationButton } from '@/components/gameup';
+import { EnterStagger } from '@/components/gameup/motion';
 import { isLadderGame } from '@/data/types';
 import { LevelUpCelebration } from '@/features/games/components/LevelUpCelebration';
 import { gameHref, ladderHref } from '@/features/games/catalog';
 import { useGameList, type GameListItem } from '@/features/games/useGameList';
 import { useLevelCelebration } from '@/features/games/useLevelCelebration';
 import { useRefreshOnFocus } from '@/data/useRefreshOnFocus';
+import { useLargeText } from '@/features/accessibility/useLargeText';
 import { spacing } from '@/theme';
 import { errorOf, LoadErrorState } from '@/features/errors/LoadErrorState';
 
 const TITLE = 'Jugar por niveles';
 const QUESTION = '¿A qué quieres jugar?';
 
-/** Agrupa las tarjetas de dos en dos (cuadrícula del mockup). */
-function pairs(items: GameListItem[]): GameListItem[][] {
+/**
+ * Agrupa las tarjetas de dos en dos (cuadrícula del mockup) o, con letra
+ * grande, de a una (si no, los nombres largos se parten a la mitad).
+ */
+function rowsOf(items: GameListItem[], perRow: 1 | 2): GameListItem[][] {
   const rows: GameListItem[][] = [];
-  for (let i = 0; i < items.length; i += 2) rows.push(items.slice(i, i + 2));
+  for (let i = 0; i < items.length; i += perRow)
+    rows.push(items.slice(i, i + perRow));
   return rows;
 }
 
@@ -43,6 +49,7 @@ function cardHref({ game, level }: GameListItem) {
  */
 export default function LevelsScreen() {
   const { resource, reload, refresh } = useGameList();
+  const perRow = useLargeText() ? 1 : 2;
   // Al volver de un juego, las estrellas se actualizan.
   useRefreshOnFocus(refresh);
   const list = resource.status === 'ready' ? resource.data : null;
@@ -53,6 +60,7 @@ export default function LevelsScreen() {
 
   return (
     <Screen
+      backdrop="clouds"
       header={
         <ScreenHeader
           left={<HeaderBackButton onPress={() => router.back()} />}
@@ -82,7 +90,7 @@ export default function LevelsScreen() {
       />
 
       {resource.status === 'ready'
-        ? resource.data.sections.map((section) => (
+        ? resource.data.sections.map((section, sectionIndex) => (
             <View key={section.id} style={styles.section}>
               <AppText
                 variant="label"
@@ -91,9 +99,11 @@ export default function LevelsScreen() {
               >
                 {section.title}
               </AppText>
-              {pairs(section.items).map((row) => (
-                <View
+              {rowsOf(section.items, perRow).map((row, rowIndex) => (
+                // Cada fila entra un poco después de la anterior.
+                <EnterStagger
                   key={row.map((item) => item.game.id).join('-')}
+                  index={sectionIndex * 3 + rowIndex}
                   style={styles.row}
                 >
                   {row.map((item) => (
@@ -111,8 +121,8 @@ export default function LevelsScreen() {
                     />
                   ))}
                   {/* Si la fila queda impar, un hueco mantiene el ancho. */}
-                  {row.length === 1 ? <View style={styles.spacer} /> : null}
-                </View>
+                  {row.length < perRow ? <View style={styles.spacer} /> : null}
+                </EnterStagger>
               ))}
             </View>
           ))

@@ -23,6 +23,7 @@ import {
 } from '../suggestedDates';
 import { useAssignModule, type ModuleChoice } from '../useAssignModule';
 import { ModuleActivitiesPreview } from './ModuleActivitiesPreview';
+import { Illustration } from '@/components/gameup';
 
 interface AssignModuleViewProps {
   studentId: string;
@@ -105,6 +106,7 @@ export function AssignModuleView({ studentId }: AssignModuleViewProps) {
           kind="empty"
           title="No hay módulos publicados"
           message="Cuando la fundación publique uno, podrás asignarlo."
+          visual={<Illustration name="box" size="md" />}
         />
       ) : null}
 

@@ -1,5 +1,5 @@
 import { findGame } from '@/features/games/catalog';
-import type { ReviewItem, ReviewKind } from '@/data/types';
+import type { GameId, ReviewItem, ReviewKind } from '@/data/types';
 import { formatSubmittedAt } from './formatTime';
 
 export type ReviewFilter = 'all' | ReviewKind;
@@ -59,3 +59,10 @@ export const feedbackSuggestions = [
   'Hazlo más despacio, abriendo bien la boca.',
   'Mira otra vez el gesto antes de decirlo.',
 ] as const;
+
+/** Juego de una actividad por revisar (para mostrar su dibujo). */
+export function reviewGameId(item: ReviewItem): GameId | null {
+  if (item.kind === 'speech') return 'speak';
+  if (item.kind === 'listening') return 'findMouth';
+  return item.game?.gameId ?? null;
+}

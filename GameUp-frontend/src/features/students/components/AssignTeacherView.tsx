@@ -16,6 +16,7 @@ import { spacing } from '@/theme';
 import { leaveTeacherNotice } from '../assignmentNotice';
 import { isAccessError } from '../assignmentText';
 import { useAssignTeacher, type TeacherChoice } from '../useAssignTeacher';
+import { Illustration } from '@/components/gameup';
 
 interface AssignTeacherViewProps {
   studentId: string;
@@ -98,6 +99,7 @@ export function AssignTeacherView({ studentId }: AssignTeacherViewProps) {
           kind="empty"
           title="No hay talleristas activas"
           message="Cuando la fundación active una cuenta de tallerista, aparecerá aquí."
+          visual={<Illustration name="people" size="md" />}
         />
       ) : null}
 

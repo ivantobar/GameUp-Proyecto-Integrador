@@ -10,7 +10,7 @@ import {
 } from '@/components/ui';
 import type { GameId } from '@/data/types';
 import { colors, radii, sizes, spacing, type ThemeColor } from '@/theme';
-import { GameIcon } from './GameIcon';
+import { GameIconFrame } from './GameIconFrame';
 import { LevelStars, levelStarsLabel } from './LevelStars';
 
 export type GameCardTone = 'brand' | 'warm' | 'surface';
@@ -51,7 +51,8 @@ interface GameCardProps extends PressableBaseProps {
   icon: IconName;
   /**
    * Juego de la tarjeta: en vez del ícono de línea muestra su dibujo a
-   * color (`GameIcon`), que el niño reconoce sin leer.
+   * color sobre su fondo suave (`GameIconFrame`), para reconocerlo sin
+   * leer. La tarjeta sigue con los colores de la guía (`tone`).
    */
   game?: GameId;
   tone: GameCardTone;
@@ -88,19 +89,11 @@ export function GameCard({
     .filter(Boolean)
     .join('. ');
 
-  return (
-    <PressableCard
-      tone={tone}
-      onPress={onPress}
-      disabled={disabled}
-      accessibilityLabel={label}
-      accessibilityHint={accessibilityHint}
-      testID={testID}
-      style={styles.card}
-    >
+  const content = (
+    <>
       <View style={styles.top}>
         {game ? (
-          <GameIcon game={game} />
+          <GameIconFrame game={game} size="md" />
         ) : (
           <View style={[styles.iconSlot, config.iconBox && styles.iconBox]}>
             <Icon name={icon} size="lg" color={config.icon} />
@@ -119,6 +112,20 @@ export function GameCard({
           <LevelStars level={level} />
         </View>
       )}
+    </>
+  );
+
+  return (
+    <PressableCard
+      tone={tone}
+      onPress={onPress}
+      disabled={disabled}
+      accessibilityLabel={label}
+      accessibilityHint={accessibilityHint}
+      testID={testID}
+      style={styles.card}
+    >
+      {content}
     </PressableCard>
   );
 }

@@ -22,10 +22,19 @@ export type TextVariant =
   | 'label'
   | 'support'
   | 'glyph'
-  | 'glyphLarge';
+  | 'glyphLarge'
+  | 'number';
 
 /** Tamaño mínimo de texto de la guía. */
 export const MIN_FONT_SIZE = 15;
+
+/**
+ * Desde esta escala de letra del sistema (130 %), las pantallas del niño
+ * pasan a una columna: las tarjetas que iban de dos en dos van de a una y
+ * el texto de los avisos baja debajo del dibujo (si no, las palabras
+ * largas como «Secuenciar» se partirían a la mitad).
+ */
+export const LARGE_TEXT_SCALE = 1.3;
 
 export const typography: Record<TextVariant, TextStyle> = {
   /** Display 30/36 */
@@ -60,6 +69,8 @@ export const typography: Record<TextVariant, TextStyle> = {
    * La guía no define este tamaño; se toma del mockup.
    */
   glyph: { fontFamily: fontFamilies.extraBold, fontSize: 52, lineHeight: 60 },
+  /** [derivado GameUP] Cifras destacadas del Resumen de la directora. */
+  number: { fontFamily: fontFamilies.extraBold, fontSize: 40, lineHeight: 48 },
   /** [derivado GameUP] Letra del paso «Mira» (mockup 4). */
   glyphLarge: {
     fontFamily: fontFamilies.extraBold,

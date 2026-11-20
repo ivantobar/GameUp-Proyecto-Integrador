@@ -235,10 +235,31 @@ Vienen de la guía «Estilos para el frontend» de la fundación:
   texto oscuro, **nunca blanco**. Única excepción aprobada: sobre una tarjeta
   verde oscuro, la acción principal es naranja.
 - Botones de **56 px** de alto como mínimo (64 px para la acción principal del
-  niño). Áreas táctiles de **44 px** o más.
+  niño). Áreas táctiles de **48 dp** o más (`sizes.touchMin`).
 - Texto de **15 px** como mínimo. La «Etiqueta» de la guía (13 px) se usa
   en 15 px por decisión del equipo.
 - Superficies planas con esquinas redondeadas, sin degradados ni sombras.
+  Lo que se toca lleva **relieve plano**: un borde inferior sólido más
+  oscuro que se hunde al presionar (`PressableSurface`). La tarjeta que solo
+  se lee es plana. En las pantallas de adultos (`AdultSurfaces`) el relieve
+  es más bajo y no hay rebote.
+- **Solo colores de la guía o derivados** en botones, encabezados, barra
+  inferior, textos, fondos y estados (elegido, pista, acierto). El color de
+  cada juego va solo como fondo suave detrás de su dibujo (`GameIconFrame`);
+  los colores `juego.*` solo dentro de los dibujos. Lo vigila
+  `src/theme/__tests__/guidePalette.test.ts`.
+- **Tarjetas de juego:** imagen de la fundación → dibujo propio (coincidencia
+  exacta del emoji o de la palabra) → el emoji en grande → la palabra. El
+  emoji nunca va junto a un dibujo, y una tarjeta para leer no lleva dibujo.
+- **Sin castigo:** nada de rojo ni «incorrecto». La pista se marca con borde
+  punteado, «Prueba esta» y la manito; la opción solo «respira» después de
+  la pista o del acierto, nunca antes.
+- **Movimiento:** suave y corto, nada en bucle; todo respeta «reducir
+  movimiento» (fundido corto o nada).
+- **Letra grande:** nada de altos fijos con texto (`minHeight`/`minWidth`) y
+  `flexWrap` donde haga falta; desde el 130 % (`useLargeText`) las tarjetas
+  de dos en dos pasan a una columna. Nada con `flexGrow` en el encabezado ni
+  en el pie (Yoga lo estiraría a toda la pantalla).
 - Las acciones van en la parte inferior; nada flota sobre el contenido.
 - El estado nunca se comunica solo con color: también con texto o forma.
 - Todo elemento tocable lleva `accessibilityRole`, `accessibilityLabel` y

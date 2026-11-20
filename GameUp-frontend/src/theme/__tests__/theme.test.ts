@@ -76,6 +76,48 @@ describe('contraste de colores (WCAG AA)', () => {
     );
   });
 
+  it('el relieve de lo blanco es un gris decorativo (1,6:1 a 2:1 sobre el gris)', () => {
+    const onGray = contrastRatio(colors.borde.relieve, colors.marca.gris);
+    expect(onGray).toBeGreaterThanOrEqual(1.6);
+    expect(onGray).toBeLessThanOrEqual(2);
+    // Más marcado que el borde suave y más claro que la estrella vacía.
+    expect(onGray).toBeGreaterThan(
+      contrastRatio(colors.borde.suave, colors.marca.gris),
+    );
+    expect(onGray).toBeLessThan(
+      contrastRatio(colors.estrella.vacia, colors.marca.gris),
+    );
+  });
+
+  it.each([
+    ['gris', colors.marca.gris],
+    ['blanco', colors.superficie.blanca],
+    ['verde suave (Habla conmigo)', colors.verde.suave],
+    ['naranja suave (Busca la boca)', colors.naranja.suave],
+  ])(
+    'el café (avance actual, casilla «siguiente») se ve sobre %s',
+    (_n, bg) => {
+      // Gráficos: borde del punto actual y de la casilla «siguiente».
+      expect(contrastRatio(colors.cafe.oscuro, bg)).toBeGreaterThanOrEqual(
+        AA.graphic,
+      );
+      // Texto: «Toca para oír otra vez» en Busca la boca.
+      expect(contrastRatio(colors.cafe.oscuro, bg)).toBeGreaterThanOrEqual(
+        AA.text,
+      );
+    },
+  );
+
+  it.each([
+    ['gris', colors.marca.gris],
+    ['verde suave (Habla conmigo)', colors.verde.suave],
+    ['naranja suave (Busca la boca)', colors.naranja.suave],
+  ])('los puntos hechos y pendientes se ven sobre %s (gráficos)', (_n, bg) => {
+    for (const dot of [colors.verde.oscuro, colors.texto.secundario]) {
+      expect(contrastRatio(dot, bg)).toBeGreaterThanOrEqual(AA.graphic);
+    }
+  });
+
   it('la estrella vacía cumple el mínimo para gráficos sobre blanco', () => {
     expect(
       contrastRatio(colors.estrella.vacia, colors.superficie.blanca),

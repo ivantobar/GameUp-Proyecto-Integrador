@@ -3,6 +3,7 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, spacing, type ThemeColor } from '@/theme';
+import { Backdrop, type BackdropKind } from './Backdrop';
 
 export type ScreenTone =
   'gray' | 'white' | 'softGreen' | 'softOrange' | 'brand';
@@ -39,6 +40,14 @@ interface ScreenProps {
    * inferior del teléfono.
    */
   safeAreaBottom?: boolean;
+  /** Formas decorativas de fondo, detrás de todo (ver `Backdrop`). */
+  backdrop?: BackdropKind;
+  /**
+   * Centra el contenido a lo alto en el espacio libre entre el encabezado y
+   * las acciones (pantallas de «¡Listo!»). Si no cabe (letra grande), se
+   * desplaza como siempre: no agrega alto de más.
+   */
+  centerContent?: boolean;
 }
 
 /** Marco común de toda pantalla: fondo, área segura, encabezado y acciones. */
@@ -49,6 +58,8 @@ export function Screen({
   footer,
   scroll = true,
   safeAreaBottom = true,
+  backdrop,
+  centerContent = false,
 }: ScreenProps) {
   const config = screenTones[tone];
   return (
@@ -61,17 +72,29 @@ export function Screen({
       }
     >
       <StatusBar style={config.statusBar} />
+      {backdrop ? <Backdrop kind={backdrop} /> : null}
       {header ? <View style={styles.header}>{header}</View> : null}
       {scroll ? (
         <ScrollView
           style={styles.flex}
-          contentContainerStyle={styles.content}
+          contentContainerStyle={[
+            styles.content,
+            centerContent && styles.centered,
+          ]}
           keyboardShouldPersistTaps="handled"
         >
           {children}
         </ScrollView>
       ) : (
-        <View style={[styles.flex, styles.content]}>{children}</View>
+        <View
+          style={[
+            styles.flex,
+            styles.content,
+            centerContent && styles.centered,
+          ]}
+        >
+          {children}
+        </View>
       )}
       {footer ? <View style={styles.footer}>{footer}</View> : null}
     </SafeAreaView>
@@ -94,6 +117,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.gutter,
     paddingVertical: spacing.md,
     gap: spacing.lg,
+  },
+  /** Llena el alto disponible y centra; crece si el contenido no cabe. */
+  centered: {
+    flexGrow: 1,
+    justifyContent: 'center',
   },
   footer: {
     paddingHorizontal: spacing.gutter,

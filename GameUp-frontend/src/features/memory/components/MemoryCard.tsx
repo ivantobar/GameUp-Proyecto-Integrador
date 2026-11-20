@@ -1,7 +1,23 @@
-import { Pressable, StyleSheet } from 'react-native';
+import { useEffect, useRef } from 'react';
+import { StyleSheet } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
+import { curves, PressableSurface } from '@/components/ui';
 import { Character, HintPill, Pictogram } from '@/components/gameup';
+import { Breathe } from '@/components/gameup/motion';
+import { useReducedMotion } from '@/features/motion/useReducedMotion';
 import type { PictureFace } from '@/data/types';
-import { colors, radii, sizes, spacing, type ThemeColor } from '@/theme';
+import {
+  colors,
+  motion,
+  radii,
+  sizes,
+  spacing,
+  type ThemeColor,
+} from '@/theme';
 import type { MemoryCardView } from '../memoryGame';
 
 /**
@@ -16,21 +32,29 @@ export const memoryCardStyles = {
   down: {
     background: colors.verde.oscuro,
     border: colors.verde.oscuro,
+    edge: colors.verde.profundo,
+    pressedBackground: colors.texto.principal,
     borderStyle: 'solid',
   },
   up: {
     background: colors.superficie.blanca,
     border: colors.verde.oscuro,
+    edge: colors.borde.relieve,
+    pressedBackground: colors.superficie.blanca,
     borderStyle: 'solid',
   },
   mismatch: {
     background: colors.superficie.blanca,
     border: colors.texto.secundario,
+    edge: colors.borde.relieve,
+    pressedBackground: colors.verde.suave,
     borderStyle: 'dashed',
   },
   matched: {
     background: colors.verde.suave,
     border: colors.verde.oscuro,
+    edge: colors.verde.oscuro,
+    pressedBackground: colors.verde.suave,
     borderStyle: 'solid',
   },
 } as const satisfies Record<
@@ -38,6 +62,8 @@ export const memoryCardStyles = {
   {
     background: ThemeColor;
     border: ThemeColor;
+    edge: ThemeColor;
+    pressedBackground: ThemeColor;
     borderStyle: 'solid' | 'dashed';
   }
 >;
@@ -86,47 +112,89 @@ export function MemoryCard({
     .filter(Boolean)
     .join(', ');
 
+  const flip = useFlip(isUp);
+
   return (
-    <Pressable
-      onPress={onPress}
-      disabled={locked}
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      accessibilityHint={view === 'down' ? 'Toca para voltearla' : undefined}
-      accessibilityState={{ disabled: locked, selected: view === 'matched' }}
-      style={({ pressed }) => [
-        styles.card,
-        compact && styles.compact,
-        {
-          backgroundColor:
-            pressed && view === 'down'
-              ? colors.texto.principal
-              : config.background,
-          borderColor: config.border,
-          borderStyle: config.borderStyle,
-        },
-      ]}
-    >
-      {isUp && face ? (
-        <Pictogram face={face} size={compact ? 'md' : 'lg'} />
-      ) : (
-        <Character mouth="smile" size="xs" />
-      )}
-      {view === 'matched' ? <HintPill kind="correct" label="¡Pareja!" /> : null}
-    </Pressable>
+    // La pareja encontrada respira dos veces; antes, nada se mueve solo.
+    <Breathe active={view === 'matched'} style={styles.grow}>
+      <PressableSurface
+        colors={{
+          background: config.background,
+          pressedBackground: config.pressedBackground,
+          border: config.border,
+          pressedBorder: config.border,
+          edge: config.edge,
+        }}
+        onPress={onPress}
+        disabled={locked}
+        accessibilityLabel={label}
+        accessibilityHint={view === 'down' ? 'Toca para voltearla' : undefined}
+        accessibilityState={{ selected: view === 'matched' }}
+        depth="md"
+        pressScale
+        radius={radii.card}
+        borderWidth={sizes.borderStrong + 1}
+        borderStyle={config.borderStyle}
+        // Los de una misma fila miden lo mismo.
+        fill
+        style={styles.grow}
+        contentStyle={[styles.card, compact && styles.compact]}
+      >
+        <Animated.View style={[styles.face, flip]}>
+          {isUp && face ? (
+            <Pictogram face={face} size={compact ? 'md' : 'lg'} />
+          ) : (
+            <Character mouth="smile" size="xs" />
+          )}
+          {view === 'matched' ? (
+            <HintPill kind="correct" label="¡Pareja!" />
+          ) : null}
+        </Animated.View>
+      </PressableSurface>
+    </Breathe>
   );
 }
 
+/**
+ * Volteo suave: al cambiar de cara, el dibujo se estrecha y vuelve a abrirse
+ * (escala horizontal, 150 ms cada mitad), como una carta que gira. Con
+ * «reducir movimiento», cambia sin animación.
+ */
+function useFlip(isUp: boolean) {
+  const reduced = useReducedMotion();
+  const scaleX = useSharedValue(1);
+  const previous = useRef(isUp);
+
+  useEffect(() => {
+    if (previous.current === isUp) return;
+    previous.current = isUp;
+    if (reduced) return;
+    const half = { duration: motion.duration.state, easing: curves.out };
+    scaleX.value = 0;
+    scaleX.value = withTiming(1, half);
+  }, [isUp, reduced, scaleX]);
+
+  return useAnimatedStyle(() => ({ transform: [{ scaleX: scaleX.value }] }));
+}
+
 const styles = StyleSheet.create({
+  /**
+   * Crece para llenar el alto de su fila, con base en su contenido. No es
+   * `flex: 1`: en vertical, `flex: 1` (base 0) puede colapsar a alto 0
+   * dentro del contenido desplazable.
+   */
+  grow: {
+    flexGrow: 1,
+  },
   card: {
-    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: spacing.xs,
     minHeight: sizes.pictureTile + spacing.xxxl,
     padding: spacing.sm,
-    borderRadius: radii.xl,
-    borderWidth: sizes.borderStrong + 1,
+  },
+  face: {
+    alignItems: 'center',
+    gap: spacing.xs,
   },
   compact: {
     minHeight: sizes.pictureTile,

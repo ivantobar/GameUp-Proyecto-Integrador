@@ -1,5 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 import { AppText } from '@/components/ui';
+import { MiniPicture } from '@/components/gameup';
+import { PopIn } from '@/components/gameup/motion';
 import type { PictureFace } from '@/data/types';
 import { colors, radii, sizes, spacing } from '@/theme';
 
@@ -12,7 +14,8 @@ interface SequenceSlotsProps {
 
 /**
  * Casillas numeradas de la rutina (1, 2, 3…). La siguiente por llenar se
- * distingue por la forma (borde punteado), no solo por el color.
+ * distingue por la forma (borde punteado), no solo por el color. Cada paso
+ * ya ordenado muestra su miniatura (imagen, dibujo o palabra).
  */
 export function SequenceSlots({ total, placed }: SequenceSlotsProps) {
   const summary = Array.from({ length: total }, (_, index) => {
@@ -53,8 +56,11 @@ export function SequenceSlots({ total, placed }: SequenceSlotsProps) {
                 <AppText variant="label" tone={step ? 'marca' : 'secundario'}>
                   {String(index + 1)}
                 </AppText>
-                {step?.emoji ? (
-                  <AppText variant="title">{step.emoji}</AppText>
+                {step ? (
+                  // El paso «cae» en su casilla con un rebote leve.
+                  <PopIn key={step.id}>
+                    <MiniPicture face={step} />
+                  </PopIn>
                 ) : null}
               </View>
             );
@@ -80,6 +86,8 @@ const styles = StyleSheet.create({
     minHeight: sizes.sequenceSlot,
     alignItems: 'center',
     justifyContent: 'center',
+    gap: spacing.xxs,
+    paddingVertical: spacing.xxs,
     borderRadius: radii.lg,
     borderWidth: sizes.borderStrong,
   },
@@ -91,8 +99,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.superficie.blanca,
     borderColor: colors.borde.suave,
   },
+  /** Café: 6,9:1 sobre blanco (el naranja de marca daba 2,3:1). */
   next: {
-    borderColor: colors.marca.naranja,
+    borderColor: colors.cafe.oscuro,
     borderStyle: 'dashed',
   },
 });

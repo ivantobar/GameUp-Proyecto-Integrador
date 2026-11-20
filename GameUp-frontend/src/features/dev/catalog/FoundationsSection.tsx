@@ -1,5 +1,7 @@
 import { StyleSheet, View } from 'react-native';
-import { AppText, Card } from '@/components/ui';
+import { AppText, Backdrop, Card, type BackdropKind } from '@/components/ui';
+import { GameIconFrame } from '@/components/gameup';
+import type { GameId } from '@/data/types';
 import {
   colors,
   radii,
@@ -32,6 +34,40 @@ const swatches: readonly Swatch[] = [
   { token: 'cafe.oscuro · derivado', value: colors.cafe.oscuro },
   { token: 'borde.suave · derivado', value: colors.borde.suave },
   { token: 'estrella.vacia · derivado', value: colors.estrella.vacia },
+  { token: 'borde.relieve · pendiente', value: colors.borde.relieve },
+];
+
+/** Fondos decorativos sobre el color donde se usan. */
+const backdrops: readonly {
+  kind: BackdropKind;
+  name: string;
+  background: ThemeColor;
+}[] = [
+  {
+    kind: 'clouds',
+    name: 'Nubes · pantallas del niño',
+    background: colors.marca.gris,
+  },
+  {
+    kind: 'hills',
+    name: 'Colinas · Inicio',
+    background: colors.marca.gris,
+  },
+  {
+    kind: 'bubbles',
+    name: 'Burbujas · juegos',
+    background: colors.marca.gris,
+  },
+];
+
+/** Identidad de cada juego (pendiente): solo el fondo detrás del dibujo. */
+const gameIdentities: readonly { name: string; game: GameId }[] = [
+  { name: 'Emparejar', game: 'match' },
+  { name: 'Clasificar', game: 'classify' },
+  { name: 'Secuenciar', game: 'sequence' },
+  { name: 'Memoria', game: 'memory' },
+  { name: 'Habla conmigo', game: 'speak' },
+  { name: 'Busca la boca', game: 'findMouth' },
 ];
 
 function formatRatio(ratio: number): string {
@@ -49,9 +85,10 @@ const typeSamples: readonly { variant: TextVariant; name: string }[] = [
   { variant: 'button', name: 'Botón' },
   { variant: 'label', name: 'Etiqueta' },
   { variant: 'support', name: 'Apoyo' },
+  { variant: 'number', name: 'Cifra (Resumen de la directora)' },
 ];
 
-/** Colores con su contraste y las ocho variantes de texto. */
+/** Colores con su contraste y las variantes de texto. */
 export function FoundationsSection() {
   return (
     <>
@@ -75,6 +112,33 @@ export function FoundationsSection() {
                 )}
               </AppText>
             </View>
+          </View>
+        ))}
+      </CatalogSection>
+      <CatalogSection
+        title="Fondos"
+        note="Formas planas de contraste muy bajo (1,1:1 a 1,2:1): decoran sin distraer. No se mueven ni las lee el lector de pantalla."
+      >
+        {backdrops.map((item) => (
+          <View
+            key={item.kind}
+            style={[styles.backdropBox, { backgroundColor: item.background }]}
+          >
+            <Backdrop kind={item.kind} />
+            <AppText variant="bodyStrong">{item.name}</AppText>
+          </View>
+        ))}
+      </CatalogSection>
+      <CatalogSection
+        title="Identidad de cada juego"
+        note="Solo el fondo suave detrás del dibujo de cada juego, para reconocerlo sin leer. Nunca en botones, textos, encabezados, fondos de pantalla ni estados. Pendiente de aprobación."
+      >
+        {gameIdentities.map((item) => (
+          <View key={item.name} style={styles.identity}>
+            <GameIconFrame game={item.game} />
+            <AppText variant="bodyStrong" style={styles.flex}>
+              {item.name}
+            </AppText>
           </View>
         ))}
       </CatalogSection>
@@ -108,6 +172,23 @@ export function FoundationsSection() {
 }
 
 const styles = StyleSheet.create({
+  backdropBox: {
+    minHeight: sizes.categoryBin,
+    padding: spacing.md,
+    borderRadius: radii.xl,
+    overflow: 'hidden',
+  },
+  identity: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: spacing.sm,
+    padding: spacing.md,
+    borderRadius: radii.xl,
+  },
+  flex: {
+    flex: 1,
+  },
   swatchRow: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -64,6 +64,15 @@ export const colors = {
   borde: {
     /** [derivado GameUP] Bordes de tarjetas y fichas. Decorativo. */
     suave: '#D9DCDB',
+    /**
+     * [PENDIENTE DE APROBACIÓN] Relieve plano de las tarjetas y botones
+     * blancos: el borde inferior sólido que los hace ver «tocables» (sin
+     * sombras ni degradados). DECORATIVO: el estado nunca depende de él.
+     * Gris neutro entre `borde.suave` y `estrella.vacia`: 1,8:1 sobre
+     * `marca.gris` y 2,1:1 sobre blanco. Es el único color nuevo fuera de
+     * los dibujos; los demás relieves usan colores de la guía o derivados.
+     */
+    relieve: '#ADB4B2',
   },
   estrella: {
     /** [derivado GameUP] Estrella vacía. 3,15:1 sobre blanco. */
@@ -95,6 +104,8 @@ export const colors = {
    * [PENDIENTE DE APROBACIÓN] Colores vivos de los dibujos de cada juego
    * (`GameIcon`): estilo infantil para que el niño reconozca el juego sin
    * leer. Solo decoran; el texto de la tarjeta dice qué juego es.
+   * Sobre blanco dan entre 1,4:1 y 3,5:1: sirven como relleno de un dibujo
+   * con contorno, nunca como texto ni como único indicador de algo.
    */
   juego: {
     rojo: '#FF5A5F',
@@ -106,6 +117,31 @@ export const colors = {
     morado: '#9B6BFF',
     moradoClaro: '#C9B3FF',
     fondoAmarillo: '#FFF1C7',
+    /**
+     * [PENDIENTE DE APROBACIÓN] Rellenos de la biblioteca de ilustraciones
+     * (perro, pan; agua y cielo; metal del grifo). Siempre dentro de un
+     * contorno oscuro: el dibujo se distingue por el contorno, no por ellos.
+     */
+    cafe: '#C98B4E',
+    celeste: '#BFE6FF',
+    gris: '#C9D1CF',
+  },
+  /**
+   * [PENDIENTE DE APROBACIÓN] Fondo suave de cada juego, SOLO detrás de su
+   * dibujo (el recuadro del `GameIcon`), para reconocer el juego sin leer.
+   * Nunca en botones, textos, encabezados, fondos de pantalla ni estados.
+   * Secuenciar usa `juego.fondoAmarillo` y Habla conmigo, `verde.suave`.
+   * Sobre ellos no va texto.
+   */
+  identidad: {
+    /** Emparejar: coral muy claro. */
+    emparejarFondo: '#FFE9E5',
+    /** Clasificar: azul muy claro. */
+    clasificarFondo: '#E3F1FF',
+    /** Memoria: lila muy claro. */
+    memoriaFondo: '#EFE8FF',
+    /** Busca la boca: rosa muy claro. */
+    bocaFondo: '#FDEBF1',
   },
   /** Sin color de fondo (enlaces, bordes invisibles). */
   transparente: 'transparent',

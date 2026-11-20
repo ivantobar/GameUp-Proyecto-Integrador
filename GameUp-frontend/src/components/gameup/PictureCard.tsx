@@ -1,8 +1,9 @@
-import { Pressable, StyleSheet, View } from 'react-native';
-import { AppText } from '@/components/ui';
+import { StyleSheet, View } from 'react-native';
+import { AppText, PressableSurface } from '@/components/ui';
 import type { PictureFace } from '@/data/types';
 import { colors, radii, sizes, spacing, type ThemeColor } from '@/theme';
 import { HintPill } from './HintPill';
+import { Breathe } from './motion';
 import { Pictogram } from './Pictogram';
 
 /**
@@ -14,7 +15,11 @@ import { Pictogram } from './Pictogram';
  * - correct: la eligió bien («¡Muy bien!» con ✓);
  * - dimmed: otra opción, cuando la ronda ya está resuelta.
  *
- * Nunca se marca una opción como «incorrecta» ni se usa rojo.
+ * Nunca se marca una opción como «incorrecta» ni se usa rojo. Los estados
+ * usan siempre los verdes de la guía, nunca el color del juego.
+ *
+ * Relieve plano: la tarjeta que se puede tocar tiene borde inferior y se
+ * hunde al presionar; la resuelta queda plana («ya se tocó»).
  */
 export type PictureCardState = 'idle' | 'hint' | 'correct' | 'dimmed';
 
@@ -23,21 +28,25 @@ export const pictureCardStates = {
     background: colors.superficie.blanca,
     border: colors.borde.suave,
     borderStyle: 'solid',
+    edge: colors.borde.relieve,
   },
   hint: {
     background: colors.superficie.blanca,
     border: colors.verde.oscuro,
     borderStyle: 'dashed',
+    edge: colors.borde.relieve,
   },
   correct: {
     background: colors.verde.suave,
     border: colors.verde.oscuro,
     borderStyle: 'solid',
+    edge: colors.verde.oscuro,
   },
   dimmed: {
     background: colors.superficie.blanca,
     border: colors.borde.suave,
     borderStyle: 'solid',
+    edge: colors.borde.relieve,
   },
 } as const satisfies Record<
   PictureCardState,
@@ -45,6 +54,7 @@ export const pictureCardStates = {
     background: ThemeColor;
     border: ThemeColor;
     borderStyle: 'solid' | 'dashed';
+    edge: ThemeColor;
   }
 >;
 
@@ -89,45 +99,63 @@ export function PictureCard({
   const isTile = layout === 'tile';
 
   return (
-    <Pressable
-      onPress={onPress}
-      disabled={locked}
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      accessibilityState={{ selected: state === 'correct', disabled: locked }}
-      style={({ pressed }) => [
-        styles.card,
-        isTile ? styles.tile : styles.row,
-        {
-          backgroundColor:
-            pressed && state !== 'correct'
-              ? colors.verde.suave
-              : config.background,
-          borderColor: config.border,
-          borderStyle: config.borderStyle,
-          opacity: state === 'dimmed' ? DIMMED_OPACITY : 1,
-        },
-      ]}
+    // Respira solo con la pista o al acertar: nunca antes (no regala la
+    // respuesta).
+    <Breathe
+      active={state === 'hint' || state === 'correct'}
+      style={isTile ? styles.grow : undefined}
+      testID="picture-card-breathe"
     >
-      <Pictogram face={face} />
-      {showLabel ? (
-        <AppText
-          variant="bodyStrong"
-          style={isTile ? styles.centerText : styles.flex}
-        >
-          {face.label}
-        </AppText>
-      ) : null}
-      {isTile ? null : <View style={styles.flex} />}
-      {pill ? <HintPill kind={pill.kind} label={pill.label} /> : null}
-    </Pressable>
+      <PressableSurface
+        colors={{
+          background: config.background,
+          pressedBackground:
+            state === 'correct' ? config.background : colors.verde.suave,
+          border: config.border,
+          pressedBorder: colors.verde.oscuro,
+          edge: config.edge,
+        }}
+        onPress={onPress}
+        disabled={locked}
+        accessibilityLabel={label}
+        accessibilityState={{ selected: state === 'correct' }}
+        depth="md"
+        pressScale
+        radius={radii.card}
+        borderWidth={sizes.borderStrong + 1}
+        borderStyle={config.borderStyle}
+        opacity={state === 'dimmed' ? DIMMED_OPACITY : 1}
+        // En cuadrícula, las tarjetas de una fila miden lo mismo.
+        fill={isTile}
+        style={isTile ? styles.grow : undefined}
+        contentStyle={[styles.card, isTile ? styles.tile : styles.row]}
+      >
+        <Pictogram face={face} />
+        {showLabel ? (
+          <AppText
+            variant="bodyStrong"
+            style={isTile ? styles.centerText : styles.flex}
+          >
+            {face.label}
+          </AppText>
+        ) : null}
+        {isTile ? null : <View style={styles.flex} />}
+        {pill ? <HintPill kind={pill.kind} label={pill.label} /> : null}
+      </PressableSurface>
+    </Breathe>
   );
 }
 
 const styles = StyleSheet.create({
+  /**
+   * Crece para llenar el alto de su fila, con base en su contenido. No es
+   * `flex: 1`: en vertical, `flex: 1` (base 0) puede colapsar a alto 0
+   * dentro del contenido desplazable.
+   */
+  grow: {
+    flexGrow: 1,
+  },
   card: {
-    borderRadius: radii.xl,
-    borderWidth: sizes.borderStrong + 1,
     gap: spacing.xs,
   },
   row: {
@@ -138,7 +166,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
   },
   tile: {
-    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: sizes.pictureTile,

@@ -1,8 +1,10 @@
 import { StyleSheet, View } from 'react-native';
 import { AppText, Badge, Button, Card } from '@/components/ui';
-import { GameIcon } from '@/components/gameup';
+import { GameIconFrame } from '@/components/gameup';
+import { EnterStagger } from '@/components/gameup/motion';
+import { useLargeText } from '@/features/accessibility/useLargeText';
 import type { GameId } from '@/data/types';
-import { spacing } from '@/theme';
+import { radii, sizes, spacing } from '@/theme';
 
 interface TaskHeroCardProps {
   gameTitle: string;
@@ -15,8 +17,10 @@ interface TaskHeroCardProps {
 
 /**
  * Inicio · «Haz esta tarea»: la tarea de la profe es lo primero que ve el
- * niño, grande y con un solo botón. El botón es naranja porque está sobre
- * verde oscuro (la misma excepción que «Continuar»).
+ * niño, grande y con un solo botón. El dibujo del juego va sobre su fondo
+ * suave (`GameIconFrame`), para reconocerlo sin leer. El botón es
+ * naranja porque está sobre verde oscuro (la misma excepción que
+ * «Continuar»). Entra con un desplazamiento corto al abrir el Inicio.
  */
 export function TaskHeroCard({
   gameTitle,
@@ -24,56 +28,68 @@ export function TaskHeroCard({
   again = false,
   onStart,
 }: TaskHeroCardProps) {
+  const largeText = useLargeText();
   const caption = again
     ? 'Tu profe quiere que lo practiques otra vez'
     : 'Tu profe te dejó';
   return (
-    <Card tone="brand">
-      <View style={styles.row}>
-        <View style={styles.texts}>
-          <AppText
-            variant="label"
-            tone="sobreOscuro"
-            accessibilityRole="header"
-          >
-            Haz esta tarea
-          </AppText>
-          <AppText variant="title" tone="sobreOscuro">
-            {gameTitle}
-          </AppText>
-          <AppText tone="sobreOscuro">{caption}</AppText>
+    <EnterStagger index={0}>
+      <Card tone="brand" style={styles.card}>
+        <View style={largeText ? styles.stacked : styles.row}>
+          <GameIconFrame game={game} size="lg" />
+          <View style={largeText ? styles.stackedTexts : styles.texts}>
+            <AppText
+              variant="label"
+              tone="sobreOscuro"
+              accessibilityRole="header"
+            >
+              Haz esta tarea
+            </AppText>
+            <AppText variant="title" tone="sobreOscuro">
+              {gameTitle}
+            </AppText>
+            <AppText tone="sobreOscuro">{caption}</AppText>
+            {again ? <Badge label="Otra vez" /> : null}
+          </View>
         </View>
-        <GameIcon game={game} size="md" />
-      </View>
-      {again ? (
-        <View style={styles.badge}>
-          <Badge label="Otra vez" />
-        </View>
-      ) : null}
-      <Button
-        label="¡Vamos!"
-        variant="accent"
-        size="large"
-        accessibilityHint={`Abre la tarea ${gameTitle}`}
-        onPress={onStart}
-      />
-    </Card>
+        <Button
+          label="¡Vamos!"
+          variant="accent"
+          size="large"
+          accessibilityHint={`Abre la tarea ${gameTitle}`}
+          onPress={onStart}
+        />
+      </Card>
+    </EnterStagger>
   );
 }
 
 const styles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    marginBottom: spacing.sm,
+  card: {
+    borderRadius: radii.card,
+    padding: spacing.lg,
+    gap: spacing.md,
   },
-  texts: {
-    flex: 1,
+  /** Letra grande: el dibujo arriba y el texto debajo, a todo el ancho. */
+  stacked: {
+    alignItems: 'flex-start',
+    gap: spacing.md,
+  },
+  stackedTexts: {
+    alignSelf: 'stretch',
     gap: spacing.xxs,
   },
-  badge: {
+  /** Si no cabe, el texto baja debajo del dibujo (flexWrap). */
+  row: {
     flexDirection: 'row',
-    marginBottom: spacing.sm,
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  texts: {
+    flexGrow: 1,
+    flexShrink: 1,
+    flexBasis: sizes.textColumnMin,
+    gap: spacing.xxs,
   },
 });

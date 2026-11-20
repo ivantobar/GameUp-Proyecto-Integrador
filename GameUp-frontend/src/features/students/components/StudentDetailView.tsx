@@ -39,6 +39,7 @@ import { useStudentTeachers } from '../useStudentTeachers';
 import { Section } from './Section';
 import { StudentRecordingsSection } from './StudentRecordingsSection';
 import { StudentTeachersSection } from './StudentTeachersSection';
+import { Illustration } from '@/components/gameup';
 
 interface StudentDetailViewProps {
   studentId: string;
@@ -240,6 +241,7 @@ export function StudentDetailView({
                 kind="empty"
                 title="Sin asignaciones"
                 message="Toca «Asignar actividad» para empezar."
+                visual={<Illustration name="box" size="md" />}
               />
             ) : (
               resource.data.assignments.map((assignment) => (

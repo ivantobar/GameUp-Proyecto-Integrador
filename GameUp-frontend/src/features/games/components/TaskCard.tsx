@@ -6,7 +6,7 @@ import {
   PressableCard,
   type IconName,
 } from '@/components/ui';
-import { GameIcon } from '@/components/gameup';
+import { GameIconFrame } from '@/components/gameup';
 import type { GameId } from '@/data/types';
 import { colors, radii, sizes, spacing } from '@/theme';
 
@@ -43,7 +43,8 @@ export function TaskCard({
     >
       <View style={styles.row}>
         {game ? (
-          <GameIcon game={game} size="sm" />
+          // El dibujo sobre su fondo suave: se reconoce sin leer.
+          <GameIconFrame game={game} size="sm" />
         ) : (
           <View style={styles.iconBox}>
             <Icon name={icon} size="lg" color={colors.verde.oscuro} />

@@ -1,9 +1,9 @@
-import { Animated, Pressable, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { colors, radii, sizes, spacing } from '@/theme';
 import { AppText } from './AppText';
 import { Icon } from './Icon';
+import { PressableSurface } from './PressableSurface';
 import type { PressableBaseProps } from './types';
-import { pressColor, usePressFeedback } from './usePressFeedback';
 
 interface FilterChipProps extends PressableBaseProps {
   label: string;
@@ -23,43 +23,46 @@ export function FilterChip({
   accessibilityHint,
   testID,
 }: FilterChipProps) {
-  const { progress, onPressIn, onPressOut } = usePressFeedback();
-  const background = selected
-    ? colors.verde.oscuro
-    : pressColor(progress, colors.superficie.blanca, colors.verde.suave);
-
   return (
-    <Pressable
+    <PressableSurface
+      colors={
+        selected
+          ? {
+              background: colors.verde.oscuro,
+              pressedBackground: colors.verde.oscuro,
+              border: colors.verde.oscuro,
+              pressedBorder: colors.verde.oscuro,
+              edge: colors.verde.profundo,
+            }
+          : {
+              background: colors.superficie.blanca,
+              pressedBackground: colors.verde.suave,
+              border: colors.borde.suave,
+              pressedBorder: colors.verde.oscuro,
+              edge: colors.borde.relieve,
+            }
+      }
       onPress={onPress}
-      onPressIn={onPressIn}
-      onPressOut={onPressOut}
       disabled={disabled}
-      accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityHint={accessibilityHint}
-      accessibilityState={{ selected, disabled }}
+      accessibilityState={{ selected }}
       testID={testID}
+      depth="sm"
+      radius={radii.pill}
+      borderWidth={sizes.border}
+      contentStyle={styles.base}
     >
-      <Animated.View
-        style={[
-          styles.base,
-          {
-            backgroundColor: background,
-            borderColor: selected ? colors.verde.oscuro : colors.borde.suave,
-          },
-        ]}
+      {selected ? (
+        <Icon name="check" size="sm" color={colors.texto.sobreOscuro} />
+      ) : null}
+      <AppText
+        variant="bodyStrong"
+        tone={selected ? 'sobreOscuro' : 'principal'}
       >
-        {selected ? (
-          <Icon name="check" size="sm" color={colors.texto.sobreOscuro} />
-        ) : null}
-        <AppText
-          variant="bodyStrong"
-          tone={selected ? 'sobreOscuro' : 'principal'}
-        >
-          {label}
-        </AppText>
-      </Animated.View>
-    </Pressable>
+        {label}
+      </AppText>
+    </PressableSurface>
   );
 }
 
@@ -70,7 +73,5 @@ const styles = StyleSheet.create({
     gap: spacing.xxs,
     minHeight: sizes.touchMin,
     paddingHorizontal: spacing.md,
-    borderRadius: radii.pill,
-    borderWidth: sizes.border,
   },
 });

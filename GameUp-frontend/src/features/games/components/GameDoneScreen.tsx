@@ -9,8 +9,8 @@ import {
   Screen,
   ScreenHeader,
 } from '@/components/ui';
-import { Celebration, Character, NarrationButton } from '@/components/gameup';
-import { colors, sizes, spacing } from '@/theme';
+import { CelebrationHero, NarrationButton } from '@/components/gameup';
+import { colors, spacing } from '@/theme';
 import {
   NOT_SENT_ADULT_TEXT,
   parseActivityId,
@@ -51,6 +51,9 @@ export function GameDoneScreen({ message, replayPath }: GameDoneScreenProps) {
   return (
     <Screen
       tone="brand"
+      // El personaje, las estrellas y el aviso, centrados en el espacio
+      // libre (sin hueco grande antes de los botones).
+      centerContent
       header={
         <ScreenHeader
           left={
@@ -94,34 +97,11 @@ export function GameDoneScreen({ message, replayPath }: GameDoneScreenProps) {
         </>
       }
     >
-      <View style={styles.center}>
-        <Celebration
-          width={sizes.character.lg + 80}
-          height={sizes.character.md + 24}
-        >
-          <Character mouth="smile" size="md" />
-        </Celebration>
-        <View
-          style={styles.stars}
-          accessible
-          accessibilityLabel="Tres estrellas por jugar"
-        >
-          <Icon name="star" size="xl" color={colors.marca.naranja} />
-          <Icon name="star" size="xl" color={colors.marca.naranja} />
-          <Icon name="star" size="xl" color={colors.marca.naranja} />
-        </View>
-        <AppText
-          variant="display"
-          tone="sobreOscuro"
-          accessibilityRole="header"
-          style={styles.text}
-        >
-          {CHEER}
-        </AppText>
-        <AppText tone="sobreOscuro" style={styles.text}>
-          {message}
-        </AppText>
-      </View>
+      <CelebrationHero
+        cheer={CHEER}
+        message={message}
+        starsLabel="Tres estrellas por jugar"
+      />
 
       <Card>
         <View style={styles.review}>
@@ -141,17 +121,6 @@ export function GameDoneScreen({ message, replayPath }: GameDoneScreenProps) {
 }
 
 const styles = StyleSheet.create({
-  center: {
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  stars: {
-    flexDirection: 'row',
-    gap: spacing.xs,
-  },
-  text: {
-    textAlign: 'center',
-  },
   review: {
     flexDirection: 'row',
     alignItems: 'center',

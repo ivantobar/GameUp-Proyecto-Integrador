@@ -70,13 +70,17 @@ const styles = StyleSheet.create({
   container: {
     gap: spacing.xs,
   },
+  /** Con letra grande, las vocales bajan de línea en vez de salirse. */
   row: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: spacing.xs,
   },
+  /** Tamaño mínimo (no fijo): con letra grande la vocal no se corta. */
   circle: {
-    width: sizes.vowelDone,
-    height: sizes.vowelDone,
+    minWidth: sizes.vowelDone,
+    minHeight: sizes.vowelDone,
+    paddingHorizontal: spacing.xxs,
     borderRadius: radii.pill,
     alignItems: 'center',
     justifyContent: 'center',
@@ -84,9 +88,10 @@ const styles = StyleSheet.create({
   done: {
     backgroundColor: colors.verde.oscuro,
   },
+  /** Borde gris oscuro (5,6:1 o más): el círculo se ve (antes 1,4:1). */
   pending: {
     backgroundColor: colors.superficie.blanca,
     borderWidth: sizes.borderStrong,
-    borderColor: colors.borde.suave,
+    borderColor: colors.texto.secundario,
   },
 });

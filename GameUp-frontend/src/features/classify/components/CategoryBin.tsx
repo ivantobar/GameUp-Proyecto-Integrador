@@ -1,6 +1,7 @@
-import { Pressable, StyleSheet, View } from 'react-native';
-import { AppText } from '@/components/ui';
-import { HintPill, Pictogram } from '@/components/gameup';
+import { StyleSheet, View } from 'react-native';
+import { AppText, PressableSurface } from '@/components/ui';
+import { HintPill, MiniPicture, Pictogram } from '@/components/gameup';
+import { Breathe } from '@/components/gameup/motion';
 import type { ClassifyCategory, ClassifyItem } from '@/data/types';
 import { colors, radii, sizes, spacing } from '@/theme';
 
@@ -20,7 +21,8 @@ interface CategoryBinProps {
 /**
  * Grupo de «Clasificar»: se toca para poner ahí el elemento de arriba.
  * Muestra los elementos que ya tiene. Con pista, borde punteado y
- * «Va aquí» (nunca se marca el otro grupo como incorrecto).
+ * «Va aquí» (nunca se marca el otro grupo como incorrecto). Con la pista,
+ * el grupo «respira» despacio dos veces; antes, nunca.
  */
 export function CategoryBin({
   category,
@@ -43,55 +45,65 @@ export function CategoryBin({
     .join('. ');
 
   return (
-    <Pressable
-      onPress={onPress}
-      disabled={disabled}
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      accessibilityState={{ disabled }}
-      style={({ pressed }) => [
-        styles.bin,
-        compact && styles.compact,
-        {
-          backgroundColor:
-            pressed && !disabled
-              ? colors.verde.suave
-              : colors.superficie.blanca,
-          borderColor: hint ? colors.verde.oscuro : colors.borde.suave,
-          borderStyle: hint ? 'dashed' : 'solid',
-        },
-      ]}
-    >
-      <View style={styles.title}>
-        <Pictogram face={{ ...category, text: undefined }} />
-        <AppText variant="bodyStrong" style={styles.center}>
-          {category.label}
-        </AppText>
-      </View>
-      {hint ? <HintPill kind="hint" label="Va aquí" /> : null}
-      <View
-        style={styles.items}
-        accessibilityElementsHidden
-        importantForAccessibility="no-hide-descendants"
+    <Breathe active={hint} style={styles.grow}>
+      <PressableSurface
+        colors={{
+          background: colors.superficie.blanca,
+          pressedBackground: colors.verde.suave,
+          border: hint ? colors.verde.oscuro : colors.borde.suave,
+          pressedBorder: colors.verde.oscuro,
+          edge: colors.borde.relieve,
+        }}
+        onPress={onPress}
+        disabled={disabled}
+        accessibilityLabel={label}
+        depth="md"
+        radius={radii.card}
+        borderWidth={sizes.borderStrong + 1}
+        borderStyle={hint ? 'dashed' : 'solid'}
+        // Los de una misma fila miden lo mismo.
+        fill
+        style={styles.grow}
+        contentStyle={[styles.bin, compact && styles.compact]}
       >
-        {items.map((item) => (
-          <AppText key={item.id} variant={compact ? 'bodyStrong' : 'title'}>
-            {item.emoji ?? item.label}
+        <View style={styles.title}>
+          <Pictogram face={{ ...category, text: undefined }} />
+          <AppText variant="bodyStrong" style={styles.center}>
+            {category.label}
           </AppText>
-        ))}
-      </View>
-    </Pressable>
+        </View>
+        {hint ? <HintPill kind="hint" label="Va aquí" /> : null}
+        <View
+          style={styles.items}
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+        >
+          {items.map((item) => (
+            <MiniPicture
+              key={item.id}
+              face={item}
+              size={compact ? 'xs' : 'sm'}
+            />
+          ))}
+        </View>
+      </PressableSurface>
+    </Breathe>
   );
 }
 
 const styles = StyleSheet.create({
+  /**
+   * Crece para llenar el alto de su fila, con base en su contenido. No es
+   * `flex: 1`: en vertical, `flex: 1` (base 0) puede colapsar a alto 0
+   * dentro del contenido desplazable.
+   */
+  grow: {
+    flexGrow: 1,
+  },
   bin: {
-    flex: 1,
     minHeight: sizes.categoryBin,
     padding: spacing.sm,
     gap: spacing.xs,
-    borderRadius: radii.xl,
-    borderWidth: sizes.borderStrong + 1,
   },
   compact: {
     minHeight: sizes.pictureTile,

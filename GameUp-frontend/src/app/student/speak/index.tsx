@@ -38,6 +38,7 @@ export default function SpeakSelectionScreen() {
   return (
     <Screen
       tone="softGreen"
+      backdrop="clouds"
       header={
         <ScreenHeader
           left={<HeaderBackButton onPress={() => router.back()} />}
@@ -55,7 +56,7 @@ export default function SpeakSelectionScreen() {
     >
       <Card>
         <View style={styles.instruction}>
-          <Character mouth="a" size="sm" />
+          <Character mouth="a" size="sm" wave />
           <AppText variant="subtitle" style={styles.flex}>
             {INSTRUCTION}
           </AppText>

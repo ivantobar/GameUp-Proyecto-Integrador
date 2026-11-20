@@ -9,9 +9,17 @@ import {
   Screen,
   ScreenHeader,
 } from '@/components/ui';
-import { NarrationButton } from '@/components/gameup';
+import { GameQuestion, NarrationButton } from '@/components/gameup';
+import { PopIn } from '@/components/gameup/motion';
+import type { GameId } from '@/data/types';
 import type { TurnPhase } from '../turnGame';
-import { typography } from '@/theme';
+import { spacing, typography } from '@/theme';
+
+/** Juegos que usan este marco («Pensar y recordar»). */
+export type RoundGameId = Extract<
+  GameId,
+  'match' | 'classify' | 'sequence' | 'memory'
+>;
 
 /** Mensajes de apoyo comunes. Nunca dicen «mal», «error» ni «incorrecto». */
 export const supportMessages = {
@@ -25,6 +33,8 @@ export function phaseMessage(phase: TurnPhase): string | null {
 }
 
 interface RoundGameScreenProps {
+  /** Juego: da el fondo, las burbujas y el dibujo de identidad. */
+  game: RoundGameId;
   /** Pregunta de la ronda, corta: «¿Qué palabra es?». */
   question: string;
   /** Lo que lee el parlante del encabezado. */
@@ -50,8 +60,13 @@ interface RoundGameScreenProps {
  * flujo que «Busca la boca»: volver, puntos de avance y parlante arriba;
  * pregunta; juego; y «Siguiente» abajo, que se habilita al completar la
  * ronda. Sin tiempo límite, vidas ni puntaje.
+ *
+ * Identidad del juego (para reconocerlo sin leer): su dibujo junto a la
+ * pregunta, sobre su fondo suave. La pantalla va sobre el gris de la guía
+ * con burbujas blancas sutiles. El color del juego nunca marca una opción.
  */
 export function RoundGameScreen({
+  game,
   question,
   narration,
   index,
@@ -66,6 +81,7 @@ export function RoundGameScreen({
 }: RoundGameScreenProps) {
   return (
     <Screen
+      backdrop="bubbles"
       header={
         <ScreenHeader
           left={<HeaderBackButton onPress={() => router.back()} />}
@@ -85,19 +101,16 @@ export function RoundGameScreen({
       }
     >
       <View style={styles.top}>
-        <AppText
-          variant="title"
-          accessibilityRole="header"
-          style={styles.center}
-        >
-          {question}
-        </AppText>
+        <GameQuestion game={game} question={question} />
         {/* Espacio fijo: el juego no salta cuando aparece el mensaje. */}
         <View style={styles.message} accessibilityLiveRegion="polite">
           {message ? (
-            <AppText variant="bodyStrong" tone="marca" style={styles.center}>
-              {message}
-            </AppText>
+            // Cada mensaje nuevo aparece con un rebote leve.
+            <PopIn key={message}>
+              <AppText variant="bodyStrong" tone="marca" style={styles.center}>
+                {message}
+              </AppText>
+            </PopIn>
           ) : null}
         </View>
       </View>
@@ -109,6 +122,7 @@ export function RoundGameScreen({
 const styles = StyleSheet.create({
   top: {
     alignItems: 'center',
+    gap: spacing.xxs,
   },
   center: {
     textAlign: 'center',

@@ -4,19 +4,19 @@ import { StyleSheet, View } from 'react-native';
 import {
   AppText,
   HeaderBackButton,
-  Icon,
   Notice,
   Screen,
   ScreenHeader,
   StateView,
 } from '@/components/ui';
-import { NarrationButton } from '@/components/gameup';
+import { Illustration, NarrationButton } from '@/components/gameup';
+import { EnterStagger } from '@/components/gameup/motion';
 import { SignOutButton } from '@/features/auth/components/SignOutButton';
 import { SignOutConfirm } from '@/features/auth/components/SignOutConfirm';
 import { ModuleProgressCard } from '@/features/progress/components/ModuleProgressCard';
 import { useProgressOverview } from '@/features/progress/useProgressOverview';
 import { useRefreshOnFocus } from '@/data/useRefreshOnFocus';
-import { colors, spacing } from '@/theme';
+import { sizes, spacing } from '@/theme';
 import { errorOf, LoadErrorState } from '@/features/errors/LoadErrorState';
 
 /**
@@ -42,6 +42,7 @@ export default function ProgressScreen() {
 
   return (
     <Screen
+      backdrop="clouds"
       safeAreaBottom={false}
       header={
         <ScreenHeader
@@ -66,7 +67,7 @@ export default function ProgressScreen() {
       ) : null}
 
       <View style={styles.heading}>
-        <Icon name="star" size="lg" color={colors.marca.naranja} />
+        <Illustration name="estrella" size={sizes.icon.xl} />
         <AppText variant="title" accessibilityRole="header">
           Mi progreso
         </AppText>
@@ -86,12 +87,10 @@ export default function ProgressScreen() {
       {resource.status === 'ready' ? (
         <>
           <View style={styles.list}>
-            {resource.data.modules.map(({ module, percent }) => (
-              <ModuleProgressCard
-                key={module.id}
-                module={module}
-                percent={percent}
-              />
+            {resource.data.modules.map(({ module, percent }, position) => (
+              <EnterStagger key={module.id} index={position}>
+                <ModuleProgressCard module={module} percent={percent} />
+              </EnterStagger>
             ))}
           </View>
           <AppText variant="support" tone="secundario">

@@ -1,5 +1,5 @@
 import { StyleSheet, View } from 'react-native';
-import { colors, radii, sizes } from '@/theme';
+import { colors, radii, sizes, spacing } from '@/theme';
 import { AppText } from './AppText';
 
 interface InitialsAvatarProps {
@@ -26,9 +26,11 @@ export function InitialsAvatar({ initials }: InitialsAvatarProps) {
 }
 
 const styles = StyleSheet.create({
+  /** Tamaño mínimo (no fijo): con letra grande las iniciales no se cortan. */
   circle: {
-    width: sizes.avatar,
-    height: sizes.avatar,
+    minWidth: sizes.avatar,
+    minHeight: sizes.avatar,
+    paddingHorizontal: spacing.xxs,
     borderRadius: radii.pill,
     backgroundColor: colors.verde.suave,
     alignItems: 'center',

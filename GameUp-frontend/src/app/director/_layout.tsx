@@ -1,4 +1,5 @@
 import { Stack } from 'expo-router';
+import { AdultSurfaces } from '@/components/ui';
 import { RoleGate } from '@/features/auth/RoleGate';
 import { useStackScreenOptions } from '@/features/motion/useStackScreenOptions';
 
@@ -11,7 +12,10 @@ export default function DirectorLayout() {
   const screenOptions = useStackScreenOptions();
   return (
     <RoleGate role="director">
-      <Stack screenOptions={screenOptions} />
+      {/* Pantallas de adultos: relieve discreto y sin rebote. */}
+      <AdultSurfaces>
+        <Stack screenOptions={screenOptions} />
+      </AdultSurfaces>
     </RoleGate>
   );
 }

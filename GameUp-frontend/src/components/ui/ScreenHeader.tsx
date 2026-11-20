@@ -29,9 +29,11 @@ export function ScreenHeader({
   onDark = false,
 }: ScreenHeaderProps) {
   return (
-    <View style={styles.row}>
-      <View style={styles.side}>{left}</View>
-      <View style={styles.center}>
+    <View style={styles.row} testID="screen-header">
+      <View style={styles.side} testID="screen-header-left">
+        {left}
+      </View>
+      <View style={styles.center} testID="screen-header-center">
         {center ??
           (title ? (
             <AppText
@@ -46,7 +48,9 @@ export function ScreenHeader({
             </AppText>
           ) : null)}
       </View>
-      <View style={[styles.side, styles.right]}>{right}</View>
+      <View style={[styles.side, styles.right]} testID="screen-header-right">
+        {right}
+      </View>
     </View>
   );
 }
@@ -98,6 +102,11 @@ const styles = StyleSheet.create({
   right: {
     alignItems: 'flex-end',
   },
+  /**
+   * Lo único flexible del encabezado: crece a lo ANCHO (está en una fila).
+   * Nada del encabezado crece a lo alto: mide lo que su contenido (ver
+   * `layoutSizing.test.tsx`).
+   */
   center: {
     flex: 1,
     alignItems: 'center',

@@ -3,6 +3,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 import { AppText, Card } from '@/components/ui';
 import { Pictogram } from '@/components/gameup';
+import { EnterStagger, PopIn } from '@/components/gameup/motion';
 import { CategoryBin } from '@/features/classify/components/CategoryBin';
 import { useClassifyGame } from '@/features/classify/useClassifyGame';
 import type { ClassifySet } from '@/data/types';
@@ -71,6 +72,7 @@ function ClassifyGame({ sets, activityId, ladder }: ClassifyGameProps) {
 
   return (
     <RoundGameScreen
+      game="classify"
       question={set.question}
       narration={`${set.question} Toca el grupo donde va${item ? ` ${item.label}` : ''}.`}
       index={index}
@@ -84,12 +86,15 @@ function ClassifyGame({ sets, activityId, ladder }: ClassifyGameProps) {
     >
       <Card style={styles.item}>
         {item ? (
-          <View accessible accessibilityLabel={`¿Dónde va ${item.label}?`}>
-            <Pictogram face={item} size="lg" />
-            <AppText variant="subtitle" style={styles.center}>
-              {item.label}
-            </AppText>
-          </View>
+          // Cada elemento nuevo por ubicar aparece con un rebote leve.
+          <PopIn key={item.id}>
+            <View accessible accessibilityLabel={`¿Dónde va ${item.label}?`}>
+              <Pictogram face={item} size="lg" />
+              <AppText variant="subtitle" style={styles.center}>
+                {item.label}
+              </AppText>
+            </View>
+          </PopIn>
         ) : (
           <AppText variant="subtitle" tone="marca" style={styles.center}>
             ¡Todos en su grupo!
@@ -97,17 +102,18 @@ function ClassifyGame({ sets, activityId, ladder }: ClassifyGameProps) {
         )}
       </Card>
 
-      <View style={styles.bins}>
-        {set.categories.map((category) => (
-          <CategoryBin
-            key={category.id}
-            category={category}
-            items={placed.filter((p) => p.categoryId === category.id)}
-            hint={phase === 'hinted' && item?.categoryId === category.id}
-            disabled={!item}
-            compact={set.categories.length > 2}
-            onPress={() => choose(category.id)}
-          />
+      <View key={set.id} style={styles.bins}>
+        {set.categories.map((category, position) => (
+          <EnterStagger key={category.id} index={position} style={styles.bin}>
+            <CategoryBin
+              category={category}
+              items={placed.filter((p) => p.categoryId === category.id)}
+              hint={phase === 'hinted' && item?.categoryId === category.id}
+              disabled={!item}
+              compact={set.categories.length > 2}
+              onPress={() => choose(category.id)}
+            />
+          </EnterStagger>
         ))}
       </View>
     </RoundGameScreen>
@@ -125,6 +131,9 @@ const styles = StyleSheet.create({
   },
   bins: {
     flexDirection: 'row',
-    gap: spacing.md,
+    gap: spacing.option,
+  },
+  bin: {
+    flex: 1,
   },
 });

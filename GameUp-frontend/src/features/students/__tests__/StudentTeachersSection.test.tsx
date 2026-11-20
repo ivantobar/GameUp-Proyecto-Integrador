@@ -13,6 +13,7 @@ import {
   directorRoutes,
   teacherRoutes,
 } from '../staffRoutes';
+import { settle } from '@/test-utils/settle';
 
 jest.mock('expo-router', () => ({
   router: { push: jest.fn(), back: jest.fn() },
@@ -21,11 +22,6 @@ jest.mock('expo-router', () => ({
 jest.mock('@/data/useRefreshOnFocus', () => ({
   useRefreshOnFocus: jest.fn(),
 }));
-
-const settle = () =>
-  act(async () => {
-    await jest.runAllTimersAsync();
-  });
 
 /** «Volver a la pantalla» = llamar a lo que registró con useRefreshOnFocus. */
 async function focusAgain() {

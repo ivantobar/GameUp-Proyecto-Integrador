@@ -1,6 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 import { AppText, Icon, type IconName, type TextTone } from '@/components/ui';
 import { colors, radii, spacing, type ThemeColor } from '@/theme';
+import { HintHand } from './motion';
 
 export type HintPillKind = 'hint' | 'correct';
 
@@ -44,7 +45,12 @@ export function HintPill({ kind, label }: HintPillProps) {
   const config = hintPillStyles[kind];
   return (
     <View style={[styles.pill, { backgroundColor: config.background }]}>
-      <Icon name={config.icon} size="sm" color={config.iconColor} />
+      {kind === 'hint' ? (
+        // La manito dibujada «toca» despacio unas veces y se queda quieta.
+        <HintHand />
+      ) : (
+        <Icon name={config.icon} size="sm" color={config.iconColor} />
+      )}
       <AppText variant="bodyStrong" tone={config.text}>
         {label}
       </AppText>

@@ -38,9 +38,11 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     gap: spacing.sm,
   },
+  /** Tamaño mínimo (no fijo): con letra grande el número no se corta. */
   number: {
-    width: sizes.stepNumber,
-    height: sizes.stepNumber,
+    minWidth: sizes.stepNumber,
+    minHeight: sizes.stepNumber,
+    paddingHorizontal: spacing.xxs,
     borderRadius: radii.pill,
     backgroundColor: colors.naranja.suave,
     alignItems: 'center',

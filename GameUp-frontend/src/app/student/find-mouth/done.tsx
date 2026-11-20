@@ -9,7 +9,7 @@ import {
   Screen,
   ScreenHeader,
 } from '@/components/ui';
-import { Celebration, Character, NarrationButton } from '@/components/gameup';
+import { CelebrationHero, NarrationButton } from '@/components/gameup';
 import { VOWELS } from '@/data/types';
 import {
   NOT_SENT_ADULT_TEXT,
@@ -17,7 +17,7 @@ import {
   parseDelivery,
   PRACTICE_TEXT,
 } from '@/features/games/delivery';
-import { colors, sizes, spacing } from '@/theme';
+import { colors, spacing } from '@/theme';
 
 const CHEER = '¡Lo lograste!';
 const REVIEW = 'Tu profe va a revisar tu juego antes de sumarlo a tu progreso';
@@ -50,6 +50,9 @@ export default function FindMouthDone() {
   return (
     <Screen
       tone="brand"
+      // El personaje, las estrellas y el aviso, centrados en el espacio
+      // libre (sin hueco grande antes de los botones).
+      centerContent
       header={
         <ScreenHeader
           left={
@@ -88,36 +91,15 @@ export default function FindMouthDone() {
         </>
       }
     >
-      <View style={styles.center}>
-        <Celebration
-          width={sizes.character.lg + 80}
-          height={sizes.character.md + 24}
-        >
-          <Character mouth="smile" size="md" />
-        </Celebration>
-        <View
-          style={styles.stars}
-          accessible
-          accessibilityLabel="Tres estrellas por jugar"
-        >
-          <Icon name="star" size="xl" color={colors.marca.naranja} />
-          <Icon name="star" size="xl" color={colors.marca.naranja} />
-          <Icon name="star" size="xl" color={colors.marca.naranja} />
-        </View>
-        <AppText
-          variant="display"
-          tone="sobreOscuro"
-          accessibilityRole="header"
-          style={styles.text}
-        >
-          {CHEER}
-        </AppText>
-        <AppText tone="sobreOscuro" style={styles.text}>
-          {count === 1
+      <CelebrationHero
+        cheer={CHEER}
+        message={
+          count === 1
             ? 'Escuchaste la vocal'
-            : `Escuchaste las ${count} vocales`}
-        </AppText>
-      </View>
+            : `Escuchaste las ${count} vocales`
+        }
+        starsLabel="Tres estrellas por jugar"
+      />
 
       <Card>
         <View style={styles.review}>
@@ -137,17 +119,6 @@ export default function FindMouthDone() {
 }
 
 const styles = StyleSheet.create({
-  center: {
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  stars: {
-    flexDirection: 'row',
-    gap: spacing.xs,
-  },
-  text: {
-    textAlign: 'center',
-  },
   review: {
     flexDirection: 'row',
     alignItems: 'center',

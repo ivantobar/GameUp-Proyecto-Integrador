@@ -1,6 +1,6 @@
 import { StyleSheet, View } from 'react-native';
 import { AppText } from '@/components/ui';
-import { Character, NarrationButton } from '@/components/gameup';
+import { Character, NarrationButton, useBlinkOnce } from '@/components/gameup';
 import { spacing } from '@/theme';
 
 interface GreetingHeaderProps {
@@ -14,15 +14,19 @@ export function pendingGamesText(count: number): string {
   return count === 1 ? 'Hoy tienes 1 juego' : `Hoy tienes ${count} juegos`;
 }
 
-/** Saludo con el personaje y el parlante (Inicio). */
+/**
+ * Saludo con el personaje y el parlante (Inicio). El personaje saluda con
+ * la manito y parpadea una vez al entrar.
+ */
 export function GreetingHeader({
   name,
   pendingCount,
   narration,
 }: GreetingHeaderProps) {
+  const eyes = useBlinkOnce();
   return (
     <View style={styles.row}>
-      <Character mouth="closed" size="xs" />
+      <Character mouth="smile" size="sm" eyes={eyes} wave />
       <View style={styles.texts}>
         <AppText variant="title" accessibilityRole="header">
           ¡Hola, {name}!
@@ -42,5 +46,6 @@ const styles = StyleSheet.create({
   },
   texts: {
     flex: 1,
+    gap: spacing.xxs,
   },
 });

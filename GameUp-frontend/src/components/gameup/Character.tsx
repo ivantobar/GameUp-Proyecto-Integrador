@@ -14,7 +14,15 @@ interface CharacterProps {
    * decorativo (lo habitual: el texto de al lado ya dice qué hacer).
    */
   accessibilityLabel?: string;
+  /**
+   * Ojos: `open` (normal), `happy` (arcos: celebrar) o `closed` (parpadeo).
+   */
+  eyes?: CharacterEyes;
+  /** Manito que saluda, abajo a la derecha (Inicio, bienvenida). */
+  wave?: boolean;
 }
+
+export type CharacterEyes = 'open' | 'happy' | 'closed';
 
 const c = colors.ilustracion;
 
@@ -30,6 +38,8 @@ export function Character({
   size = 'md',
   halo = true,
   accessibilityLabel,
+  eyes = 'open',
+  wave = false,
 }: CharacterProps) {
   const side = sizes.character[size];
   const decorative = accessibilityLabel === undefined;
@@ -67,22 +77,47 @@ export function Character({
           <Path d="M115 75 Q 127 70, 139 76" />
         </G>
         {/* Ojos */}
-        <Ellipse
-          cx={74}
-          cy={93}
-          rx={8.5}
-          ry={10}
-          fill={colors.texto.principal}
-        />
-        <Ellipse
-          cx={126}
-          cy={93}
-          rx={8.5}
-          ry={10}
-          fill={colors.texto.principal}
-        />
-        <Circle cx={77} cy={89} r={2.8} fill={colors.superficie.blanca} />
-        <Circle cx={129} cy={89} r={2.8} fill={colors.superficie.blanca} />
+        {eyes === 'open' ? (
+          <>
+            <Ellipse
+              cx={74}
+              cy={93}
+              rx={8.5}
+              ry={10}
+              fill={colors.texto.principal}
+            />
+            <Ellipse
+              cx={126}
+              cy={93}
+              rx={8.5}
+              ry={10}
+              fill={colors.texto.principal}
+            />
+            <Circle cx={77} cy={89} r={2.8} fill={colors.superficie.blanca} />
+            <Circle cx={129} cy={89} r={2.8} fill={colors.superficie.blanca} />
+          </>
+        ) : (
+          <G
+            stroke={colors.texto.principal}
+            strokeWidth={4.5}
+            strokeLinecap="round"
+            fill="none"
+          >
+            {eyes === 'happy' ? (
+              // Ojos felices: arcos hacia arriba (celebrar).
+              <>
+                <Path d="M65 96 Q 74 84, 83 96" />
+                <Path d="M117 96 Q 126 84, 135 96" />
+              </>
+            ) : (
+              // Ojos cerrados: una línea suave (parpadeo).
+              <>
+                <Path d="M65 94 Q 74 98, 83 94" />
+                <Path d="M117 94 Q 126 98, 135 94" />
+              </>
+            )}
+          </G>
+        )}
         {/* Nariz */}
         <Path
           d="M95 104 Q 100 112, 105 104"
@@ -96,6 +131,18 @@ export function Character({
         <Circle cx={142} cy={121} r={10} fill={c.mejilla} />
         {/* Boca: caja de 100 × 100 reducida al 60 % y centrada en (100, 147) */}
         <G transform="translate(70 117) scale(0.6)">{mouthShapes[mouth]}</G>
+        {wave ? (
+          // Manito que saluda: palma y dedos, inclinada.
+          <G transform="translate(12 6) rotate(-18 168 160)">
+            <Path
+              d="M150 150 L150 132 Q150 126 155 126 Q160 126 160 132 L160 146 L160 124 Q160 118 165 118 Q170 118 170 124 L170 146 L170 128 Q170 122 175 122 Q180 122 180 128 L180 160 Q180 182 164 182 Q148 182 146 168 L140 156 Q137 150 143 148 Q147 147 150 152 Z"
+              fill={c.piel}
+              stroke={c.nariz}
+              strokeWidth={3}
+              strokeLinejoin="round"
+            />
+          </G>
+        ) : null}
       </Svg>
     </View>
   );

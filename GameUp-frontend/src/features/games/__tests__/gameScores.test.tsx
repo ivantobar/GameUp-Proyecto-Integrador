@@ -66,26 +66,56 @@ describe('Pictogram', () => {
     expect(
       screen.getAllByTestId('pictogram-image', { includeHiddenElements: true }),
     ).toHaveLength(2);
-    // La imagen reemplaza al dibujo provisional.
+    // La imagen reemplaza al dibujo propio de respaldo.
     expect(
-      screen.queryByText('🐶', { includeHiddenElements: true }),
+      screen.queryByTestId('illustration-perro', {
+        includeHiddenElements: true,
+      }),
     ).toBeNull();
   });
 
-  it('sin imagen, conserva el dibujo provisional como respaldo', async () => {
+  it('sin imagen, muestra el dibujo propio de su emoji (nunca el emoji)', async () => {
     await render(<Pictogram face={{ id: 'p', label: 'perro', emoji: '🐶' }} />);
     expect(
-      screen.getByText('🐶', { includeHiddenElements: true }),
+      screen.getByTestId('illustration-perro', { includeHiddenElements: true }),
     ).toBeOnTheScreen();
+    expect(
+      screen.queryByText('🐶', { includeHiddenElements: true }),
+    ).toBeNull();
     expect(
       screen.queryByTestId('pictogram-image', { includeHiddenElements: true }),
     ).toBeNull();
   });
 
-  it('sin imagen, dibujo ni texto, muestra la etiqueta', async () => {
-    await render(<Pictogram face={{ id: 'p', label: 'gato' }} />);
+  it('sin imagen ni emoji, usa el dibujo de su palabra exacta', async () => {
+    await render(<Pictogram face={{ id: 'p', label: 'Gato' }} />);
     expect(
-      screen.getByText('gato', { includeHiddenElements: true }),
+      screen.getByTestId('illustration-gato', { includeHiddenElements: true }),
     ).toBeOnTheScreen();
+    expect(
+      screen.queryByText('Gato', { includeHiddenElements: true }),
+    ).toBeNull();
+  });
+
+  it('sin coincidencia exacta, muestra la etiqueta y ningún dibujo', async () => {
+    await render(<Pictogram face={{ id: 'p', label: 'trompo' }} />);
+    expect(
+      screen.getByText('trompo', { includeHiddenElements: true }),
+    ).toBeOnTheScreen();
+    expect(
+      screen.queryByTestId(/^illustration-/, { includeHiddenElements: true }),
+    ).toBeNull();
+  });
+
+  it('un emoji sin dibujo propio se muestra como imagen, no la palabra', async () => {
+    await render(
+      <Pictogram face={{ id: 'p', label: 'trompo', emoji: '🪀' }} />,
+    );
+    expect(
+      screen.getByText('🪀', { includeHiddenElements: true }),
+    ).toBeOnTheScreen();
+    expect(
+      screen.queryByText('trompo', { includeHiddenElements: true }),
+    ).toBeNull();
   });
 });

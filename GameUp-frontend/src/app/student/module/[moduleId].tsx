@@ -10,6 +10,7 @@ import {
   StateView,
 } from '@/components/ui';
 import { Character, NarrationButton } from '@/components/gameup';
+import { EnterStagger } from '@/components/gameup/motion';
 import { useRepositories } from '@/data/RepositoryProvider';
 import { useResource } from '@/data/useResource';
 import { useRefreshOnFocus } from '@/data/useRefreshOnFocus';
@@ -53,6 +54,7 @@ export default function ModuleTasksScreen() {
 
   return (
     <Screen
+      backdrop="clouds"
       header={
         <ScreenHeader
           left={<HeaderBackButton onPress={() => router.back()} />}
@@ -74,7 +76,7 @@ export default function ModuleTasksScreen() {
 
       {resource.status === 'ready' && !group ? (
         <View style={styles.center}>
-          <Character mouth="smile" size="lg" />
+          <Character mouth="smile" eyes="happy" size="lg" />
           <AppText variant="title" style={styles.text}>
             {DONE_TITLE}
           </AppText>
@@ -94,19 +96,20 @@ export default function ModuleTasksScreen() {
           <AppText variant="display" accessibilityRole="header">
             {group.title}
           </AppText>
-          {group.tasks.map((task) => {
+          {group.tasks.map((task, position) => {
             const game = findGame(task.gameId);
             return (
-              <TaskCard
-                key={task.id}
-                caption={game.title}
-                title={taskTitle(task)}
-                icon={game.icon}
-                game={game.id}
-                badge={taskBadge(task)}
-                accessibilityHint="Abre esta actividad de tu profe."
-                onPress={() => router.push(assignmentHref(task))}
-              />
+              <EnterStagger key={task.id} index={position}>
+                <TaskCard
+                  caption={game.title}
+                  title={taskTitle(task)}
+                  icon={game.icon}
+                  game={game.id}
+                  badge={taskBadge(task)}
+                  accessibilityHint="Abre esta actividad de tu profe."
+                  onPress={() => router.push(assignmentHref(task))}
+                />
+              </EnterStagger>
             );
           })}
         </View>

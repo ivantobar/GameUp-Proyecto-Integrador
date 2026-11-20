@@ -52,13 +52,20 @@ const styles = StyleSheet.create({
   done: {
     backgroundColor: colors.verde.oscuro,
   },
+  /**
+   * Naranja de marca con borde café: el naranja solo da 2:1 sobre el gris;
+   * el borde café (6,7:1 o más) le da el 3:1 de los gráficos.
+   */
   current: {
     width: sizes.dotActiveWidth,
     backgroundColor: colors.marca.naranja,
+    borderWidth: sizes.border,
+    borderColor: colors.cafe.oscuro,
   },
+  /** Borde gris oscuro: 5,6:1 o más (el borde suave daba 1,2:1). */
   pending: {
     backgroundColor: colors.superficie.blanca,
     borderWidth: sizes.border,
-    borderColor: colors.borde.suave,
+    borderColor: colors.texto.secundario,
   },
 });

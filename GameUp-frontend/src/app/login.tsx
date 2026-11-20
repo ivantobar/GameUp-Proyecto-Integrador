@@ -8,6 +8,7 @@ import {
   type TextInput,
 } from 'react-native';
 import {
+  AdultSurfaces,
   AppText,
   Button,
   Card,
@@ -97,122 +98,125 @@ export default function LoginScreen() {
       style={styles.flex}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <Screen>
-        <View style={styles.brand}>
-          <Logo />
-          <View style={styles.texts}>
-            <AppText
-              variant="title"
-              accessibilityRole="header"
-              style={styles.center}
-            >
-              Te damos la bienvenida a GameUP
-            </AppText>
-            <AppText tone="secundario" style={styles.center}>
-              Escribe tu correo y tu contraseña.
-            </AppText>
+      {/* Pantalla de adultos: relieve discreto y sin rebote. */}
+      <AdultSurfaces>
+        <Screen>
+          <View style={styles.brand}>
+            <Logo />
+            <View style={styles.texts}>
+              <AppText
+                variant="title"
+                accessibilityRole="header"
+                style={styles.center}
+              >
+                Te damos la bienvenida a GameUP
+              </AppText>
+              <AppText tone="secundario" style={styles.center}>
+                Escribe tu correo y tu contraseña.
+              </AppText>
+            </View>
           </View>
-        </View>
 
-        <Card>
-          <View style={styles.form}>
-            <TextField
-              label="Correo"
-              value={form.email}
-              onChangeText={form.setEmail}
-              placeholder="nombre@correo.com"
-              error={form.errors.email}
-              keyboardType="email-address"
-              autoComplete="email"
-              textContentType="emailAddress"
-              autoCapitalize="none"
-              autoCorrect={false}
-              returnKeyType="next"
-              submitBehavior="submit"
-              onSubmitEditing={() => passwordRef.current?.focus()}
-              editable={!form.submitting}
-              testID="login-email"
-            />
-            <TextField
-              inputRef={passwordRef}
-              label="Contraseña"
-              value={form.password}
-              onChangeText={form.setPassword}
-              error={form.errors.password}
-              secureTextEntry={!showPassword}
-              autoComplete="current-password"
-              textContentType="password"
-              autoCapitalize="none"
-              autoCorrect={false}
-              returnKeyType="go"
-              onSubmitEditing={() => {
-                onSubmit().catch(() => {});
-              }}
-              editable={!form.submitting}
-              testID="login-password"
-              trailing={
-                <IconButton
-                  icon={showPassword ? 'eyeOff' : 'eye'}
-                  variant="soft"
-                  size="sm"
-                  accessibilityLabel={
-                    showPassword
-                      ? 'Ocultar la contraseña'
-                      : 'Mostrar la contraseña'
-                  }
-                  onPress={() => setShowPassword((value) => !value)}
-                />
-              }
-            />
+          <Card>
+            <View style={styles.form}>
+              <TextField
+                label="Correo"
+                value={form.email}
+                onChangeText={form.setEmail}
+                placeholder="nombre@correo.com"
+                error={form.errors.email}
+                keyboardType="email-address"
+                autoComplete="email"
+                textContentType="emailAddress"
+                autoCapitalize="none"
+                autoCorrect={false}
+                returnKeyType="next"
+                submitBehavior="submit"
+                onSubmitEditing={() => passwordRef.current?.focus()}
+                editable={!form.submitting}
+                testID="login-email"
+              />
+              <TextField
+                inputRef={passwordRef}
+                label="Contraseña"
+                value={form.password}
+                onChangeText={form.setPassword}
+                error={form.errors.password}
+                secureTextEntry={!showPassword}
+                autoComplete="current-password"
+                textContentType="password"
+                autoCapitalize="none"
+                autoCorrect={false}
+                returnKeyType="go"
+                onSubmitEditing={() => {
+                  onSubmit().catch(() => {});
+                }}
+                editable={!form.submitting}
+                testID="login-password"
+                trailing={
+                  <IconButton
+                    icon={showPassword ? 'eyeOff' : 'eye'}
+                    variant="soft"
+                    size="sm"
+                    accessibilityLabel={
+                      showPassword
+                        ? 'Ocultar la contraseña'
+                        : 'Mostrar la contraseña'
+                    }
+                    onPress={() => setShowPassword((value) => !value)}
+                  />
+                }
+              />
 
-            {form.waking ? (
-              // El backend gratuito de Render se duerme: el primer «Entrar»
-              // del día puede tardar casi un minuto.
-              <View accessibilityLiveRegion="polite">
-                <Notice
-                  icon="time"
-                  tone="soft"
-                  title="Estamos despertando GameUP…"
-                  message="Puede tardar hasta un minuto. No cierres la app."
-                />
-              </View>
-            ) : null}
+              {form.waking ? (
+                // El backend gratuito de Render se duerme: el primer «Entrar»
+                // del día puede tardar casi un minuto.
+                <View accessibilityLiveRegion="polite">
+                  <Notice
+                    icon="time"
+                    tone="soft"
+                    title="Estamos despertando GameUP…"
+                    message="Puede tardar hasta un minuto. No cierres la app."
+                  />
+                </View>
+              ) : null}
 
-            {notice ? (
-              <View accessibilityLiveRegion="polite">
-                <Notice
-                  icon={form.problem === 'connection' ? 'offline' : 'info'}
-                  tone="warm"
-                  title={notice.title}
-                  message={notice.message}
-                />
-              </View>
-            ) : null}
+              {notice ? (
+                <View accessibilityLiveRegion="polite">
+                  <Notice
+                    icon={form.problem === 'connection' ? 'offline' : 'info'}
+                    tone="warm"
+                    title={notice.title}
+                    message={notice.message}
+                  />
+                </View>
+              ) : null}
 
-            {roleNotReady ? (
-              <View accessibilityLiveRegion="polite">
-                <Notice
-                  icon="construction"
-                  tone="soft"
-                  title={`Hola, ${roleNotReady}`}
-                  message="Tu espacio en GameUP llega en una próxima versión."
-                />
-              </View>
-            ) : null}
+              {roleNotReady ? (
+                <View accessibilityLiveRegion="polite">
+                  <Notice
+                    icon="construction"
+                    tone="soft"
+                    title={`Hola, ${roleNotReady}`}
+                    message="Tu espacio en GameUP llega en una próxima versión."
+                  />
+                </View>
+              ) : null}
 
-            <Button
-              label="Entrar"
-              icon="login"
-              loading={form.submitting}
-              onPress={() => {
-                onSubmit().catch(() => {});
-              }}
-            />
-          </View>
-        </Card>
+              <Button
+                label="Entrar"
+                icon="login"
+                loading={form.submitting}
+                onPress={() => {
+                  onSubmit().catch(() => {});
+                }}
+              />
+            </View>
+          </Card>
 
-        {DevAccounts ? <DevAccounts onPick={form.fill} /> : null}
-      </Screen>
+          {DevAccounts ? <DevAccounts onPick={form.fill} /> : null}
+        </Screen>
+      </AdultSurfaces>
     </KeyboardAvoidingView>
   );
 }

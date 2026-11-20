@@ -1,4 +1,5 @@
 import { StateView } from '@/components/ui';
+import { Illustration } from '@/components/gameup';
 import { ForbiddenError } from '@/services/apiErrors';
 
 /** Título cuando el backend responde 403: la cuenta no puede ver esto. */
@@ -36,8 +37,15 @@ export function LoadErrorState({
       />
     );
   }
+  // Sin conexión o servidor dormido: una nube dormida, sin alarma.
   return (
-    <StateView kind="error" title={title} message={message} action={action} />
+    <StateView
+      kind="error"
+      title={title}
+      message={message}
+      action={action}
+      visual={<Illustration name="cloudSleep" size="md" />}
+    />
   );
 }
 

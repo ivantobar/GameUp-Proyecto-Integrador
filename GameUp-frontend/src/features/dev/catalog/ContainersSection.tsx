@@ -12,6 +12,7 @@ import {
   StateView,
   type CardTone,
 } from '@/components/ui';
+import { Illustration } from '@/components/gameup';
 import { colors, spacing } from '@/theme';
 import { CatalogLabel, CatalogSection } from './CatalogSection';
 
@@ -32,7 +33,7 @@ export function ContainersSection() {
     <>
       <CatalogSection
         title="Tarjetas"
-        note="Planas, sin sombras. Las que se tocan muestran un borde al presionar."
+        note="Sin sombras ni degradados. La que solo se lee es plana; la que se toca lleva relieve plano (borde inferior sólido) y se hunde al presionar."
       >
         {cardTones.map(({ tone, name, onDark }) => (
           <Card key={tone} tone={tone}>
@@ -144,6 +145,7 @@ export function ContainersSection() {
             kind="empty"
             title="Aún no hay grabaciones"
             message="Cuando tus estudiantes practiquen, aparecerán aquí."
+            visual={<Illustration name="box" size="md" />}
           />
         </Card>
         <Card>
@@ -152,6 +154,7 @@ export function ContainersSection() {
             title="Vamos a intentarlo otra vez"
             message="No pudimos traer tus juegos."
             action={{ label: 'Intentar de nuevo', onPress: noop }}
+            visual={<Illustration name="cloudSleep" size="md" />}
           />
         </Card>
       </CatalogSection>

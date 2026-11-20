@@ -1,8 +1,11 @@
 export { AudioClipRow, type AudioClipKind } from './AudioClipRow';
 export { Celebration } from './Celebration';
-export { Character } from './Character';
+export { CelebrationHero } from './CelebrationHero';
+export { Character, type CharacterEyes } from './Character';
 export { GameCard, type GameCardTone } from './GameCard';
 export { GameIcon } from './GameIcon';
+export { GameIconFrame } from './GameIconFrame';
+export { GameQuestion } from './GameQuestion';
 export { MicButton } from './MicButton';
 export { MirrorView } from './MirrorView';
 export { Mouth } from './Mouth';
@@ -18,3 +21,13 @@ export { Waveform, type WaveformTone } from './Waveform';
 export { HintPill, hintPillStyles, type HintPillKind } from './HintPill';
 export { Pictogram, type PictogramSize } from './Pictogram';
 export { PictureCard, type PictureCardState } from './PictureCard';
+export {
+  Illustration,
+  illustrationFor,
+  illustrationNames,
+  normalizeWord,
+  type IllustrationName,
+} from './illustrations';
+export { MiniPicture } from './MiniPicture';
+export { gameThemes } from './gameThemes';
+export { useBlinkOnce } from './useBlinkOnce';
