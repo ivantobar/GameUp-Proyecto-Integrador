@@ -36,7 +36,8 @@ export function useWeeklyPractice() {
     return { guardian, students, week };
   }, [staff, guardians, selectedId]);
 
-  const { resource, reload, refresh } = useResource(load);
+  const { resource, reload, refresh, refreshing, refreshFailed } =
+    useResource(load);
 
   /** Ver la práctica de otro de sus estudiantes. */
   const selectStudent = useCallback((studentId: string) => {
@@ -65,6 +66,8 @@ export function useWeeklyPractice() {
     resource,
     reload,
     refresh,
+    refreshing,
+    refreshFailed,
     markState,
     markPracticedToday,
     selectStudent,

@@ -4,6 +4,7 @@ import { AppText, Button, Notice } from '@/components/ui';
 import { useClipPlayer } from '@/features/audio/useClipPlayer';
 import { spacing } from '@/theme';
 import { useVoiceNote } from '../useVoiceNote';
+import { useHoldAutoRefresh } from '@/features/refresh/RefreshHold';
 
 interface VoiceNoteRecorderProps {
   studentName: string;
@@ -21,6 +22,9 @@ export function VoiceNoteRecorder({
 }: VoiceNoteRecorderProps) {
   const note = useVoiceNote();
   const player = useClipPlayer(note.uri);
+  // Grabando, con una nota grabada sin guardar o escuchándola, la pantalla
+  // no se recarga sola.
+  useHoldAutoRefresh(note.phase !== 'idle' || player.playing);
 
   if (note.denied) {
     return (

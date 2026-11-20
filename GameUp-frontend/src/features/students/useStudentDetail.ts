@@ -62,7 +62,8 @@ export function useStudentDetail(studentId: string) {
     return { student, progress, assignments };
   }, [directory, assignmentManagement, studentId]);
 
-  const { resource, reload, refresh } = useResource(load);
+  const { resource, reload, refresh, refreshing, refreshFailed } =
+    useResource(load);
 
   // Nombre del estudiante para el aviso de «asignada» (sin rehacer callbacks).
   const nameRef = useRef<string | null>(null);
@@ -122,6 +123,8 @@ export function useStudentDetail(studentId: string) {
     resource,
     reload,
     refresh,
+    refreshing,
+    refreshFailed,
     message,
     showNotice,
     rowMessage,

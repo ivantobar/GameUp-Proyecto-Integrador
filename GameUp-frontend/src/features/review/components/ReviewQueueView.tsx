@@ -10,7 +10,8 @@ import {
   ScreenHeader,
   StateView,
 } from '@/components/ui';
-import { useRefreshOnFocus } from '@/data/useRefreshOnFocus';
+import { useRefreshHolds } from '@/features/refresh/RefreshHold';
+import { useScreenRefresh } from '@/features/refresh/useScreenRefresh';
 import { ReviewCard } from '@/features/review/components/ReviewCard';
 import {
   matchesFilter,
@@ -44,10 +45,14 @@ export function ReviewQueueView({
   studentName,
 }: ReviewQueueViewProps) {
   const queue = useReviewQueue(studentId);
-  const { resource, reload, refresh, message, busyId } = queue;
+  const { resource, reload, message, busyId } = queue;
   const [filter, setFilter] = useState<ReviewFilter>('all');
   const [openId, setOpenId] = useState<string | null>(null);
-  useRefreshOnFocus(refresh);
+  // Mientras suena un audio o hay una indicación o nota de voz sin enviar,
+  // la pantalla no se recarga sola (se hace al terminar). Deslizar hacia
+  // abajo sí recarga.
+  const holds = useRefreshHolds();
+  const screenRefresh = useScreenRefresh(queue, { autoPaused: holds.paused });
 
   const items =
     resource.status === 'ready'
@@ -67,6 +72,7 @@ export function ReviewQueueView({
 
   return (
     <Screen
+      refresh={screenRefresh}
       header={
         <ScreenHeader
           left={<HeaderBackButton onPress={() => router.back()} />}
@@ -131,31 +137,33 @@ export function ReviewQueueView({
               message="Toca «Todas» para ver sus otras actividades."
             />
           ) : (
-            <View style={styles.list}>
-              {items.map((item) => (
-                <ReviewCard
-                  key={item.id}
-                  item={item}
-                  expanded={item.id === expandedId}
-                  onExpand={() => setOpenId(item.id)}
-                  busy={busyId === item.id}
-                  onValidate={() => {
-                    queue.validate(item).catch(() => {});
-                  }}
-                  onRequestMore={(feedback, options) =>
-                    queue.requestMorePractice(item, feedback, options)
-                  }
-                  onSaveVoiceNote={(audioUri) =>
-                    queue.saveFamilyVoiceNote(item, audioUri)
-                  }
-                  loadRecording={() => queue.loadRecording(item)}
-                  voiceNoteEnabled={queue.features.familyVoiceNote}
-                  // Los niveles de cada juego se ven en el detalle del
-                  // estudiante, no en cada actividad.
-                  shareOption={!queue.features.feedbackAlwaysReachesFamily}
-                />
-              ))}
-            </View>
+            <holds.Provider>
+              <View style={styles.list}>
+                {items.map((item) => (
+                  <ReviewCard
+                    key={item.id}
+                    item={item}
+                    expanded={item.id === expandedId}
+                    onExpand={() => setOpenId(item.id)}
+                    busy={busyId === item.id}
+                    onValidate={() => {
+                      queue.validate(item).catch(() => {});
+                    }}
+                    onRequestMore={(feedback, options) =>
+                      queue.requestMorePractice(item, feedback, options)
+                    }
+                    onSaveVoiceNote={(audioUri) =>
+                      queue.saveFamilyVoiceNote(item, audioUri)
+                    }
+                    loadRecording={() => queue.loadRecording(item)}
+                    voiceNoteEnabled={queue.features.familyVoiceNote}
+                    // Los niveles de cada juego se ven en el detalle del
+                    // estudiante, no en cada actividad.
+                    shareOption={!queue.features.feedbackAlwaysReachesFamily}
+                  />
+                ))}
+              </View>
+            </holds.Provider>
           )}
         </>
       ) : null}

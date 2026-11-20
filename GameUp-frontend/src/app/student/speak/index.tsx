@@ -13,7 +13,7 @@ import { VowelsDoneMeter } from '@/features/speak/components/VowelsDoneMeter';
 import { speakSelectionNarration } from '@/features/speak/practice';
 import { useVowelSelection } from '@/features/speak/useVowelSelection';
 import { spacing } from '@/theme';
-import { useRefreshOnFocus } from '@/data/useRefreshOnFocus';
+import { useScreenRefresh } from '@/features/refresh/useScreenRefresh';
 import { errorOf, LoadErrorState } from '@/features/errors/LoadErrorState';
 
 const INSTRUCTION = 'Toca un sonido para practicar';
@@ -23,9 +23,14 @@ const INSTRUCTION = 'Toca un sonido para practicar';
  * vocales: sílabas y palabras quedan para la segunda etapa.
  */
 export default function SpeakSelectionScreen() {
-  const { resource, reload, refresh } = useVowelSelection();
+  const { resource, reload, refresh, refreshing, refreshFailed } =
+    useVowelSelection();
   // Al volver de una práctica, la ficha muestra la estrella nueva.
-  useRefreshOnFocus(refresh);
+  const screenRefresh = useScreenRefresh({
+    refresh,
+    refreshing,
+    refreshFailed,
+  });
   // Con los datos, la narración dice cuándo se termina una vocal y cuántas van.
   const narration =
     resource.status === 'ready'
@@ -37,6 +42,7 @@ export default function SpeakSelectionScreen() {
 
   return (
     <Screen
+      refresh={screenRefresh}
       tone="softGreen"
       backdrop="clouds"
       header={

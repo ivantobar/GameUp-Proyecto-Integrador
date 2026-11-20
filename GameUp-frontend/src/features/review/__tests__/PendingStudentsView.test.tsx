@@ -15,6 +15,8 @@ import { PendingStudentsView } from '@/features/review/components/PendingStudent
 import { directorRoutes, teacherRoutes } from '@/features/students/staffRoutes';
 
 jest.mock('expo-router', () => ({
+  // La pantalla está visible (recarga al volver la app al frente).
+  useIsFocused: () => true,
   router: { push: jest.fn(), back: jest.fn(), replace: jest.fn() },
 }));
 /** «Volver a la pestaña» = llamar a lo que registró con useRefreshOnFocus. */

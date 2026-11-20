@@ -8,7 +8,7 @@ import {
 } from '@/components/ui';
 import { Character, GameCard, NarrationButton } from '@/components/gameup';
 import { EnterStagger } from '@/components/gameup/motion';
-import { useRefreshOnFocus } from '@/data/useRefreshOnFocus';
+import { useScreenRefresh } from '@/features/refresh/useScreenRefresh';
 import { moduleBadge, type ModuleTasks } from '@/features/games/moduleTasks';
 import { useModuleTasks } from '@/features/games/useModuleTasks';
 import { useLargeText } from '@/features/accessibility/useLargeText';
@@ -38,15 +38,20 @@ function tasksBadge(modules: ModuleTasks[] | null): string | undefined {
  * módulo) y los juegos por niveles; las dos cosas no se mezclan.
  */
 export default function GamesScreen() {
-  const { resource, refresh } = useModuleTasks();
+  const { resource, refresh, refreshing, refreshFailed } = useModuleTasks();
   // Al volver, la cuenta de temas y la insignia se actualizan.
-  useRefreshOnFocus(refresh);
+  const screenRefresh = useScreenRefresh({
+    refresh,
+    refreshing,
+    refreshFailed,
+  });
   const modules = resource.status === 'ready' ? resource.data : null;
   // Con letra grande, una opción debajo de la otra (no se parten palabras).
   const largeText = useLargeText();
 
   return (
     <Screen
+      refresh={screenRefresh}
       backdrop="clouds"
       safeAreaBottom={false}
       header={

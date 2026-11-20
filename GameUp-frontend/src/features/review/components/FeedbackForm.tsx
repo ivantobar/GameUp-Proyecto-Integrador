@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import { AppText, Button, FilterChip, TextField } from '@/components/ui';
 import { spacing } from '@/theme';
 import { feedbackSuggestions } from '../reviewText';
+import { useHoldAutoRefresh } from '@/features/refresh/RefreshHold';
 
 /** Opciones al enviar «Practicar más». */
 export interface FeedbackOptions {
@@ -35,6 +36,8 @@ export function FeedbackForm({
   onCancel,
 }: FeedbackFormProps) {
   const [text, setText] = useState('');
+  // Con una indicación escrita sin enviar, la pantalla no se recarga sola.
+  useHoldAutoRefresh(text.trim().length > 0);
   const [share, setShare] = useState(false);
   const empty = text.trim().length === 0;
 

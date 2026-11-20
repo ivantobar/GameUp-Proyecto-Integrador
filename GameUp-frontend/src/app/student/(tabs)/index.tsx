@@ -11,7 +11,7 @@ import { ResumeCard } from '@/features/home/components/ResumeCard';
 import { TaskHeroCard } from '@/features/home/components/TaskHeroCard';
 import { useStudentHome } from '@/features/home/useStudentHome';
 import { spacing } from '@/theme';
-import { useRefreshOnFocus } from '@/data/useRefreshOnFocus';
+import { useScreenRefresh } from '@/features/refresh/useScreenRefresh';
 import type { Vowel } from '@/data/types';
 import { errorOf, LoadErrorState } from '@/features/errors/LoadErrorState';
 
@@ -21,12 +21,17 @@ import { errorOf, LoadErrorState } from '@/features/errors/LoadErrorState';
  * pequeños a Juegos y Mi progreso (distinto de la pantalla Juegos).
  */
 export default function StudentHome() {
-  const { resource, reload, refresh } = useStudentHome();
-  useRefreshOnFocus(refresh);
+  const { resource, reload, refresh, refreshing, refreshFailed } =
+    useStudentHome();
+  const screenRefresh = useScreenRefresh({
+    refresh,
+    refreshing,
+    refreshFailed,
+  });
 
   if (resource.status !== 'ready') {
     return (
-      <Screen backdrop="hills" safeAreaBottom={false}>
+      <Screen refresh={screenRefresh} backdrop="hills" safeAreaBottom={false}>
         {resource.status === 'loading' ? (
           <StateView kind="loading" title="Preparando tus juegos…" />
         ) : (
@@ -67,6 +72,7 @@ export default function StudentHome() {
 
   return (
     <Screen
+      refresh={screenRefresh}
       backdrop="hills"
       safeAreaBottom={false}
       header={

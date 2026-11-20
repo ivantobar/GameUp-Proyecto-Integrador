@@ -7,6 +7,7 @@ import type { NoAudioReason, ReviewItem } from '@/data/types';
 import { useAttemptPlayback } from '@/features/speak/useAttemptPlayback';
 import { colors, radii, spacing } from '@/theme';
 import { useRemoteRecording } from '../useRemoteRecording';
+import { useHoldAutoRefresh } from '@/features/refresh/RefreshHold';
 
 type Speech = NonNullable<ReviewItem['speech']>;
 
@@ -33,6 +34,11 @@ function SpeechEvidence({
   const local = useAttemptPlayback(speech.vowel, speech.audioUri);
   const remote = useRemoteRecording(
     speech.remoteAudio ? loadRecording : undefined,
+  );
+  // Mientras suena (o se descarga) la grabación, la pantalla no se recarga
+  // sola: no se corta el audio que la tallerista está escuchando.
+  useHoldAutoRefresh(
+    local.attemptPlaying || remote.playing || remote.state === 'loading',
   );
   const attemptText = `${firstName(studentName)} · intento ${speech.attemptNumber} de ${speech.attemptsTotal}`;
   // «Voz de Martín · intento 2 de 2», junto a «Así debe sonar».

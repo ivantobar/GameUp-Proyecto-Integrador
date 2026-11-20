@@ -14,7 +14,7 @@ import {
 } from '@/components/ui';
 import { NoLinkedStudentsError } from '@/data/guardianErrors';
 import { firstName } from '@/data/studentName';
-import { useRefreshOnFocus } from '@/data/useRefreshOnFocus';
+import { useScreenRefresh } from '@/features/refresh/useScreenRefresh';
 import { SignOutButton } from '@/features/auth/components/SignOutButton';
 import { ActivityFeedbackCard } from '@/features/home-practice/components/ActivityFeedbackCard';
 import { TeacherNoteCard } from '@/features/home-practice/components/TeacherNoteCard';
@@ -34,11 +34,17 @@ export default function GuardianPracticeScreen() {
     resource,
     reload,
     refresh,
+    refreshing,
+    refreshFailed,
     markState,
     markPracticedToday,
     selectStudent,
   } = useWeeklyPractice();
-  useRefreshOnFocus(refresh);
+  const screenRefresh = useScreenRefresh({
+    refresh,
+    refreshing,
+    refreshFailed,
+  });
 
   const week = resource.status === 'ready' ? resource.data.week : null;
   const students = resource.status === 'ready' ? resource.data.students : [];
@@ -68,6 +74,7 @@ export default function GuardianPracticeScreen() {
 
   return (
     <Screen
+      refresh={screenRefresh}
       header={
         <ScreenHeader
           left={
@@ -78,6 +85,7 @@ export default function GuardianPracticeScreen() {
           }
           title="Practicar en casa"
           right={<SignOutButton />}
+          refresh={screenRefresh}
         />
       }
       footer={footer}

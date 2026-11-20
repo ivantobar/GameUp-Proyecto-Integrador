@@ -8,6 +8,8 @@ import { ReviewQueueView } from '@/features/review/components/ReviewQueueView';
 import { settle } from '@/test-utils/settle';
 
 jest.mock('expo-router', () => ({
+  // La pantalla está visible (recarga al volver la app al frente).
+  useIsFocused: () => true,
   router: { push: jest.fn(), back: jest.fn(), replace: jest.fn() },
 }));
 jest.mock('@/data/useRefreshOnFocus', () => ({

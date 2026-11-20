@@ -181,7 +181,11 @@ describe('useStudentRoster', () => {
     const { result } = await renderRoster(repos);
     expect(spy).toHaveBeenCalledTimes(3);
 
-    await act(async () => result.current.refresh());
+    // `refresh` termina cuando llega la respuesta: aquí no se espera para
+    // ver que, mientras se actualiza, todo sigue a la vista.
+    await act(async () => {
+      result.current.refresh().catch(() => {});
+    });
     // Mientras se actualiza, la lista y su progreso siguen a la vista.
     expect(result.current.resource.status).toBe('ready');
     expect(result.current.rows[0]?.percent).toBe(43);
