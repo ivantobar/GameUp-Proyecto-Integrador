@@ -4,9 +4,14 @@ import { StyleSheet, View } from 'react-native';
 import { AppText, Button, Notice, Screen } from '@/components/ui';
 import { MicButton, MirrorView, Waveform } from '@/components/gameup';
 import { parseActivityId } from '@/features/games/delivery';
+import { NoRecordingPill } from '@/features/speak/components/NoRecordingPill';
 import { PracticeHeader } from '@/features/speak/components/PracticeHeader';
 import type { PracticeOutcome } from '@/features/speak/completePractice';
 import { usePracticeSession } from '@/features/speak/PracticeSession';
+import {
+  noRecordingNotice,
+  useVoiceConsentStatus,
+} from '@/features/speak/noRecordingNotice';
 import { useSayStep } from '@/features/speak/useSayStep';
 import { parseVowel, vowelContent } from '@/features/speak/vowelContent';
 import { spacing } from '@/theme';
@@ -39,10 +44,19 @@ export default function SayStep() {
     useSayStep(vowel, onDone, activityId);
   const recording = phase === 'recording';
   const saving = phase === 'saving';
+  // Por qué no se graba (práctica libre o sin autorización): solo se
+  // explica; cuándo se graba lo sigue decidiendo `useSayStep`.
+  const voiceConsent = useVoiceConsentStatus();
+  const notice = noRecordingNotice(activityId !== null, voiceConsent);
 
-  const narration = canRecord
-    ? `Ahora tú. Mírate en el espejo y di la ${letter}. Toca el micrófono para empezar y otra vez cuando termines.`
-    : `Ahora tú. Mírate en el espejo y di la ${letter} en voz alta. Después toca Ya lo dije.`;
+  const narration = [
+    canRecord
+      ? `Ahora tú. Mírate en el espejo y di la ${letter}. Toca el micrófono para empezar y otra vez cuando termines.`
+      : `Ahora tú. Mírate en el espejo y di la ${letter} en voz alta. Después toca Ya lo dije.`,
+    notice ? `${notice}.` : null,
+  ]
+    .filter(Boolean)
+    .join(' ');
 
   return (
     <Screen
@@ -62,6 +76,8 @@ export default function SayStep() {
       </AppText>
 
       <MirrorView mouth={vowelContent[vowel].mouth} active={focused} />
+
+      {notice ? <NoRecordingPill text={notice} /> : null}
 
       <View style={styles.voice} accessibilityLiveRegion="polite">
         {canRecord ? (
