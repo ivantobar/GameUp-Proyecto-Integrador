@@ -36,10 +36,12 @@ const problemNotices: Record<
     title: 'No pudimos entrar',
     message: 'Tu cuenta no tiene acceso a GameUP. Habla con la fundación.',
   },
+  // El backend o el servicio de cuentas (API de seguridad) siguen
+  // despertando en Render: no es un error de la persona ni de su internet.
   unavailable: {
-    title: 'GameUP no está disponible',
+    title: 'GameUP todavía se está despertando',
     message:
-      'No pudimos verificar tu cuenta en este momento. Espera un momento e inténtalo otra vez.',
+      'No pudimos verificar tu cuenta porque el servicio de cuentas se estaba despertando. Espera unos 30 segundos y toca «Intentar de nuevo».',
   },
   tooMany: {
     title: 'Demasiados intentos',
@@ -188,6 +190,21 @@ export default function LoginScreen() {
                     tone="warm"
                     title={notice.title}
                     message={notice.message}
+                    action={
+                      form.problem === 'unavailable' ? (
+                        <Button
+                          label="Intentar de nuevo"
+                          icon="replay"
+                          size="large"
+                          variant="secondary"
+                          disabled={form.submitting}
+                          accessibilityLabel="Intentar entrar de nuevo"
+                          onPress={() => {
+                            onSubmit().catch(() => {});
+                          }}
+                        />
+                      ) : undefined
+                    }
                   />
                 </View>
               ) : null}
