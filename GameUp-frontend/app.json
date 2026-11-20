@@ -2,7 +2,7 @@
   "expo": {
     "name": "GameUP",
     "slug": "gameup",
-    "version": "0.0.1",
+    "version": "1.0.0",
     "scheme": "gameup",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
