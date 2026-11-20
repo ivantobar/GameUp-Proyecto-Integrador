@@ -35,7 +35,7 @@ describe('validateEnv', () => {
   it('API de seguridad: URL opcional y valores por defecto de timeout y caché', () => {
     const env = validateEnv({ DATABASE_URL: DB });
     expect(env.SEGURIDAD_API_URL).toBeUndefined();
-    expect(env.SEGURIDAD_API_TIMEOUT_MS).toBe(5000);
+    expect(env.SEGURIDAD_API_TIMEOUT_MS).toBe(30000);
     expect(env.AUTH_CACHE_TTL_SEG).toBe(300);
   });
 
