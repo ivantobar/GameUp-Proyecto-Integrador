@@ -37,8 +37,10 @@ services:
       # URL base de la API de seguridad (login y perfil), sin /api al final.
       - key: SEGURIDAD_API_URL
         sync: false
+      # 30 s: la API de seguridad también está en el plan gratis de Render y
+      # tarda ~20 s en despertar. Con 5 s el primer login del día fallaba.
       - key: SEGURIDAD_API_TIMEOUT_MS
-        value: "5000"
+        value: "30000"
       - key: AUTH_CACHE_TTL_SEG
         value: "300"
       # Alta automática en el primer login: roles de GameUP separados por

@@ -93,11 +93,15 @@ export class EnvironmentVariables {
   @IsUrl({ require_tld: false, protocols: ['http', 'https'] })
   SEGURIDAD_API_URL?: string;
 
-  /** Tiempo máximo de espera de cada llamada a la API de seguridad. */
+  /**
+   * Tiempo máximo de espera de cada llamada a la API de seguridad. 30 s por
+   * defecto: esa API está en el plan gratis de Render y tarda ~20 s en
+   * despertar (con 5 s, el primer login del día respondía 503).
+   */
   @IsInt()
   @Min(500)
   @Max(30000)
-  SEGURIDAD_API_TIMEOUT_MS: number = 5000;
+  SEGURIDAD_API_TIMEOUT_MS: number = 30000;
 
   /**
    * Segundos que se recuerda un token ya verificado (máximo 5 minutos).

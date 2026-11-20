@@ -139,7 +139,7 @@ Si al actualizar Prisma npm avisa de scripts bloqueados:
 | `SUPABASE_URL` | **En producción** | — | URL del proyecto de Supabase (Auth/Storage) |
 | `SUPABASE_SECRET_KEY` | **En producción** | — | Clave secreta de Supabase (**solo backend**) |
 | `SEGURIDAD_API_URL` | **En producción*** | — | URL base de la API de seguridad (login y perfil). *Sin ella, el login y las rutas protegidas responden 503 |
-| `SEGURIDAD_API_TIMEOUT_MS` | No | `5000` | Espera máxima por llamada a la API de seguridad |
+| `SEGURIDAD_API_TIMEOUT_MS` | No | `30000` | Espera máxima por llamada a la API de seguridad (500 a 30000). Alta a propósito: esa API se duerme en Render y tarda ~20 s en despertar |
 | `AUTH_CACHE_TTL_SEG` | No | `300` | Segundos que se recuerda un token verificado (máx. 300 y nunca más que su `exp`) |
 | `ASISCO_API_URL` | **En producción** | — | URL base de ASISCO UP, sin `/api` (ej. `https://proyecto-asiscoup-g1-jvaz.onrender.com`). Activa la integración: consentimiento de voz (`autorizaGrabacionVoz`) y copia de los vínculos de acudientes al iniciar sesión. Sin ella, no se graba voz (falla cerrado) y la directora vincula acudientes a mano |
 | `ASISCO_API_TIMEOUT_MS` | No | `5000` | Espera máxima por llamada a ASISCO UP (500 a 30000) |
